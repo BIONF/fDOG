@@ -5,12 +5,12 @@
 
 # Table of Contents
 * [How to install](#how-to-install)
-     * [Install the fdog package](#install-the-fdog-package)
-     * [Setup fdog](#setup-fdog)
+     * [Install the fDOG package](#install-the-fdog-package)
+     * [Setup fDOG](#setup-fdog)
 * [Usage](#usage)
-* [fdog data set](#fdog-data-set)
-     * [Adding a new gene set into fdog](#adding-a-new-gene-set-into-fdog)
-     * [Adding a list of gene sets into fdog](#adding-a-list-of-gene-sets-into-fdog)
+* [fDOG data set](#fdog-data-set)
+     * [Adding a new gene set into fDOG](#adding-a-new-gene-set-into-fdog)
+     * [Adding a list of gene sets into fDOG](#adding-a-list-of-gene-sets-into-fdog)
 * [Bugs](#bugs)
 * [How to cite](#how-to-cite)
 * [Contributors](#contributors)
@@ -20,7 +20,7 @@
 
 *fDOG* tool is distributed as a python package called *fdog*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
 
-## Install the fdog package
+## Install the fDOG package
 You can install *fdog* using `pip`:
 ```
 python3 -m pip install fdog
@@ -37,7 +37,7 @@ and then add the following line to the end of your **~/.bashrc** or **~/.bash_pr
 export PATH=$HOME/.local/bin:$PATH
 ```
 
-## Setup fdog
+## Setup fDOG
 
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
 
@@ -70,7 +70,7 @@ fdog.run -h
 
 Please find more information in [our wiki](https://github.com/BIONF/fDOG/wiki) to learn about the [input and outputs files](https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files) of *fdog*.
 
-# fdog data set
+# fDOG data set
 
 Within the data package we provide a set of 78 reference taxa. They can be automatically downloaded during the setup. This data comes "ready to use" with the *fdog* framework. Species data must be present in the three directories listed below:
 
@@ -82,7 +82,7 @@ For each species/taxon there is a sub-directory named in accordance to the namin
 
 *fdog* is not limited to those 78 taxa. If needed the user can manually add further gene sets (multiple fasta format) using provided functions.
 
-## Adding a new gene set into fdog
+## Adding a new gene set into fDOG
 For adding **one gene set**, please use the `fdog.addTaxon` function:
 ```
 fdog.addTaxon -f newTaxon.fa -i tax_id [-o /output/directory] [-n abbr_tax_name] [-c] [-v protein_version] [-a]
@@ -90,7 +90,7 @@ fdog.addTaxon -f newTaxon.fa -i tax_id [-o /output/directory] [-n abbr_tax_name]
 
 in which, the first 3 arguments are required including `newTaxon.fa` is the gene set that need to be added, `tax_id` is its NCBI taxonomy ID, `/output/directory` is where the sub-directories can be found (*genome_dir*, *blast_dir* and *weight_dir*). If not given, new taxon will be added into the same directory of pre-calculated data. Other arguments are optional, which are `-n` for specify your own taxon name (if not given, an abbriviate name will be suggested based on the NCBI taxon name of the input `tax_id`), `-c` for calculating the BLAST DB (only needed if you need to include your new taxon into the list of taxa for compilating the core set), `-v` for identifying the genome/proteome version (default will be 1), and `-a` for turning off the annotation step (*not recommended*).
 
-## Adding a list of gene sets into fdog
+## Adding a list of gene sets into fDOG
 For adding **more than one gene set**, please use the `fdog.addTaxa` script:
 ```
 fdog.addTaxa -i /path/to/newtaxa/fasta -m mapping_file [-o /output/directory] [-c]
