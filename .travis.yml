@@ -1,0 +1,13 @@
+language: python
+python:
+  - '3.8'
+install:
+  - pip install .
+script: python3 fdog/runSingle.py -h
+deploy:
+  provider: pypi
+  username: "__token__"
+  password:
+    secure: uq69z5nwEI3xqpaBtBXb198+mDaawqunZAez9cAFjYZH4X8UYSOC2p+RoEjMGb/2pCkecl+wnNusSKjyvj8E493yZTObWv0klGTjaQwly9bYrxC9G4ubaIvJPbKto6MvmIeVlwUkdeW+zowmWKJ2q4onCr1SFrqMD+IAQoKGaKBv7sXysLRugxMZoAbe13R/U5z8M4E+jzi1nxtceHalIRDBNqm7DVcRvJff5vCIlQ+uKWnmCAgq74AK0i6Z/alJ/yggc0mwUwPxCrvIiMk8WHG5iL3Z/XlVaT2pBie7FxswSpZ7PgCTLK6ZgeGs/uxN0GYoOGNmpTrwMs4MOlPUc2sCfx3ybMZmE6eiFLwJ71RKv2lFjlQOdQS7ifapqcfBNhE6AUo40fbNThAUjDpIUdqxYSneLwzzeizgsZwsGXpPcVV6yEISJHNC2eQMlteo5/TMhrO6hBW+n7wSuGpSovE/DJGjq/facyHWZRlBo6exO3m4ryWl/gme9vQkbs3hot9zpEmzdBnQpfYkj/1WHDal87MwU3vgH1s4E5Uwo0urCHhXcg7BIDnFgTOVQigAEISJTfeITCEdONXXs3NoNRTY7NicZBMCrXbCe9Mh8SwFBp01EeU6fjBmx05r8heBRBTs4jPVXadpQ042RL94c/Nrdx7wjS6r5QA/v5aeLBw=
+  on:
+    tags: true
