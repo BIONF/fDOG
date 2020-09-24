@@ -1254,7 +1254,7 @@ sub checkInput {
 
 	## 13) setting up the directories where the output files will be put into.
 	$fa_dir_neu = $outpath . '/fa_dir_' . $dbfile_short . '_' . $hmmset . '_' . $refspec[0];
-	$tmpdir = $outpath . '/' . $tmpdir;
+	# $tmpdir = $outpath . '/' . $tmpdir;
 	if (!$strict) {
 		$fa_dir_neu = $outpath . '/fa_dir_' . $dbfile_short . '_' . $hmmset . '_' . $refspec[0];
 	}
@@ -1281,10 +1281,10 @@ sub checkInput {
 			`rm -rf "$fa_dir_neu"`;
 			`mkdir "$fa_dir_neu"`;
 		}
-		if (!(-e "$tmpdir")) {
+		if (!(-d "$tmpdir")) {
 			`mkdir "$tmpdir"`;
 		}
-		elsif (-e "$tmpdir" and $cleartmp) {
+		elsif (-d "$tmpdir" and $cleartmp) {
 			`rm -rf "$tmpdir"`;
 			`mkdir "$tmpdir"`;
 		}

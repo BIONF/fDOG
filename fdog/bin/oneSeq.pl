@@ -607,6 +607,7 @@ if (!$coreOnly) {
 	my $final_eval_blast = $eval_blast*$eval_relaxfac;
 	my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
 
+	$taxaPath = $genome_dir;
 	my @searchTaxa;
 	unless($groupNode) {
 		@searchTaxa = keys %taxa;
@@ -643,14 +644,15 @@ if (!$coreOnly) {
 	foreach (sort @searchTaxa) {
 		chomp(my $searchTaxon = $_);
 		my $pid = $pm->start and next;
-		my $doneTaxon = runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
-		unless ($silent) {
-			print $doneTaxon,"\t";
+		my $searchTaxonName = getTaxonName($searchTaxon);
+		if (defined($searchTaxonName)) {
+			unless ($silent) {
+				print $searchTaxon, "\t", $searchTaxonName, "\n";
+			} else {
+				print $searchTaxonName, "\n";
+			}
 		}
-		my $doneTaxonName = getTaxonName($doneTaxon);
-		if (defined($doneTaxonName)) {
-			print $doneTaxonName, " DONE\n";
-		}
+		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
 		$pm->finish;
 	}
 	$pm->wait_all_children;
@@ -668,7 +670,6 @@ if(!$coreOnly){
 	unless (-e $finalOutput) {
 		die "ERROR: Could not find $finalOutput\n";
 	}
-
 	# check and add seed to final extended.fa if needed
 	addSeedSeq($seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 
@@ -1568,14 +1569,16 @@ sub getBestOrtholog {
 			unless ($silent) {
 				print "fdog species: " . $key->scientific_name . " - " . @{$key->name('supplied')}[0] . "\n";
 			}
-			my $doneTaxon = runHamstr(@{$key->name('supplied')}[0], $seqName, $outputFa, $refSpec, $core_hitlimit, $core_rep, $corestrict, $coremode, $eval_blast, $eval_hmmer, $aln);
-			unless ($silent) {
-				print $doneTaxon,"\t";
+			my $coreTaxon = @{$key->name('supplied')}[0];
+			my $coreTaxonName = getTaxonName($coreTaxon);
+			if (defined($coreTaxonName)) {
+				unless ($silent) {
+					print $coreTaxon, "\t", $coreTaxonName, "\n";
+				} else {
+					print $coreTaxonName, "\n";
+				}
 			}
-			my $doneTaxonName = getTaxonName($doneTaxon);
-			if (defined($doneTaxonName)) {
-				print $doneTaxonName, " DONE\n";
-			}
+			runHamstr($coreTaxon, $seqName, $outputFa, $refSpec, $core_hitlimit, $core_rep, $corestrict, $coremode, $eval_blast, $eval_hmmer, $aln);
 			## check weather a candidate was found in the searched taxon
 			if(-e $candidatesFile) {
 
@@ -1904,7 +1907,7 @@ sub getTaxonName {
 	if (defined($taxon)) {
 		return($taxon->scientific_name);
 	} else {
-		return("Unk NCBI taxon");
+		return("Unk NCBI taxon for $taxAbbr");
 	}
 }
 
@@ -2042,7 +2045,6 @@ sub runHamstr {
 	else {
 		print "No protein set available for $taxon. Failed to fetch it from database and nothing at $taxaDir. Skipping!\n";
 	}
-	return($taxon);
 }
 
 # add seed sequence to output file if not exists
@@ -2061,19 +2063,30 @@ sub addSeedSeq {
 			}
 		}
 	}
-	# get seed seq
+	# get seed sequence and add to be beginning of the fasta output
+	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
+	my $seedFa = "";
 	if ($flag == 1) {
+		# first, write the seed to TEMP
 		my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
 		while(my $seq = $seqio->next_seq) {
 			my $id = $seq->id;
 			if ($id =~ /$refSpec/) {
-				my $seedFa = ">".$id."|1\n".$seq->seq;
-				# append to begining of outputFa
-				my $headCommand = "sed -i \'1s/^/". ">".$id."|1\\n".$seq->seq . "\\n/\' " . $outputFa;
-				system($headCommand);
+				print TEMP ">$id|1\n", $seq->seq, "\n";
+				last;
+			}
+		}
+		# then write other sequences
+		my $seqio2 = Bio::SeqIO->new(-file => "$outputFa", '-format' => 'Fasta');
+		while(my $seq = $seqio2->next_seq) {
+			my $id = $seq->id;
+			if ($id !~ /$refSpec/) {
+				print TEMP ">$id\n", $seq->seq, "\n";
 			}
 		}
 	}
+	close(TEMP);
+	system("mv $outputFa.temp $outputFa")
 }
 
 ##########################
@@ -2548,7 +2561,7 @@ sub initialCheck {
 	}
 
 	# check executable FAS
-	my $fasCheckMsg = `prepareFAS -t ./ -c 2>&1`;
+	my $fasCheckMsg = `setupFAS -t ./ -c 2>&1`;
 	if ($fasoff != 1 && $fasCheckMsg =~ /ERROR/) {
 		die "ERROR: greedyFAS not ready to use! Please check https://github.com/BIONF/FAS/wiki/prepareFAS\n";
 	}
