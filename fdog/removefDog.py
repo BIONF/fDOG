@@ -45,7 +45,7 @@ def query_yes_no(question, default='yes'):
                              '(or "y" or "n").\n')
 
 def main():
-    version = '1.0.0'
+    version = '0.0.1'
     parser = argparse.ArgumentParser(description='You are running fdog.remove version ' + str(version) + '.')
     parser.add_argument('--data', help='Remove fdog together with all files/data within the installed fdog directory', action='store_true', default=False)
     args = parser.parse_args()

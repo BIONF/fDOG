@@ -26,14 +26,14 @@ with open("README.md", "r") as input:
 
 setup(
     name="fdog",
-    version="0.0.1",
+    version="0.0.2",
     python_requires='>=3.7.0',
     description="Feature-aware Directed OrtholoG search tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Vinh Tran",
     author_email="tran@bio.uni-frankfurt.de",
-    url="https://github.com/BIONF/HaMStR",
+    url="https://github.com/BIONF/fDOG",
     packages=find_packages(),
     package_data={'': ['*']},
     install_requires=[

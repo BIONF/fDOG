@@ -184,7 +184,7 @@ def checkMissingNcbiID(namesDmp, taxaList):
     return(missingTaxa.keys(), dupTaxa)
 
 def main():
-    version = '1.0.0'
+    version = '0.0.1'
     parser = argparse.ArgumentParser(description='You are running fdog.checkData version ' + str(version) + '.')
     parser.add_argument('-g', '--genomeDir', help='Path to search taxa directory (e.g. fdog_dataPath/genome_dir)', action='store', default='')
     parser.add_argument('-b', '--blastDir', help='Path to blastDB directory (e.g. fdog_dataPath/blast_dir)', action='store', default='')
