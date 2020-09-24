@@ -28,14 +28,15 @@ def checkOptConflict(lib, conda):
             sys.exit('*** ERROR: --lib and --conda cannot be used at the same time!')
 
 def main():
-    version = '0.0.1'
+    version = '0.0.2'
     parser = argparse.ArgumentParser(description='You are running fdog.setup version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-o', '--outPath', help='Output path for fdog data', action='store', default='', required=True)
     optional.add_argument('--conda', help='Setup fdog within a conda env', action='store_true', default=False)
     optional.add_argument('--lib', help='Install fdog libraries only', action='store_true', default=False)
-    optional.add_argument('--getPath', help='Get path to installed fdog', action='store_true', default=False)
+    optional.add_argument('--getSourcepath', help='Get path to installed fdog', action='store_true', default=False)
+    optional.add_argument('--getDatapath', help='Get fdog default data path', action='store_true', default=False)
 
     ### get arguments
     args = parser.parse_args()
@@ -45,9 +46,19 @@ def main():
     outPath = args.outPath
     Path(outPath).mkdir(parents = True, exist_ok = True)
     fdogPath = os.path.realpath(__file__).replace('/setupfDog.py','')
-    ### get path
-    if args.getPath:
+    ### get install path
+    if args.getSourcepath:
         print(fdogPath)
+        sys.exit()
+    ### get data path
+    if args.getDatapath:
+        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
+        if not os.path.exists(pathconfigFile):
+            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        else:
+            with open(pathconfigFile) as f:
+                dataPath = f.readline().strip()
+                print(dataPath)
         sys.exit()
     ### run setup
     if conda:
