@@ -218,7 +218,6 @@ $path =~ s/\/bin//;
 my $hmmpath = "$path/core_orthologs"; #path where the hmms are located
 my $blastpath = "$path/blast_dir"; #path to the blast-dbs
 my $outpath = '.';
-my $tmpdir = "$outpath/tmp";
 my $idsep = '__'; #character used to replace whitespaces in the sequence header with (flag -longhead)
 my $hmm_dir = 'hmm_dir';
 my $fa_dir  = 'fa_dir';
@@ -521,6 +520,8 @@ else {
 	print OUT join "\n", @log;
 	close OUT;
 }
+my $tmpdir = "$outpath/tmp";
+
 ### read in of the core-ortholog sequences
 my $co_seqs = parseSeqfile("$fafile");
 
