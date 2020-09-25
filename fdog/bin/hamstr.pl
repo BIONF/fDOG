@@ -1255,7 +1255,7 @@ sub checkInput {
 
 	## 13) setting up the directories where the output files will be put into.
 	$fa_dir_neu = $outpath . '/fa_dir_' . $dbfile_short . '_' . $hmmset . '_' . $refspec[0];
-	# $tmpdir = $outpath . '/' . $tmpdir;
+	$tmpdir = $outpath . '/tmp'; # . $tmpdir;
 	if (!$strict) {
 		$fa_dir_neu = $outpath . '/fa_dir_' . $dbfile_short . '_' . $hmmset . '_' . $refspec[0];
 	}

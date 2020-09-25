@@ -178,7 +178,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.6'
+    version = '0.0.7'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -188,15 +188,6 @@ def main():
                             action='store', default='', required=True)
     required.add_argument('--refspec', help='Reference taxon. It should be the species the seed sequence was derived from',
                             action='store', default='', required=True)
-
-    optional_noReusecore = parser.add_argument_group('Arguments, required when using without --reuseCore')
-    optional_noReusecore.add_argument('--minDist', help='Minimum systematic distance of primer taxa for the core set compilation. Default: genus',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
-                            action='store', default='genus')
-    optional_noReusecore.add_argument('--maxDist', help='Maximum systematic distance of primer taxa for the core set compilation. Default: kingdom',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
-                            action='store', default='kingdom')
-    optional_noReusecore.add_argument('--coreOrth', help='Number of orthologs added to the core set. Default: 5', action='store', default=5, type=int)
 
     optional_paths = parser.add_argument_group('Non-default directory options')
     optional_paths.add_argument('--outpath', help='Output directory', action='store', default='')
@@ -218,6 +209,13 @@ def main():
     core_options = parser.add_argument_group('Core compilation options')
     core_options.add_argument('--coreOnly', help='Compile only the core orthologs', action='store_true', default=False)
     core_options.add_argument('--reuseCore', help='Reuse existing core set of your sequence', action='store_true', default=False)
+    core_options.add_argument('--minDist', help='Minimum systematic distance of primer taxa for the core set compilation. Default: genus',
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            action='store', default='genus')
+    core_options.add_argument('--maxDist', help='Maximum systematic distance of primer taxa for the core set compilation. Default: kingdom',
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            action='store', default='kingdom')
+    core_options.add_argument('--coreOrth', help='Number of orthologs added to the core set. Default: 5', action='store', default=5, type=int)
     core_options.add_argument('--coreTaxa', help='List of primer taxa that should exclusively be used for the core set compilation', action='store', default='')
     core_options.add_argument('--coreStrict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
