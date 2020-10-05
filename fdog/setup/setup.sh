@@ -85,6 +85,12 @@ if [ -z "$(which $wgetprog)" ]; then
   exit
 fi
 
+if [ -z "$(which $readlinkprog)" ]; then
+  echo -e "\e[31m$readlinkprog not found!\e[0m"
+  echo "Please run fdog.setup with --lib first!"
+  exit
+fi
+
 if ! [ -f ~/$bashFile ]; then
   touch ~/$bashFile
 fi
