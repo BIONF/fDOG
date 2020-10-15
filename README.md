@@ -39,6 +39,8 @@ export PATH=$HOME/.local/bin:$PATH
 
 ## Setup fDOG
 
+**NOTE**: in case you haven't installed/used [greedyFAS](https://github.com/BIONF/FAS) before, please run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) first.
+
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
 
 You can do it by just running this command
@@ -53,6 +55,8 @@ fdog.setup -o /output/path/for/fdog/data --conda
 *You should have the sudo password ready, otherwise some missing dependencies cannot be installed. See [dependency list](#dependencies) for more info. If you do not have root privileges, ask your admin to install those dependencies using `fdog.setup --lib` command.*
 
 [Pre-calculated data set](https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure) of fdog will be saved in `/output/path/for/fdog/data`. After the setup run successfully, you can start using *fdog*.
+
+You will get a warning if any of the dependencies are not ready to use, please solve those issues and rerun `fdog.setup`.
 
 *For debugging the setup, please create a log file by running the setup as e.g. `fdog.setup | tee log.txt` for Linux/MacOS or `fdog.setup --conda | tee log.txt` for Anaconda and send us that log file, so that we can trouble shoot the issues. Most of the problems can be solved by just re-running the setup.*
 
