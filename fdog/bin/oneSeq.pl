@@ -663,7 +663,6 @@ print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) .
 ## Evaluation of all orthologs that are predicted by the final run
 if(!$coreOnly){
 	my $fasStTime = gettime();
-	print "Starting the feature architecture similarity score computation...\n";
 	my $processID = $$;
 
 	# check if final extended.fa exists
@@ -675,6 +674,7 @@ if(!$coreOnly){
 
 	# calculate FAS scores for final extended.fa
 	if ($fas_support) {
+		print "Starting the feature architecture similarity score computation...\n";
 		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu";
 		unless ($countercheck) {
 			$fdogFAScmd .= " --bidirectional"
