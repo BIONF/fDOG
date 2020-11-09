@@ -39,11 +39,11 @@ export PATH=$HOME/.local/bin:$PATH
 
 ## Setup fDOG
 
-**NOTE**: in case you haven't installed/used [greedyFAS](https://github.com/BIONF/FAS) before, please run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) first.
-
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
 
-You can do it by just running this command
+**NOTE**: in case you haven't installed [greedyFAS](https://github.com/BIONF/FAS) before, it will be installed automatically within *fDOG* setup. However, you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) after *fDOG* setup finished before actually using *fDOG*! 
+
+You can setup fDOG by running this command
 ```
 fdog.setup -o /output/path/for/fdog/data
 ```
@@ -54,7 +54,7 @@ fdog.setup -o /output/path/for/fdog/data --conda
 
 *You should have the sudo password ready, otherwise some missing dependencies cannot be installed. See [dependency list](#dependencies) for more info. If you do not have root privileges, ask your admin to install those dependencies using `fdog.setup --lib` command.*
 
-[Pre-calculated data set](https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure) of fdog will be saved in `/output/path/for/fdog/data`. After the setup run successfully, you can start using *fdog*.
+[Pre-calculated data set](https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure) of fdog will be saved in `/output/path/for/fdog/data`. After the setup run successfully, you can start using *fdog*. **Please make sure to check if you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) first.**
 
 You will get a warning if any of the dependencies are not ready to use, please solve those issues and rerun `fdog.setup`.
 
