@@ -93,7 +93,7 @@ def checkValidSeqs(faFile):
         if any(e in id for e in spaceChr):
             sys.exit('*** ERROR: Invalid character found in \">%s\" in %s' % (id, faFile))
         if any(c for c in seq if not c.isalpha()):
-            print('*** ERROR: Invalid character found in the sequence of gene \"%s\" in %s' % (id, faFile))
+            print('*** ERROR: Invalid character "%s" found in the sequence of gene \"%s\" in %s' % (c, id, faFile))
             sys.exit('You can use "--replace" or "--delete" to solve this issue!')
 
 def rewriteSeqs(faFile, replace, delete):
@@ -140,7 +140,7 @@ def checkDataFolder(checkDir, replace, delete, concat):
                                 else:
                                     rewriteSeqs(faFile, replace, delete)
                             elif checkFaFile == 'ok':
-                                if not delete or replace:
+                                if not (delete or replace):
                                     checkValidSeqs(faFile)
                                 else:
                                     rewriteSeqs(faFile, replace, delete)
@@ -184,7 +184,7 @@ def checkMissingNcbiID(namesDmp, taxaList):
     return(missingTaxa.keys(), dupTaxa)
 
 def main():
-    version = '0.0.1'
+    version = '0.0.2'
     parser = argparse.ArgumentParser(description='You are running fdog.checkData version ' + str(version) + '.')
     parser.add_argument('-g', '--genomeDir', help='Path to search taxa directory (e.g. fdog_dataPath/genome_dir)', action='store', default='')
     parser.add_argument('-b', '--blastDir', help='Path to blastDB directory (e.g. fdog_dataPath/blast_dir)', action='store', default='')
