@@ -83,7 +83,7 @@ def runBlast(args):
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.1'
+    version = '0.0.2'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -91,7 +91,7 @@ def main():
     required.add_argument('-i', '--taxid', help='Taxonomy ID of input taxon', action='store', default='', required=True, type=int)
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
     optional.add_argument('-n', '--name', help='Acronym name of input taxon', action='store', default='', type=str)
-    optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default=1, type=int)
+    optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default=1, type=str)
     optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in blast_dir folder)', action='store_true', default=False)
     optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using annoFAS', action='store_true', default=False)
     optional.add_argument('--oldFAS', help='Use old verion of FAS (annoFAS ≤ 1.2.0)', action='store_true', default=False)
