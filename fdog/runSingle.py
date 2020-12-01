@@ -64,12 +64,12 @@ def runSingle(args):
     (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
     cmd = cmd + ' -outpath=%s -hmmpath=%s -blastpath=%s -searchpath=%s -weightpath=%s' % (outpath, hmmpath, blastpath, searchpath, weightpath)
     # add other I/O options
-    (append, force, cleanup, group, blast, db) = ioArgs
+    (append, force, noCleanup, group, blast, db) = ioArgs
     if append == True:
         cmd = cmd + ' -append'
     if force == True:
         cmd = cmd + ' -force'
-    if cleanup == True:
+    if noCleanup == False:
         cmd = cmd + ' -cleanup'
     if blast == True:
         cmd = cmd + ' -blast'
@@ -161,7 +161,7 @@ def runSingle(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.10'
+    version = '0.0.11'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -182,7 +182,7 @@ def main():
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
-    addtionalIO.add_argument('--cleanup', help='Temporary output will be deleted. Default: True', action='store_true', default=True)
+    addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--group', help='Allows to limit the search to a certain systematic group', action='store', default='')
     addtionalIO.add_argument('--blast', help='Determine sequence id and refspec automatically. Note, the chosen sequence id and reference species does not necessarily reflect the species the sequence was derived from.',
                                 action='store_true', default=False)
@@ -281,7 +281,7 @@ def main():
     # other I/O arguments
     append = args.append
     force = args.force
-    cleanup = args.cleanup
+    noCleanup = args.noCleanup
     group = args.group
     blast = args.blast
     db = args.db
@@ -352,7 +352,7 @@ def main():
 
     # group arguments
     basicArgs = [fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth]
-    ioArgs = [append, force, cleanup, group, blast, db]
+    ioArgs = [append, force, noCleanup, group, blast, db]
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]

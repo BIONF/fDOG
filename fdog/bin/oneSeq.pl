@@ -120,9 +120,10 @@ my $startTime = gettime();
 ## Modified 07. Sep 2020 v2.2.0 (Vinh)	- append seed sequence to output extended.fa if no ortholog was found in refspec
 ## Modified 22. Sep 2020 v2.2.1 (Vinh)	- make sure that seed sequence always at the beginning of extended.fa output
 ## Modified 23. Sep 2020 v2.2.3 (Vinh)	- use full taxonomy name instead of abbr taxon name for LOG
+## Modified 01. Dec 2020 v2.2.4 (Vinh)	- fixed bug while creating final extended.fa (and replaced grep and sed by bioperl)
 
 ############ General settings
-my $version = 'oneSeq v.2.2.2';
+my $version = 'oneSeq v.2.2.4';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -670,7 +671,7 @@ if(!$coreOnly){
 		die "ERROR: Could not find $finalOutput\n";
 	}
 	# check and add seed to final extended.fa if needed
-	addSeedSeq($seqName, $coreOrthologsPath, $refSpec, $finalOutput);
+	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput); # BLABLABLABLA
 
 	# calculate FAS scores for final extended.fa
 	if ($fas_support) {
@@ -684,9 +685,10 @@ if(!$coreOnly){
 	} else {
 		fasta2profile($finalOutput, $seqName)
 	}
-	push @logOUT, "FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\nCleaning up...";
-	print "==> FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\nCleaning up...\n";
+	push @logOUT, "FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
+	print "==> FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
 	if($autoclean){
+		print "Cleaning up...\n";
 		runAutoCleanUp($processID);
 	}
 }
@@ -1994,25 +1996,22 @@ sub runHamstr {
 				$outputFa .= '.extended';
 			}
 			if(-e $resultFile) {
-				unless (-e $outputFa) { system("touch $outputFa"); }
-				printDebug("Post-processing of fdog\n");
-				my $tailCommand = "";
-				if ($taxon eq $refSpec) {
-					# $tailCommand = "$grepprog -A 1 '$taxon.*|1\$' \"" . $resultFile . "\" |sed -e 's/\\([^|]\\{1,\\}\\)|[^|]*|\\([^|]\\{1,\\}\\)|\\([^|]\\{1,\\}\\)|\\([01]\\)\$/\\1|\\2|\\3|\\4/'". " | cat - ". $outputFa . " > " . "$outputFa.temp && mv $outputFa.temp " . $outputFa;
-					# printDebug("$tailCommand\n");
-					# system($tailCommand);
-					$tailCommand = "$grepprog -A 1 '$taxon.*|0\$' \"" . $resultFile . "\" |sed -e 's/\\([^|]\\{1,\\}\\)|[^|]*|\\([^|]\\{1,\\}\\)|\\([^|]\\{1,\\}\\)|\\([01]\\)\$/\\1|\\2|\\3|\\4/' >> \"" . $outputFa. "\"";
-					printDebug("$tailCommand\n");
-					system($tailCommand);
+				unless (-e $outputFa) {
+					open(EXTENDEDFA, ">$outputFa") or die "Cannot create $outputFa\n";
 				} else {
-					$tailCommand = "$grepprog -A 1 '$taxon.*|[01]\$' \"" . $resultFile . "\" |sed -e 's/\\([^|]\\{1,\\}\\)|[^|]*|\\([^|]\\{1,\\}\\)|\\([^|]\\{1,\\}\\)|\\([01]\\)\$/\\1|\\2|\\3|\\4/' >> \"" . $outputFa. "\"";
-					printDebug("$tailCommand\n");
-					system($tailCommand);
+					open(EXTENDEDFA, ">>$outputFa") or die "Cannot create $outputFa\n";
+				}
+				my $resultFa = Bio::SeqIO->new(-file => $resultFile, '-format' => 'Fasta');
+				while(my $resultSeq = $resultFa->next_seq) {
+					if ($resultSeq->id =~ /$taxon\|(.)+\|[01]$/) {
+						my @tmpId = split("\\|", $resultSeq->id);
+						print EXTENDEDFA ">$tmpId[0]\|$tmpId[-3]\|$tmpId[-2]\|$tmpId[-1]\n",$resultSeq->seq,"\n";
+					}
 				}
 			} else {
 				# add seed sequence to output extended.fa if no ortholog was found in refSpec
 				if ($taxon eq $refSpec) {
-					addSeedSeq($seqName, $coreOrthologsPath, $refSpec, $outputFa);
+					addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
 				}
 				printDebug("$resultFile not found");
 			}
@@ -2029,14 +2028,13 @@ sub runHamstr {
 			$delCommandFa = "rm -rf  \"" . $outputPath . "/fa_dir_" . $taxon . "_" . $seqName . "_" . $refSpec . "\"";
 			$delCommandHmm = "rm -rf \"" .  $outputPath . "/hmm_search_" . $taxon . "_" . $seqName . "\"";
 			$delCommandHam = "rm -f \"" . $outputPath . "/hamstrsearch_" . $taxon . "_" . $seqName . ".out" . "\"";
-		}
-		else {
+		} else {
 			$delCommandFa = "rm -rf \"" . $outputPath . "/fa_dir_" . $taxon . "_" . $seqName . "_strict" . "\"";
 			$delCommandHmm = "rm -rf \"" .  $outputPath . "/hmm_search_" . $taxon . "_" . $seqName . "\"";
 			$delCommandHam = "rm -f \"" . $outputPath . "/hamstrsearch_" . $taxon . "_" . $seqName . ".strict.out" . "\"";
 		}
 		printDebug("executing $delCommandFa", "executing $delCommandHmm", "executing $delCommandHam");
-		if (!$debug) {
+		if ($autoclean) {
 			system ($delCommandFa) == 0 or die "Error deleting result files\n";
 			system ($delCommandHmm) == 0 or die "Error deleting result files\n";
 			system ($delCommandHam) == 0 or die "Error deleting result files\n";
@@ -2049,40 +2047,26 @@ sub runHamstr {
 
 # add seed sequence to output file if not exists
 sub addSeedSeq {
-	my ($seqName, $coreOrthologsPath, $refSpec, $outputFa) = @_;
-	# check if outputFa has seed seq
-	my $flag = 1;
+	my ($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa) = @_;
 	unless (-e $outputFa) {
 		system("touch $outputFa");
-	} else {
-		my $seqio2 = Bio::SeqIO->new(-file => $outputFa, '-format' => 'Fasta');
-		while(my $seq2 = $seqio2->next_seq) {
-			if ($seq2->id =~ /$refSpec/) {
-				$flag = 0;
-				last;
-			}
+	}
+	# get seed sequence and add it to the beginning of the fasta output
+	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
+	my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
+	while(my $seq = $seqio->next_seq) {
+		my $id = $seq->id;
+		if ($id =~ /$refSpec/) {
+			print TEMP ">$id|1\n", $seq->seq, "\n";
+			last;
 		}
 	}
-	# get seed sequence and add to be beginning of the fasta output
-	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
-	my $seedFa = "";
-	if ($flag == 1) {
-		# first, write the seed to TEMP
-		my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
-		while(my $seq = $seqio->next_seq) {
-			my $id = $seq->id;
-			if ($id =~ /$refSpec/) {
-				print TEMP ">$id|1\n", $seq->seq, "\n";
-				last;
-			}
-		}
-		# then write other sequences
-		my $seqio2 = Bio::SeqIO->new(-file => "$outputFa", '-format' => 'Fasta');
-		while(my $seq = $seqio2->next_seq) {
-			my $id = $seq->id;
-			if ($id !~ /$refSpec/) {
-				print TEMP ">$id\n", $seq->seq, "\n";
-			}
+	# then write other sequences
+	my $seqio2 = Bio::SeqIO->new(-file => "$outputFa", '-format' => 'Fasta');
+	while(my $seq = $seqio2->next_seq) {
+		my $id = $seq->id;
+		unless ($id =~ /$refSpec\|$seqId/) { # /$refSpec/) {
+			print TEMP ">$id\n", $seq->seq, "\n";
 		}
 	}
 	close(TEMP);

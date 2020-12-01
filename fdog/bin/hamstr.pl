@@ -192,9 +192,10 @@ use run_genewise_hamstr;
 ## 10.07.2020 (v13.2.12 - vinh) solved problem when gene ID contains PIPE
 ## 13.07.2020 (v13.3.0 - vinh) solved problem when gene ID contains PIPE
 ## 22.07.2020 (v13.4.0 - vinh) moved tmp blast files to output folder and delete them when finished
+## 01.12.2020 (v13.4.1 - vinh) add silent option to muscle for checkCoOrthologsRef
 
 ######################## start main ###########################################
-my $version = "HaMStR v.13.4.0";
+my $version = "HaMStR v.13.4.1";
 ######################## checking whether the configure script has been run ###
 my $configure = 0;
 if ($configure == 0){
@@ -2156,7 +2157,7 @@ sub checkCoorthologRef {
 		`mafft --maxiterate 1000 --localpair --anysymbol --quiet $tmpdir/$localid.co.fa > "$tmpdir/$localid.co.aln"`;
 	}
 	elsif ($alignmentprog_co eq 'muscle') {
-		`$alignmentprog_co -in $tmpdir/$localid.co.fa -out "$tmpdir/$localid.co.aln"`;
+		`$alignmentprog_co -quiet -in $tmpdir/$localid.co.fa -out "$tmpdir/$localid.co.aln"`;
 	}
 	else {
 		die "$alignmentprog_co is neither mafft-linsi nor muscle\n";
