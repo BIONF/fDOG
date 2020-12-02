@@ -110,6 +110,8 @@ def compileCore(options, seeds, inFol, cpu, outpath):
     coreOut = []
     for _ in tqdm(pool.imap_unordered(fdogFn.runSingle, coreCompilationJobs), total=len(coreCompilationJobs)):
         coreOut.append(_)
+    pool.close()
+    pool.join()
     end = time.time()
     # read logs file to get runtime for individual seeds
     getIndividualRuntime('core', outpath, seeds)
@@ -178,7 +180,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.11'
+    version = '0.0.12'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
