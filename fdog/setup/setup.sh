@@ -230,7 +230,9 @@ if ! [ "$(ls -A $outDir/genome_dir)" ]; then
     echo "Extracting archive $data_fdog_file..."
     tar xf $outDir/$data_fdog_file
     rm $outDir/$data_fdog_file
-    for i in $(ls "$outDir/genome_dir"); do rm -f "$outDir/genome_dir/$i/$i.fa.mod"; done
+    if [ -d "$outDir/genome_dir" ]; then
+      for i in $(ls "$outDir/genome_dir"); do rm -f "$outDir/genome_dir/$i/$i.fa.mod"; done
+    fi
 
     if [ "$(ls -A $outDir/blast_dir)" ]; then
       echo "Data should be in place to run fdog."
