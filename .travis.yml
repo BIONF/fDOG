@@ -4,8 +4,9 @@ python:
 install:
 - pip install .
 script:
-- python3 fdog/setupfDog.py -o ./
-- python3 fdog/runSingle.py -h
+- setupfDog.py -o fdog/data/
+#- python3 fdog/runSingle.py -h
+- fdog.run --seqFile infile.fa --seqName test --refspec HUMAN@9606@3
 branches:
   only:
     - master
