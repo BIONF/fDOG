@@ -4,7 +4,7 @@ python:
 install:
 - pip install .
 script:
-- setupfDog.py -o fdog/data/
+- fdog.setup -o fdog/data/
 #- python3 fdog/runSingle.py -h
 - fdog.run --seqFile infile.fa --seqName test --refspec HUMAN@9606@3
 branches:
