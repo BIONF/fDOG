@@ -6,12 +6,8 @@ install:
 - pip install .
 script:
 - fdog.setup -o $TRAVIS_BUILD_DIR --lib
-- pwd
-- ls
-# - wget --no-check-certificate https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo/data_HaMStR-2019c.tar.gz -O fdog/data/data_HaMStR-2019c.tar.gz
 - fdog.setup -o $TRAVIS_BUILD_DIR
 - fdog.showTaxa
-#- python3 fdog/runSingle.py -h
 - fdog.run --seqFile infile.fa --seqName test --refspec HUMAN@9606@3 --fasoff
 branches:
   only:
