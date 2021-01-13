@@ -3,7 +3,12 @@ python:
 - '3.8'
 install:
 - pip install .
-script: python3 fdog/runSingle.py -h
+script:
+- python3 fdog/setupfDog.py -o ./
+- python3 fdog/runSingle.py -h
+branches:
+  only:
+    - master
 deploy:
   provider: pypi
   username: __token__
