@@ -56,8 +56,7 @@ print("database is finished \n")
 os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue bitscore" -out tmp/blast_results.out')
 
 ###################### extracting candidate regions ############################
-
-#what is good score??
 # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
 
 #parsing blast output
+# format <contig> <start> <end> <evalue> <score>
