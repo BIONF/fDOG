@@ -33,3 +33,5 @@ os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path)
 os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
 
 ######################## tBLASTn ###############################################
+
+#database anlegen
