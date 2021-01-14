@@ -12,6 +12,7 @@ script:
 branches:
   only:
     - master
+    - /^v.*$/
 deploy:
   provider: pypi
   username: __token__
