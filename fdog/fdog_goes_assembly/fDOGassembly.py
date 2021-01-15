@@ -6,10 +6,10 @@ import os
 def merge_regions(blast_results):
     number_regions = 0
     cut_off = 50
-    # for key in blast_results:
-    #     number_regions += 1
-    #     locations = blast_results[key]
-    #     size_list = len(locations)
+    for key in blast_results:
+         number_regions += 1
+         locations = blast_results[key]
+         size_list = len(locations)
     #     changes = True
     #     while changes == True:
     #         changes = False
@@ -22,14 +22,10 @@ def merge_regions(blast_results):
     #                     start = locations[j][0]
 
 
-
-
-
-
-        for i in locations:
-            start = i[0]
-            end = i[1]
-            print(start, end)
+        # for i in locations:
+        #     start = i[0]
+        #     end = i[1]
+        #     print(start, end)
 
 
     #merge regions here
