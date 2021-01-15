@@ -6,21 +6,20 @@ import os
 def merge_regions(blast_results):
     number_regions = 0
     cut_off = 50
-    for key in blast_results:
-        number_regions += 1
-        locations = blast_results[key]
-        size_list = len(locations)
-        changes = True
-        while changes == True:
-            changes = False
-            start = locations[0][0]
-            end = locations[0][1]
-            #### noch mal überdenken !!!!
-            for j in range(1, size_list):
-                if start > locations[j][0]:
-                    if abs(start - locations[j][1]) < cut_off:
-                        start = locations[j][0]
-
+    # for key in blast_results:
+    #     number_regions += 1
+    #     locations = blast_results[key]
+    #     size_list = len(locations)
+    #     changes = True
+    #     while changes == True:
+    #         changes = False
+    #         start = locations[0][0]
+    #         end = locations[0][1]
+    #         #### noch mal überdenken !!!!
+    #         for j in range(1, size_list):
+    #             if start > locations[j][0]:
+    #                 if abs(start - locations[j][1]) < cut_off:
+    #                     start = locations[j][0]
 
 
 
