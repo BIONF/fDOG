@@ -109,25 +109,11 @@ def candidate_regions(cut_off):
         print(candidate_regions, number_regions)
         return candidate_regions, number_regions
 
-def parse_fasta_file(lines):
-    for line in lines:
-        print(line)
-        break
-
-
 
 def extract_seq(region_dic, path):
     print(region_dic)
-    file = open(path, "r")
-    lines = file.readlines()
-    file.close()
-    file_dic = parse_fasta_file(lines)
-
     for key in region_dic:
-        pass
-
-
-
+        os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
 
 def main():
@@ -181,7 +167,7 @@ def main():
 
     #database anlegen
     print("creating a blast database \n")
-    os.system('makeblastdb -in ' + path_assembly + ' -dbtype nucl -out ' + path_assembly)
+    os.system('makeblastdb -in ' + path_assembly + ' -dbtype nucl -parse_seqids -out ' + path_assembly)
     print("database is finished \n")
 
     #make a tBLASTn search against the new database
