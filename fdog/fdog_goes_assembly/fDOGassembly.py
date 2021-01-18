@@ -1,8 +1,6 @@
 ############################ imports ###########################################
 import os
-
 ########################### functions ##########################################
-
 
 
 def merge_regions(blast_results, cut_off):
@@ -60,6 +58,7 @@ def merge_regions(blast_results, cut_off):
 
     return blast_results, number_regions
 
+
 def parse_blast(line, blast_results):
     # format blast line:  <contig> <start> <end> <evalue> <score>
     #fomrat dictionary: {node_name: [(<start>,<end>)]}
@@ -85,7 +84,6 @@ def parse_blast(line, blast_results):
     return blast_results, evalue
 
 
-
 def candidate_regions(cut_off):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
@@ -109,6 +107,26 @@ def candidate_regions(cut_off):
     else:
         candidate_regions, number_regions = merge_regions(blast_results, cut_off)
         print(candidate_regions, number_regions)
+        return candidate_regions, number_regions
+
+def parse_fasta_file(lines):
+    for line in lines:
+        print(line)
+        break
+
+
+
+def extract_seq(region_dic, path):
+    print(region_dic)
+    file = open(path, "r")
+    lines = file.readlines()
+    file.close()
+    file_dic = parse_fasta_file(lines)
+
+    for key in region_dic:
+        pass
+
+
 
 
 
@@ -171,7 +189,21 @@ def main():
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue bitscore" -out tmp/blast_results.out')
 
     # parse blast and filter for candiate regions
-    regions = candidate_regions(cut_off)
+    regions, number_regions = candidate_regions(cut_off)
+
+    if regions == 1:
+        #no candidat region are available, no ortholog can be found
+        print("No candidate region found")
+        os.system('rm -r tmp/')
+        return 1
+
+    else:
+        print(str(number_regions) + " candiate regions were found. Extracting sequences.")
+        extract_seq(regions, path_assembly)
+
+
+
+
 
 
     ################# remove tmp folder ########################################
