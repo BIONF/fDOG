@@ -3,42 +3,70 @@ import os
 
 ########################### functions ##########################################
 
-def merge_regions(blast_results):
+
+
+def merge_regions(blast_results, cut_off):
     number_regions = 0
-    cut_off = 50
     for key in blast_results:
-         number_regions += 1
-         locations = blast_results[key]
-         size_list = len(locations)
-    #     changes = True
-    #     while changes == True:
-    #         changes = False
-    #         start = locations[0][0]
-    #         end = locations[0][1]
-    #         #### noch mal überdenken !!!!
-    #         for j in range(1, size_list):
-    #             if start > locations[j][0]:
-    #                 if abs(start - locations[j][1]) < cut_off:
-    #                     start = locations[j][0]
+        locations = blast_results[key]
+        size_list = len(locations)
+        i = 0
+        j = 1
+        old_size = 0
+        while size_list != old_size and i < size_list:
+            old_size = size_list
+            start = locations[i][0]
+            end = locations[i][1]
 
+            print(locations)
+            while j < size_list:
 
-        # for i in locations:
-        #     start = i[0]
-        #     end = i[1]
-        #     print(start, end)
+                # breakup point? or we have to skip this j
+                if (i == j) and (j + 1 < size_list):
+                    j+=1
+                elif (i == j):
+                    break
 
+                if (locations[i][0] < locations[j][0]) and (locations[i][1] > locations[j][0]):
+                    # start is between start and end -> merge
+                    locations[i][1] = max(locations[j][1], locations[i][1])
+                    locations[i][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(j)
+                    j -= 1
+                elif (locations[i][0] < locations[j][1]) and (locations[i][1] > locations[j][1]):
+                    #end is between start and end -> merge
+                    locations[i][0] = min(locations[j][0], locations[i][0])
+                    locations[i][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(j)
+                    j -= 1
+                elif (locations[i][0] > locations[j][1]) and (locations[i][0] - locations[j][1] <= cut_off):
+                    # end is not more than cut-off distanced
+                    locations[i][0] = locations[j][0]
+                    locations[i][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(j)
+                    j -= 1
+                elif (locations[i][1] < locations[j][0] and locations[j][0] - locations[i][1] <= cut_off):
+                    # start is not more than cut-off distanced
+                    locations[i][0] = locations[j][0]
+                    locations[i][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(j)
+                    j -= 1
+                j += 1
+                size_list = len(locations)
 
-    #merge regions here
+            i += 1
+            j = 0
+        number_regions += size_list
 
     return blast_results, number_regions
 
 def parse_blast(line, blast_results):
     # format blast line:  <contig> <start> <end> <evalue> <score>
     #fomrat dictionary: {node_name: [(<start>,<end>)]}
-    print(line)
+    #print(line)
     line = line.replace("\n", "")
     line_info = line.split("\t")
-    print(line_info)
+    #print(line_info)
     evalue = float(line_info[3])
 
     #cut off
@@ -58,7 +86,7 @@ def parse_blast(line, blast_results):
 
 
 
-def candidate_regions():
+def candidate_regions(cut_off):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
     blast_file = open("tmp/blast_results.out", "r")
@@ -79,13 +107,8 @@ def candidate_regions():
     if blast_results == {}:
         return 1
     else:
-        candidate_regions, number_regions = merge_regions(blast_results)
-
-
-
-
-
-
+        candidate_regions, number_regions = merge_regions(blast_results, cut_off)
+        print(candidate_regions, number_regions)
 
 
 
@@ -104,6 +127,8 @@ def main():
 
     #assembly species_name
     assembly_name = "contigs.fa"
+
+    cut_off = 500
 
 
     ########################## paths ###########################################
@@ -146,7 +171,7 @@ def main():
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue bitscore" -out tmp/blast_results.out')
 
     # parse blast and filter for candiate regions
-    regions = candidate_regions()
+    regions = candidate_regions(cut_off)
 
 
     ################# remove tmp folder ########################################
