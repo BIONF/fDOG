@@ -132,7 +132,9 @@ def main():
     #assembly species_name
     assembly_name = "contigs.fa"
 
-    cut_off = 500
+    augustus_ref_species = "saccharomyces_cerevisiae_S288C"
+
+    cut_off_merging_candidates = 500
 
 
     ########################## paths ###########################################
@@ -147,10 +149,6 @@ def main():
 
     os.system('mkdir tmp')
 
-
-    #msa = open("../data/core_orthologs/" + group +"/"+ group + ".aln", "r")
-    #lines = msa.readlines()
-    #msa.close()
 
     ######################## consensus sequence ################################
 
@@ -174,8 +172,10 @@ def main():
 
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue bitscore" -out tmp/blast_results.out')
 
+    ################### search for candidate regions and extract seq ###########
+
     # parse blast and filter for candiate regions
-    regions, number_regions = candidate_regions(cut_off)
+    regions, number_regions = candidate_regions(cut_off_merging_candidates)
 
     if regions == 1:
         #no candidat region are available, no ortholog can be found
@@ -186,6 +186,15 @@ def main():
     else:
         print(str(number_regions) + " candiate regions were found. Extracting sequences.")
         extract_seq(regions, path_assembly)
+
+    ############### make Agustus PPX search ####################################
+    for key in regions:
+        locations = regions[key]
+        for i in locations:
+            start = str(i[0])
+            end = str(i[1])
+            #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
+            os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
 
 
 
