@@ -145,7 +145,7 @@ def main():
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = "../data/assembly_dir/" + species_name + "/" + assembly_name
-    augustus_path = "msa2prfl.pl"
+    msa2profile_path = "msa2prfl.pl"
 
     os.system('mkdir tmp')
 
@@ -159,7 +159,9 @@ def main():
 
     ######################## block profile #####################################
     print("Building a block profile \n")
-    os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
+
+    os.system("msa2prfl.pl " + msa_path + ' --setname=' + group + ' >' + profile_path)
+    #os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
     print("block profile is finished \n")
     ######################## tBLASTn ###########################################
 
@@ -195,11 +197,12 @@ def main():
             counter += 1
             start = str(i[0])
             end = str(i[1])
+            os.system("cd " + augustus_path)
             if start < end:
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + counter + ".gff")
+                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
             else:
-                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + end + " --predictionEnd=" + start + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + counter + ".gff")
+                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + end + " --predictionEnd=" + start + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
 
     ################# remove tmp folder ########################################
 
