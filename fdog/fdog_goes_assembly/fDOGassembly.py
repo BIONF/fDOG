@@ -141,7 +141,7 @@ def main():
         if input[i] == "--assembly":
             assembly_path = input[i+1]
         elif input[i] == "--gene":
-            group == input[i+1]
+            group = input[i+1]
         elif input[i] == "--refSpecies":
             augustus_ref_species = input[i+1]
         elif input[i] == "--cut_off":
