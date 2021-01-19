@@ -75,6 +75,9 @@ def parse_blast(line, blast_results):
     #add region to dictionary
     else:
         node_name, start, end = line_info[0], line_info[1], line_info[2]
+        split = node_name.split("|")
+        if len(split) > 1:
+            node_name = split[1]
         if node_name in blast_results:
             list = blast_results[node_name]
             list.append([int(start),int(end), evalue])
