@@ -135,7 +135,7 @@ def main():
 
     #user input core_ortholog group
     #have to add an input option
-    print(sys.argv)
+    #print(sys.argv)
     input = sys.argv
 
     for i in range(1,len(input)):
