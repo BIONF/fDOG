@@ -190,14 +190,16 @@ def main():
     ############### make Augustus PPX search ####################################
     for key in regions:
         locations = regions[key]
+        counter = 0
         for i in locations:
+            counter += 1
             start = str(i[0])
             end = str(i[1])
             if start < end:
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + i + ".gff")
+                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + counter + ".gff")
             else:
-                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + end + " --predictionEnd=" + start + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + i + ".gff")
+                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + end + " --predictionEnd=" + start + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + counter + ".gff")
 
     ################# remove tmp folder ########################################
 
