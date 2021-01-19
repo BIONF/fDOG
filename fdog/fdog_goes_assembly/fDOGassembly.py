@@ -16,7 +16,7 @@ def merge_regions(blast_results, cut_off):
             start = locations[i][0]
             end = locations[i][1]
 
-            print(locations)
+            #print(locations)
             while j < size_list:
 
                 # breakup point? or we have to skip this j
@@ -106,12 +106,12 @@ def candidate_regions(cut_off):
         return 1
     else:
         candidate_regions, number_regions = merge_regions(blast_results, cut_off)
-        print(candidate_regions, number_regions)
+        #print(candidate_regions, number_regions)
         return candidate_regions, number_regions
 
 
 def extract_seq(region_dic, path):
-    print(region_dic)
+    #print(region_dic)
     for key in region_dic:
         os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
@@ -145,7 +145,6 @@ def main():
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = "../data/assembly_dir/" + species_name + "/" + assembly_name
-    msa2profile_path = "msa2prfl.pl"
 
     os.system('mkdir tmp')
 
@@ -160,8 +159,7 @@ def main():
     ######################## block profile #####################################
     print("Building a block profile \n")
 
-    os.system("msa2prfl.pl " + msa_path + ' --setname=' + group + ' >' + profile_path)
-    #os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
+    os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
     print("block profile is finished \n")
     ######################## tBLASTn ###########################################
 
@@ -197,7 +195,6 @@ def main():
             counter += 1
             start = str(i[0])
             end = str(i[1])
-            os.system("cd " + augustus_path)
             if start < end:
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
                 os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
