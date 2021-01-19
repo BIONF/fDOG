@@ -127,10 +127,11 @@ def main():
     species_name = "L.pustulata"
     #assembly species_name
     assembly_name = "contigs.fa"
+    assembly_path = "../data/assembly_dir/"+ species_name + "/" + assembly_name
     augustus_ref_species = "saccharomyces_cerevisiae_S288C"
     cut_off_merging_candidates = 500
 
-    
+
     #user input core_ortholog group
     #have to add an input option
     print(sys.argv)
@@ -138,7 +139,7 @@ def main():
 
     for i in range(1,len(input)):
         if input[i] == "--assembly":
-            species_name = input[i+1]
+            assembly_path = input[i+1]
         elif input[i] == "--gene":
             group == input[i+1]
         elif input[i] == "--refSpecies":
@@ -157,7 +158,7 @@ def main():
     hmm_path = "../data/core_orthologs/" + group +"/hmm_dir/"+ group + ".hmm"
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
-    path_assembly = "../data/assembly_dir/" + species_name + "/" + assembly_name
+    path_assembly = assembly_path
 
     os.system('mkdir tmp')
 
