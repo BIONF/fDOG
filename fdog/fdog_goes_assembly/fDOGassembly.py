@@ -187,19 +187,17 @@ def main():
         print(str(number_regions) + " candiate regions were found. Extracting sequences.")
         extract_seq(regions, path_assembly)
 
-    ############### make Agustus PPX search ####################################
+    ############### make Augustus PPX search ####################################
     for key in regions:
         locations = regions[key]
         for i in locations:
             start = str(i[0])
             end = str(i[1])
+            if start < end:
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-
-
-
-
-
+                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
+            else:
+                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + end + " --predictionEnd=" + start + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
 
     ################# remove tmp folder ########################################
 
