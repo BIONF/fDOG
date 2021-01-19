@@ -1,5 +1,6 @@
 ############################ imports ###########################################
 import os
+import sys
 ########################### functions ##########################################
 
 
@@ -119,22 +120,34 @@ def extract_seq(region_dic, path):
 def main():
 
     ########################### handle user input ##############################
-
-    #user input core_ortholog group
-    #have to add an input option
-
+    ### for testing only
     #core-ortholog group name
     group = "778452"
-
     #species name assemblie (folder name in assemby folder)
     species_name = "L.pustulata"
-
     #assembly species_name
     assembly_name = "contigs.fa"
-
     augustus_ref_species = "saccharomyces_cerevisiae_S288C"
-
     cut_off_merging_candidates = 500
+
+    
+    #user input core_ortholog group
+    #have to add an input option
+    print(sys.argv)
+    input = sys.argv
+
+    for i in range(1,len(input)):
+        if input[i] == "--assembly":
+            species_name = input[i+1]
+        elif input[i] == "--gene":
+            group == input[i+1]
+        elif input[i] == "--refSpecies":
+            augustus_ref_species = input[i+1]
+        elif input[i] == "--cut_off":
+            cut_off_merging_candidates = input[i+1]
+
+
+
 
 
     ########################## paths ###########################################
