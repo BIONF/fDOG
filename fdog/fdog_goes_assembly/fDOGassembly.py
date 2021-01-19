@@ -114,6 +114,7 @@ def candidate_regions(cut_off):
 def extract_seq(region_dic, path):
     #print(region_dic)
     for key in region_dic:
+        print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
 
