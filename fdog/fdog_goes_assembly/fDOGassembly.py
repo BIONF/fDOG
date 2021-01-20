@@ -107,7 +107,7 @@ def candidate_regions(cut_off):
         if not evalue <= 0.00001:
             break
     if blast_results == {}:
-        return 1
+        return 1,0
     else:
         candidate_regions, number_regions = merge_regions(blast_results, cut_off)
         #print(candidate_regions, number_regions)
@@ -172,7 +172,7 @@ def main():
     #make a majority-rule consensus seqeunce with the tool hmmemit from hmmer
     print("Building a consensus sequence \n")
     os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path)
-    print("consensus seqeunce is finished\n")
+    print("consensus sequence is finished\n")
 
     ######################## block profile #####################################
     print("Building a block profile \n")
