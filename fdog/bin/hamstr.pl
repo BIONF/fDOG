@@ -193,9 +193,10 @@ use run_genewise_hamstr;
 ## 13.07.2020 (v13.3.0 - vinh) solved problem when gene ID contains PIPE
 ## 22.07.2020 (v13.4.0 - vinh) moved tmp blast files to output folder and delete them when finished
 ## 01.12.2020 (v13.4.1 - vinh) add silent option to muscle for checkCoOrthologsRef
+## 21.01.2021 (v13.4.2 - vinh) fiexed bug when refspec has "dot" in its name
 
 ######################## start main ###########################################
-my $version = "HaMStR v.13.4.1";
+my $version = "HaMStR v.13.4.2";
 ######################## checking whether the configure script has been run ###
 my $configure = 0;
 if ($configure == 0){
@@ -873,8 +874,10 @@ sub checkInput {
 
 	}
 	$dbfile =~ s/.*\///;
-	$dbfile_short = $dbfile;
-	$dbfile_short =~ s/\..*//;
+	# $dbfile_short = $dbfile;
+	# $dbfile_short =~ s/\..*//;
+	my @dbfileTMP = split(/\./, $dbfile); pop @dbfileTMP;
+	$dbfile_short = join(".", @dbfileTMP);
 	if ($central) {
 		$dboutpath = $dbpath;
 		# print "setting dboutpath to $dboutpath";

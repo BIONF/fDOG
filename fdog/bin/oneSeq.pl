@@ -1334,14 +1334,13 @@ sub checkOptions {
 		}
 	}
 
-	my $node;
-	$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
-	$node->name('supplied', $refSpec);
-
 	#### checking for the min and max distance for the core set compilation
 	#### omit this check, if the option reuseCore has been selected (added 2019-02-04)
 	$optbreaker = 0;
 	if (!$coreex) {
+		my $node;
+		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
+		$node->name('supplied', $refSpec);
 		if (lc($maxDist) eq "root"){
 			$maxDist = 'no rank';
 		}
@@ -1357,9 +1356,6 @@ sub checkOptions {
 			$maxDist = parseInput($node, $in);
 			print "You selected ". $maxDist . " as maximum rank\n\n";
 		}
-	}
-	$optbreaker = 0;
-	if (!$coreex){
 		while (!$minDist or (checkRank($minDist, $node) == 0)) {
 			if ($optbreaker >= 3){
 				print "No proper minDist given ... exiting.\n";
@@ -1373,6 +1369,7 @@ sub checkOptions {
 			print "You selected " . $minDist . " as minimum rank\n\n";
 		}
 	}
+	$optbreaker = 0;
 
 	#### checking in fas options
 	if($fasoff){
