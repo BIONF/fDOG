@@ -3,6 +3,46 @@ import os
 import sys
 ########################### functions ##########################################
 
+def merge(blast_results, insert_length):
+    number_regions = 0
+    for key in blast_results:
+        locations = blast_results[key]
+        locations = sorted(locations, key = lambda x: int(x[3]))
+        print("test")
+        print(locations)
+        size_list = len(locations)
+
+        j = 0
+
+        while j < size_list-1:
+            i = 1
+            while i < size_list-1:
+
+                if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5])):
+                    #merge overlapping regions
+                    locations[j][1] = max(locations[j][1], locations[i][1])
+                    locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(i)
+                    size_list -= 1
+                    i -= 1
+                elif ((locations[j][0] < locations[i][0]) and (locations[i][0] - locations[j][1] <= 2* insert_length) and (locations[j][5] == locations[i][5])):
+                    print(j)
+                    locations[j][1] = max(locations[j][1], locations[i][1])
+                    locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(i)
+                    size_list -= 1
+                    i -=1
+                i += 1
+            j += 1
+
+        number_regions += len(locations)
+        blast_results[key] = locations
+
+
+
+    print(blast_results)
+    return blast_results, number_regions
+
 
 def merge_regions(blast_results, cut_off):
     number_regions = 0
@@ -14,9 +54,6 @@ def merge_regions(blast_results, cut_off):
         old_size = 0
         while size_list != old_size and i < size_list:
             old_size = size_list
-            start = locations[i][0]
-            end = locations[i][1]
-
             #print(locations)
             while j < size_list:
 
@@ -61,7 +98,7 @@ def merge_regions(blast_results, cut_off):
 
 
 def parse_blast(line, blast_results):
-    # format blast line:  <contig> <start> <end> <evalue> <score>
+    # format blast line:  <contig> <sstart> <send> <evalue> <qstart> <qend> <strand>
     #fomrat dictionary: {node_name: [(<start>,<end>)]}
     #print(line)
     line = line.replace("\n", "")
@@ -70,25 +107,35 @@ def parse_blast(line, blast_results):
     evalue = float(line_info[3])
 
     #cut off
-    if evalue > 0.0001:
+    if evalue > 0.00001:
         return blast_results, evalue
     #add region to dictionary
     else:
-        node_name, start, end = line_info[0], line_info[1], line_info[2]
+        node_name, sstart, send, qstart, qend = line_info[0], line_info[1], line_info[2], line_info[4], line_info[5]
         split = node_name.split("|")
+
+        # finding out on which strand tBLASTn founded a hit
+        if sstart < send:
+            strand = "+"
+        else:
+            sstart = line_info[2]
+            send = line_info[1]
+            strand = "-"
+
+        #creating a dictionary that inlcudes every tBLASTn that is better as the evalue cut-off of 0.00001
         if len(split) > 1:
             node_name = split[1]
         if node_name in blast_results:
             list = blast_results[node_name]
-            list.append([int(start),int(end), evalue])
+            list.append([int(sstart),int(send), evalue, int(qstart), int(qend), strand])
             blast_results[node_name] = list
         else:
-            blast_results[node_name] = [[int(start),int(end), evalue]]
+            blast_results[node_name] = [[int(sstart),int(send), evalue, int(qstart), int(qend), strand]]
 
     return blast_results, evalue
 
 
-def candidate_regions(cut_off):
+def candidate_regions(cut_off, intron_length):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
     blast_file = open("tmp/blast_results.out", "r")
@@ -109,7 +156,8 @@ def candidate_regions(cut_off):
     if blast_results == {}:
         return 1,0
     else:
-        candidate_regions, number_regions = merge_regions(blast_results, cut_off)
+        candidate_regions, number_regions = merge(blast_results, intron_length)
+        #candidate_regions, number_regions = merge_regions(blast_results, cut_off)
         #print(candidate_regions, number_regions)
         return candidate_regions, number_regions
 
@@ -134,6 +182,8 @@ def main():
     assembly_path = "../data/assembly_dir/"+ species_name + "/" + assembly_name
     augustus_ref_species = "saccharomyces_cerevisiae_S288C"
     cut_off_merging_candidates = 500
+    average_intron_length = 2000
+    length_extension = 2000
 
 
     #user input core_ortholog group
@@ -148,12 +198,10 @@ def main():
             group = input[i+1]
         elif input[i] == "--refSpecies":
             augustus_ref_species = input[i+1]
-        elif input[i] == "--cut_off":
-            cut_off_merging_candidates = int(input[i+1])
-
-
-
-
+        elif input[i] == "--avIntron":
+            average_intron_length = int(input[i+1])
+        elif input[i] == "--lengthExtension":
+            length_extension = int(input[i+1])
 
     ########################## paths ###########################################
 
@@ -165,7 +213,6 @@ def main():
     path_assembly = assembly_path
 
     os.system('mkdir tmp')
-
 
     ######################## consensus sequence ################################
 
@@ -179,6 +226,7 @@ def main():
 
     os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
     print("block profile is finished \n")
+
     ######################## tBLASTn ###########################################
 
     #database anlegen
@@ -189,14 +237,16 @@ def main():
     #make a tBLASTn search against the new database
 
     print("tBLAStn search against new created database")
-    print('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue bitscore" -out tmp/blast_results.out')
-    os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue bitscore" -out tmp/blast_results.out')
+    print('tblastn -db ' + path_assembly + ' -query ' + consensus_path + \
+    ' -outfmt "6 sseqid sstart send evalue qstart qend \
+     " -out tmp/blast_results.out')
+    os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
     print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
 
     # parse blast and filter for candiate regions
-    regions, number_regions = candidate_regions(cut_off_merging_candidates)
+    regions, number_regions = candidate_regions(cut_off_merging_candidates, average_intron_length)
 
     if regions == 1:
         #no candidat region are available, no ortholog can be found
@@ -208,23 +258,21 @@ def main():
         print(str(number_regions) + " candiate regions were found. Extracting sequences.")
         extract_seq(regions, path_assembly)
 
-    ############### make Augustus PPX search ####################################
+    ############### make Augustus PPX search ###################################
+
     for key in regions:
         locations = regions[key]
         counter = 0
         for i in locations:
             counter += 1
-            start = str(i[0])
-            end = str(i[1])
-            if start < end:
-            #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
-            else:
-                os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + end + " --predictionEnd=" + start + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
-
+            start = str(i[0] - length_extension)
+            end = str(i[1] + length_extension)
+            print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
+            #os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
     ################# remove tmp folder ########################################
 
     #have to be added after program ist finished, maybe use parametere so that the user can turn it off
+
 
 if __name__ == '__main__':
     main()
