@@ -246,9 +246,6 @@ def main():
     #make a tBLASTn search against the new database
 
     print("tBLAStn search against new created database")
-    #print('tblastn -db ' + path_assembly + ' -query ' + consensus_path + \
-    ' -outfmt "6 sseqid sstart send evalue qstart qend \
-     " -out tmp/blast_results.out')
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
     print("tBLASTn search is finished")
 
