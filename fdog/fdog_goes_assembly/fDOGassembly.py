@@ -209,6 +209,7 @@ def main():
             print("--refSpecies: reference species for augustus\n")
             print("--avIntron: average intron length of the selected species in bp (default: 2000)\n")
             print("--lengthExtension: length extension of the candidate regions in bp (default:2000)\n")
+            return 0
 
 
     ########################## paths ###########################################
