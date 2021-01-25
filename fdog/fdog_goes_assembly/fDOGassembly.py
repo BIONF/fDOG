@@ -8,8 +8,8 @@ def merge(blast_results, insert_length):
     for key in blast_results:
         locations = blast_results[key]
         locations = sorted(locations, key = lambda x: int(x[3]))
-        print("test")
-        print(locations)
+        #print("test")
+        #print(locations)
         size_list = len(locations)
 
         j = 0
@@ -26,7 +26,7 @@ def merge(blast_results, insert_length):
                     size_list -= 1
                     i -= 1
                 elif ((locations[j][0] < locations[i][0]) and (locations[i][0] - locations[j][1] <= 2* insert_length) and (locations[j][5] == locations[i][5])):
-                    print(j)
+                    #print(j)
                     locations[j][1] = max(locations[j][1], locations[i][1])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
@@ -245,7 +245,7 @@ def main():
 
     #make a tBLASTn search against the new database
 
-    print("tBLAStn search against new created database")
+    print("tBLASTn search against new created database")
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
     print("tBLASTn search is finished")
 
@@ -274,7 +274,7 @@ def main():
             start = str(i[0] - length_extension)
             end = str(i[1] + length_extension)
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
+            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
     ################# remove tmp folder ########################################
 
     #have to be added after program ist finished, maybe use parametere so that the user can turn it off
