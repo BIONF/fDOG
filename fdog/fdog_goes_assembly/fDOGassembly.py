@@ -274,7 +274,7 @@ def main():
             start = str(i[0] - length_extension)
             end = str(i[1] + length_extension)
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
+            os.system("augustus --protein=1 --codingseq=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
     ################# remove tmp folder ########################################
 
     #have to be added after program ist finished, maybe use parametere so that the user can turn it off
