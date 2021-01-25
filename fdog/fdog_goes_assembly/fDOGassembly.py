@@ -202,6 +202,14 @@ def main():
             average_intron_length = int(input[i+1])
         elif input[i] == "--lengthExtension":
             length_extension = int(input[i+1])
+        elif input[i] == "--help":
+            print("Parameters: \n")
+            print("--assembly: path to assembly input file in fasta format \n")
+            print("--gene: core_ortholog group name. Has to be located in data/core_orthologs\n")
+            print("--refSpecies: reference species for augustus\n")
+            print("--avIntron: average intron length of the selected species in bp (default: 2000)\n")
+            print("--lengthExtension: length extension of the candidate regions in bp (default:2000)\n")
+
 
     ########################## paths ###########################################
 
