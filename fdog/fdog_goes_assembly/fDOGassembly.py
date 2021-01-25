@@ -246,7 +246,7 @@ def main():
     #make a tBLASTn search against the new database
 
     print("tBLAStn search against new created database")
-    print('tblastn -db ' + path_assembly + ' -query ' + consensus_path + \
+    #print('tblastn -db ' + path_assembly + ' -query ' + consensus_path + \
     ' -outfmt "6 sseqid sstart send evalue qstart qend \
      " -out tmp/blast_results.out')
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
@@ -276,8 +276,8 @@ def main():
             counter += 1
             start = str(i[0] - length_extension)
             end = str(i[1] + length_extension)
-            print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            #os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
+            #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
+            os.system("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
     ################# remove tmp folder ########################################
 
     #have to be added after program ist finished, maybe use parametere so that the user can turn it off
