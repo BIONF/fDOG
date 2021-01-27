@@ -882,6 +882,9 @@ sub checkInput {
 		$dboutpath = $dbpath;
 		# print "setting dboutpath to $dboutpath";
 	}
+
+	# print "HERERERERERERERERER $dbfile #################\n";
+	# print "THENNNNNNNNNNNNNNNN $dbfile_short #################\n";
 	##
 	## 0) Check for presence of the file with the sequences that should be hamstered
 	if (-e "$dbpath/$dbfile") {
@@ -1286,12 +1289,10 @@ sub checkInput {
 			`rm -rf "$fa_dir_neu"`;
 			`mkdir "$fa_dir_neu"`;
 		}
-		if (!(-d "$tmpdir")) {
-			`mkdir "$tmpdir"`;
-		}
-		elsif (-d "$tmpdir" and $cleartmp) {
+		mkdir "$tmpdir" unless -d "$tmpdir";
+		if (-d "$tmpdir" and $cleartmp) {
 			`rm -rf "$tmpdir"`;
-			`mkdir "$tmpdir"`;
+			mkdir "$tmpdir" unless -d "$tmpdir";
 		}
 	}
 	## 14) determin whether or not the -representative flag has been set
@@ -1404,23 +1405,23 @@ sub check4reciprocity {
 			my $suc = 0; # keeps track of success for a single taxon
 			if ($checkCoRef == 0) {
 				## the user does not want to check further in case that id of best blast hit and of reference species differ
-				printOUT("core_orthologs: ", join "\t", @original_ids , "\n");
+				printOUT("core_orthologs: @original_ids\n");
 				## now loop through the best hits with the same score and check whether
 				## among these I find the same seq as in $original
 				my $i = 0;
 				while ($suc == 0 and $i <@$hits) {
-					printOUT("blast-hit: $hits->[$i]->{name}");
+					printOUT("blast-hit: $hits->[$i]->{name}\n");
 					## now loop through all the refspec-sequences in the hmm file; this is the case when co-orthologs have been determine in the core-ortholog
 					my $j = 0;
 					while ($suc == 0 and $j < @original_ids) {
 						if ($original_ids[$j] eq $hits->[$i]->{name}) {
-							printOUT("\thitting\n");
+							printOUT("hitting $original_ids[$j]\n");
 							$refspec_final->[$k]->{hit} = $j;
 							$suc = 1;
 							$relaxed_suc = 1;
 						}
 						else {
-							printOUT("\nnot hitting $original_ids[$j]\n");
+							printOUT("not hitting $original_ids[$j]\n");
 							$j ++;
 						}
 						if ($suc == 1) {
@@ -2027,9 +2028,8 @@ sub determineRefspecFinal {
 	my $ac = 0;
 	for (my $i = 0; $i < @refspec; $i++) {
 		$fafile =~ s/\|/\\\|/g;
-		@original = `$grepprog -A 1 "^>$query_name|$refspec[$i]" $fafile |$sedprog -e "s/.*$refspec[$i]\|//"`;
+		@original = `$grepprog -A 1 "^>$query_name|$refspec[$i]" $fafile | grep -v "^\-\-\$" |$sedprog -e "s/.*$refspec[$i]\|//"`;
 		chomp @original;
-
 		if (@original > 0) {
 			$refspec_final->[$ac]->{refspec} = $refspec[$i];
 			$refspec_final->[$ac]->{searchdb} = "$blastpath/$refspec[$i]/$refspec[$i]" . $blastapp;

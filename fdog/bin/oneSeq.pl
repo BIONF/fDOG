@@ -671,7 +671,7 @@ if(!$coreOnly){
 		die "ERROR: Could not find $finalOutput\n";
 	}
 	# check and add seed to final extended.fa if needed
-	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput); # BLABLABLABLA
+	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 
 	# calculate FAS scores for final extended.fa
 	if ($fas_support) {
@@ -1155,7 +1155,7 @@ sub checkOptions {
 	### end move up
 	### adding new routine to generate the input sequence if -reuseCore has been set
 	if ($coreex) {
-		my @refseq=`$grepprog -A 1 ">$seqName|$refSpec" $coreOrthologsPath/$seqName/$seqName.fa`;
+		my @refseq=`$grepprog -A 1 ">$seqName|$refSpec" $coreOrthologsPath/$seqName/$seqName.fa | grep -v "^\-\-\$"`;
 		chomp @refseq;
 		unless ($silent) {
 			print "$refseq[0]\n";
@@ -2055,7 +2055,7 @@ sub addSeedSeq {
 		my $id = $seq->id;
 		if ($id =~ /$refSpec/) {
 			print TEMP ">$id|1\n", $seq->seq, "\n";
-			last;
+			#last;
 		}
 	}
 	# then write other sequences
