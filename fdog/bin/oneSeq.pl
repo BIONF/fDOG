@@ -2005,6 +2005,7 @@ sub runHamstr {
 						print EXTENDEDFA ">$tmpId[0]\|$tmpId[-3]\|$tmpId[-2]\|$tmpId[-1]\n",$resultSeq->seq,"\n";
 					}
 				}
+				# addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
 			} else {
 				# add seed sequence to output extended.fa if no ortholog was found in refSpec
 				if ($taxon eq $refSpec) {
@@ -2051,9 +2052,11 @@ sub addSeedSeq {
 	# get seed sequence and add it to the beginning of the fasta output
 	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
 	my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
+	my %idTmp; # used to check which seq has already been written to output
 	while(my $seq = $seqio->next_seq) {
 		my $id = $seq->id;
 		if ($id =~ /$refSpec/) {
+			$idTmp{"$id|1"} = 1;
 			print TEMP ">$id|1\n", $seq->seq, "\n";
 			#last;
 		}
@@ -2063,7 +2066,9 @@ sub addSeedSeq {
 	while(my $seq = $seqio2->next_seq) {
 		my $id = $seq->id;
 		unless ($id =~ /$refSpec\|$seqId/) { # /$refSpec/) {
-			print TEMP ">$id\n", $seq->seq, "\n";
+			unless ($idTmp{$id}) {
+				print TEMP ">$id\n", $seq->seq, "\n";
+			}
 		}
 	}
 	close(TEMP);
