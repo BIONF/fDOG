@@ -1,5 +1,6 @@
 ############################ imports ###########################################
 import os
+import os.path
 import sys
 ########################### functions ##########################################
 
@@ -182,8 +183,8 @@ def main():
     assembly_path = "../data/assembly_dir/"+ species_name + "/" + assembly_name
     augustus_ref_species = "saccharomyces_cerevisiae_S288C"
     cut_off_merging_candidates = 500
-    average_intron_length = 2000
-    length_extension = 2000
+    average_intron_length = 5000
+    length_extension = 5000
 
 
     #user input core_ortholog group
@@ -234,7 +235,12 @@ def main():
     print("Building a block profile \n")
 
     os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
-    print("block profile is finished \n")
+    if os.path.isfile(profile_path):
+        print("block profile is finished \n")
+    else:
+        new_path = "../data/core_orthologs/" + group +"/"+ group + "_new.aln"
+        os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
+        os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
 
     ######################## tBLASTn ###########################################
 
