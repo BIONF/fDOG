@@ -235,7 +235,7 @@ def main():
     print("Building a block profile \n")
 
     os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
-    if os.path.getsize(profile_path) > 0:
+    if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
