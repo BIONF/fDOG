@@ -300,6 +300,11 @@ my $breakAfter = 5; 		## Number of Significantly bad candidates after which the 
 my %hashTree;
 my $aln = 'muscle';
 my $searchTaxa;
+#variable for fdog_goes_assembly
+my $assemblyPath;
+my $augustusRefSpecies;
+my $avIntron;
+my $lengthExtension;
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -361,7 +366,11 @@ GetOptions (
 	"distDeviation=s"	=> \$distDeviation,
 	"aligner=s"	=> \$aln,
 	"hyperthread" => \$hyperthread,
-	"searchTaxa=s" => \$searchTaxa
+	"searchTaxa=s" => \$searchTaxa,
+	"assembly=s" => \$assemblyPath,
+	"augRefSpecies=s" => \$augustusRefSpecies,
+	"avIntron=s" => \$avIntron,
+	"lengthExtension=s" \$lengthExtension
 );
 
 $outputPath = abs_path($outputPath);

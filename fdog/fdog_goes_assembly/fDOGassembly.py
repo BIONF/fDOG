@@ -208,8 +208,8 @@ def main():
             print("--assembly: path to assembly input file in fasta format \n")
             print("--gene: core_ortholog group name. Has to be located in data/core_orthologs\n")
             print("--refSpecies: reference species for augustus\n")
-            print("--avIntron: average intron length of the selected species in bp (default: 2000)\n")
-            print("--lengthExtension: length extension of the candidate regions in bp (default:2000)\n")
+            print("--avIntron: average intron length of the selected species in bp (default: 5000)\n")
+            print("--lengthExtension: length extension of the candidate regions in bp (default:5000)\n")
             return 0
 
 
