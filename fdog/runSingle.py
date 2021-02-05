@@ -20,10 +20,18 @@ import os
 import argparse
 import subprocess
 from pathlib import Path
+import yaml
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
         sys.exit('%s not found' % file)
+
+def load_config(config_file):
+    with open(config_file, 'r') as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
 
 def checkInput(args):
     (fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath) = args
@@ -161,7 +169,7 @@ def runSingle(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.18'
+    version = '0.0.19'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -178,6 +186,7 @@ def main():
     optional_paths.add_argument('--blastpath', help='Path for the blastDB directory', action='store', default='')
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
     optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
+    optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
@@ -211,6 +220,7 @@ def main():
                                 action='store', default=0.05, type=float)
 
     ortho_options = parser.add_argument_group('Ortholog search strategy options')
+    ortho_options.add_argument('--searchTaxa', help='Specify file contains list of search taxa', action='store', default='')
     ortho_options.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     ortho_options.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
@@ -243,7 +253,6 @@ def main():
                                 action='store_true', default=True)
     ortho_options.add_argument('--glocal', help='Specify the alignment strategy during core ortholog compilation. Default: False',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--searchTaxa', help='Specify list of search taxa', action='store', default='')
 
     fas_options = parser.add_argument_group('FAS options')
     fas_options.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
@@ -277,6 +286,7 @@ def main():
     blastpath = args.blastpath
     searchpath = args.searchpath
     weightpath = args.weightpath
+    pathFile = args.pathFile
 
     # other I/O arguments
     append = args.append
@@ -332,24 +342,52 @@ def main():
         silent = True
 
     ### get fdog and data path
+    dataPath = ''
     fdogPath = os.path.realpath(__file__).replace('/runSingle.py','')
     pathconfigFile = fdogPath + '/bin/pathconfig.txt'
     if not os.path.exists(pathconfigFile):
         sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-    with open(pathconfigFile) as f:
-        dataPath = f.readline().strip()
+    if pathFile == '':
+        with open(pathconfigFile) as f:
+            dataPath = f.readline().strip()
+    else:
+        cfg = load_config(pathFile)
+        try:
+            dataPath = cfg['dataPath']
+        except:
+            dataPath = 'config'
+
     if hmmpath == '':
         hmmpath = dataPath + '/core_orthologs'
+        if dataPath == 'config':
+            try:
+                hmmpath = cfg['hmmpath']
+            except:
+                sys.exit('hmmpath not found in %s' % pathFile)
     if blastpath == '':
         blastpath = dataPath + '/blast_dir'
+        if dataPath == 'config':
+            try:
+                blastpath = cfg['blastpath']
+            except:
+                sys.exit('blastpath not found in %s' % pathFile)
     if searchpath == '':
         searchpath = dataPath + '/genome_dir'
+        if dataPath == 'config':
+            try:
+                searchpath = cfg['searchpath']
+            except:
+                sys.exit('searchpath not found in %s' % pathFile)
     if weightpath == '':
         weightpath = dataPath + '/weight_dir'
+        if dataPath == 'config':
+            try:
+                weightpath = cfg['weightpath']
+            except:
+                sys.exit('weightpath not found in %s' % pathFile)
 
     ### check input arguments
     seqFile, hmmpath, blastpath, searchpath, weightpath = checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])
-
     # group arguments
     basicArgs = [fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth]
     ioArgs = [append, force, noCleanup, group, blast, db]

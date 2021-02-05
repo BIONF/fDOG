@@ -28,6 +28,7 @@ import re
 from tqdm import tqdm
 import fdog.runSingle as fdogFn
 import shutil
+import yaml
 
 def getSortedFiles(directory):
     list = os.listdir(directory)
@@ -180,7 +181,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.18'
+    version = '0.0.19'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -197,6 +198,7 @@ def main():
     optional_paths.add_argument('--blastpath', help='Path for the blastDB directory', action='store', default='')
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
     optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
+    optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
@@ -297,6 +299,7 @@ def main():
     blastpath = args.blastpath
     searchpath = args.searchpath
     weightpath = args.weightpath
+    pathFile = args.pathFile
 
     # other I/O arguments
     append = args.append
@@ -353,20 +356,50 @@ def main():
         silent = True
 
     ### get fdog and data path
+    dataPath = ''
     fdogPath = os.path.realpath(__file__).replace('/runMulti.py','')
     pathconfigFile = fdogPath + '/bin/pathconfig.txt'
     if not os.path.exists(pathconfigFile):
         sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-    with open(pathconfigFile) as f:
-        dataPath = f.readline().strip()
+    if pathFile == '':
+        with open(pathconfigFile) as f:
+            dataPath = f.readline().strip()
+    else:
+        cfg = load_config(pathFile)
+        try:
+            dataPath = cfg['dataPath']
+        except:
+            dataPath = 'config'
+
     if hmmpath == '':
         hmmpath = dataPath + '/core_orthologs'
+        if dataPath == 'config':
+            try:
+                hmmpath = cfg['hmmpath']
+            except:
+                sys.exit('hmmpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
     if blastpath == '':
         blastpath = dataPath + '/blast_dir'
+        if dataPath == 'config':
+            try:
+                blastpath = cfg['blastpath']
+            except:
+                sys.exit('blastpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
     if searchpath == '':
         searchpath = dataPath + '/genome_dir'
+        if dataPath == 'config':
+            try:
+                searchpath = cfg['searchpath']
+            except:
+                sys.exit('searchpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
     if weightpath == '':
         weightpath = dataPath + '/weight_dir'
+        if dataPath == 'config':
+            try:
+                weightpath = cfg['weightpath']
+            except:
+                sys.exit('weightpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
+
 
     ### join options
     options = [fdogPath, refspec, minDist, maxDist, coreOrth,

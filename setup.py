@@ -26,7 +26,7 @@ with open("README.md", "r") as input:
 
 setup(
     name="fdog",
-    version="0.0.18",
+    version="0.0.19",
     python_requires='>=3.7.0',
     description="Feature-aware Directed OrtholoG search tool",
     long_description=long_description,
@@ -41,7 +41,8 @@ setup(
         'tqdm',
         'ete3',
         'six',
-        'greedyFAS>=1.4.0'
+        'yaml',
+        'greedyFAS>=1.5.0'
     ],
     entry_points={
         'console_scripts': ["fdog.run = fdog.runSingle:main",
