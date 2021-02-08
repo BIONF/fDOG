@@ -172,7 +172,7 @@ def extract_seq(region_dic, path):
 
 def main():
 
-    ########################### handle user input ##############################
+    #################### some variables ########################################
     ### for testing only
     #core-ortholog group name
     group = "778452"
@@ -185,8 +185,9 @@ def main():
     cut_off_merging_candidates = 500
     average_intron_length = 5000
     length_extension = 5000
+    tmp = False
 
-
+    ########################### handle user input ##############################
     #user input core_ortholog group
     #have to add an input option
     #print(sys.argv)
@@ -203,6 +204,8 @@ def main():
             average_intron_length = int(input[i+1])
         elif input[i] == "--lengthExtension":
             length_extension = int(input[i+1])
+        elif input[i] == "--tmp"
+            tmp = True
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -210,6 +213,7 @@ def main():
             print("--refSpecies: reference species for augustus\n")
             print("--avIntron: average intron length of the selected species in bp (default: 5000)\n")
             print("--lengthExtension: length extension of the candidate regions in bp (default:5000)\n")
+            print("--tmp: tmp files will not be deleted")
             return 0
 
 
@@ -221,6 +225,7 @@ def main():
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = assembly_path
+    outfile = gene + ".candidates.fa"
 
     os.system('mkdir tmp')
 
@@ -235,7 +240,7 @@ def main():
     print("Building a block profile \n")
 
     os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
-    print(os.path.getsize(profile_path))
+    #print(os.path.getsize(profile_path))
     if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
     else:
@@ -275,6 +280,8 @@ def main():
 
     ############### make Augustus PPX search ###################################
 
+    output = open(outfile, "w")
+
     for key in regions:
         locations = regions[key]
         counter = 0
@@ -282,12 +289,31 @@ def main():
             counter += 1
             start = str(i[0] - length_extension)
             end = str(i[1] + length_extension)
+            name = key + "_" + str(counter)
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + "_" + str(counter) + ".gff")
-            os.system("getAnnoFasta.pl --seqfile=tmp/" + key + ".fasta" + " tmp/" + key + "_" + str(counter) + ".gff" )
+            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + name + ".gff")
+            os.system("getAnnoFasta.pl --seqfile=tmp/" + key + ".fasta" + " tmp/" + name + ".gff")
+
+            sequence_file = open(name + ".gff", "r")
+            lines = sequence_file.readlines()
+            for line in lines:
+                if line[0] == ">":
+                    id = line.replace(">", "")
+                    header = name + " " + id
+                    output.write(header)
+                else:
+                    output.write(line)
+            sequence_file.close()
+
+    output.close()
+
+
+
+
     ################# remove tmp folder ########################################
 
-    #have to be added after program ist finished, maybe use parametere so that the user can turn it off
+    if tmp == False:
+        os.system('rm -r tmp/')
 
 
 if __name__ == '__main__':
