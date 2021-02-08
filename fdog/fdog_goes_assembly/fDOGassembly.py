@@ -204,7 +204,7 @@ def main():
             average_intron_length = int(input[i+1])
         elif input[i] == "--lengthExtension":
             length_extension = int(input[i+1])
-        elif input[i] == "--tmp"
+        elif input[i] == "--tmp":
             tmp = True
         elif input[i] == "--help":
             print("Parameters: \n")
