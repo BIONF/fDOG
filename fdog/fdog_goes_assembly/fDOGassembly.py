@@ -294,7 +294,7 @@ def main():
             os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + name + ".gff")
             os.system("getAnnoFasta.pl --seqfile=tmp/" + key + ".fasta" + " tmp/" + name + ".gff")
 
-            sequence_file = open(name + ".gff", "r")
+            sequence_file = open("tmp/" + name + ".gff", "r")
             lines = sequence_file.readlines()
             for line in lines:
                 if line[0] == ">":
