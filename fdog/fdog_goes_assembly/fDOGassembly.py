@@ -225,7 +225,7 @@ def main():
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = assembly_path
-    outfile = gene + ".candidates.fa"
+    outfile = group + ".candidates.fa"
 
     os.system('mkdir tmp')
 
