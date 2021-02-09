@@ -169,6 +169,34 @@ def extract_seq(region_dic, path):
         print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
+def augustus_ppx(regions, outfile):
+    output = open(outfile, "w")
+
+    for key in regions:
+        locations = regions[key]
+        counter = 0
+        for i in locations:
+            counter += 1
+            start = str(i[0] - length_extension)
+            end = str(i[1] + length_extension)
+            name = key + "_" + str(counter)
+            #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
+            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + name + ".gff")
+            os.system("getAnnoFasta.pl --seqfile=tmp/" + key + ".fasta" + " tmp/" + name + ".gff")
+
+            sequence_file = open("tmp/" + name + ".aa", "r")
+            lines = sequence_file.readlines()
+            for line in lines:
+                if line[0] == ">":
+                    id = line.replace(">", "")
+                    header = name + " " + id
+                    output.write(header)
+                else:
+                    output.write(line)
+            sequence_file.close()
+
+    output.close()
+
 
 def main():
 
@@ -206,6 +234,8 @@ def main():
             length_extension = int(input[i+1])
         elif input[i] == "--tmp":
             tmp = True
+        elif input[i] == "--name":
+            fdog_name =  input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -214,6 +244,7 @@ def main():
             print("--avIntron: average intron length of the selected species in bp (default: 5000)\n")
             print("--lengthExtension: length extension of the candidate regions in bp (default:5000)\n")
             print("--tmp: tmp files will not be deleted")
+            print("--name: Species name according to the fdog naming schema [Species acronym]@[NCBI ID]@[Proteome version]")
             return 0
 
 
@@ -279,33 +310,11 @@ def main():
         extract_seq(regions, path_assembly)
 
     ############### make Augustus PPX search ###################################
+    print("starting augustus ppx \n")
+    augustus_ppx(regions, outfile)
+    print("augustus is finished \n")
+    
 
-    output = open(outfile, "w")
-
-    for key in regions:
-        locations = regions[key]
-        counter = 0
-        for i in locations:
-            counter += 1
-            start = str(i[0] - length_extension)
-            end = str(i[1] + length_extension)
-            name = key + "_" + str(counter)
-            #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + name + ".gff")
-            os.system("getAnnoFasta.pl --seqfile=tmp/" + key + ".fasta" + " tmp/" + name + ".gff")
-
-            sequence_file = open("tmp/" + name + ".aa", "r")
-            lines = sequence_file.readlines()
-            for line in lines:
-                if line[0] == ">":
-                    id = line.replace(">", "")
-                    header = name + " " + id
-                    output.write(header)
-                else:
-                    output.write(line)
-            sequence_file.close()
-
-    output.close()
 
 
 
