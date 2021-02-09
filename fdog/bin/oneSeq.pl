@@ -301,10 +301,12 @@ my %hashTree;
 my $aln = 'muscle';
 my $searchTaxa;
 #variable for fdog_goes_assembly
-my $assemblyPath;
+my $assemblyPath = '';
 my $augustusRefSpecies;
 my $avIntron;
 my $lengthExtension;
+my $tmp;
+my $assemblyName;
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -370,7 +372,10 @@ GetOptions (
 	"assembly=s" => \$assemblyPath,
 	"augRefSpecies=s" => \$augustusRefSpecies,
 	"avIntron=s" => \$avIntron,
-	"lengthExtension=s" \$lengthExtension
+	"lengthExtension=s" \$lengthExtension,
+	"tmp" => \$tmp,
+	"assemblyName=s" => \$asName
+	
 );
 
 $outputPath = abs_path($outputPath);
