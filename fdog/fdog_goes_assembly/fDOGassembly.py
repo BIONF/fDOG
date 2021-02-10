@@ -189,7 +189,7 @@ def augustus_ppx(regions, outfile):
             for line in lines:
                 if line[0] == ">":
                     id = line.replace(">", "")
-                    header = name + " " + id
+                    header = ">" + name + " " + id
                     output.write(header)
                 else:
                     output.write(line)
@@ -313,7 +313,7 @@ def main():
     print("starting augustus ppx \n")
     augustus_ppx(regions, outfile)
     print("augustus is finished \n")
-    
+
 
 
 
