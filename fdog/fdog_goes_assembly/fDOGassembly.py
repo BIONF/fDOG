@@ -278,7 +278,7 @@ def main():
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = "../data/core_orthologs/" + group +"/"+ group + "_new.aln"
         os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
-        os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
+        os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
         print("block profile is finished \n")
 
     ######################## tBLASTn ###########################################
