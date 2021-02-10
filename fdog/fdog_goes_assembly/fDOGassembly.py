@@ -169,7 +169,7 @@ def extract_seq(region_dic, path):
         print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
-def augustus_ppx(regions, outfilem, length_extension, profile_path):
+def augustus_ppx(regions, outfile, length_extension, profile_path):
     output = open(outfile, "w")
 
     for key in regions:
