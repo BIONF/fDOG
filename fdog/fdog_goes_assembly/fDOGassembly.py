@@ -199,12 +199,12 @@ def augustus_ppx(regions, outfile, length_extension, profile_path, augustus_ref_
 
 def searching_for_db(assembly_path):
     print("test: " + str(assembly_path) + "\n")
-    db_endings = ['.ndb', '.nhr', '.nin', '.nog', '.nos', '.not', '.nsq', ' ntf', '.nto']
+    db_endings = ['.ndb', '.nhr', '.nin', '.nog', '.nos', '.not', '.nsq', '.ntf', '.nto']
     check = True
     for end in db_endings:
-        print(assembly_path + end + "\n")
+        #print(assembly_path + end + "\n")
         check = check and os.path.exists(assembly_path + end)
-        print(check)
+        #print(check)
 
 
 
