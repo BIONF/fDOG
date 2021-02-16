@@ -198,7 +198,7 @@ def augustus_ppx(regions, outfile, length_extension, profile_path, augustus_ref_
     output.close()
 
 def searching_for_db(assembly_path):
-    print('test: ', + assembly_path + '\n')
+    print('test: ', + str(assembly_path) + '\n')
     for root, dirs, files in os.walk(assembly_path):
         for file in files:
             print(file)
