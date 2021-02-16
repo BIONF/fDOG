@@ -205,6 +205,7 @@ def searching_for_db(assembly_path):
         check = check and os.path.exists(assembly_path + end)
 
 
+    print(check)
     return check
 
 
