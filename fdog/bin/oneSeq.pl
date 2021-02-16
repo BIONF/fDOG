@@ -121,9 +121,10 @@ my $startTime = gettime();
 ## Modified 22. Sep 2020 v2.2.1 (Vinh)	- make sure that seed sequence always at the beginning of extended.fa output
 ## Modified 23. Sep 2020 v2.2.3 (Vinh)	- use full taxonomy name instead of abbr taxon name for LOG
 ## Modified 01. Dec 2020 v2.2.4 (Vinh)	- fixed bug while creating final extended.fa (and replaced grep and sed by bioperl)
+## Modified 16. Feb 2021 v2.2.5 (Vinh)	- core compilation works with fasoff
 
 ############ General settings
-my $version = 'oneSeq v.2.2.4';
+my $version = 'oneSeq v.2.2.5';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -885,8 +886,8 @@ sub getFasScore{
 	## step: 2
 	## get FAS score
 	## fas support: on/off
+	my @candidateIds = keys(%candicontent);
 	if ($fas_support){
-		my @candidateIds = keys(%candicontent);
 		my ($name,$gene_set,$gene_id,$rep_id) = split(/\|/, $candidateIds[0]);
 		unless (-e "$weightPath/$gene_set.json") {
 			print "ERROR: $weightPath/$gene_set.json not found! FAS Score will be set as zero.\n";
@@ -898,6 +899,8 @@ sub getFasScore{
 			my @fasOutTmp = split(/\t/,$fasOutTmp);
 			$fas_box{$candidateIds[0]} = $fasOutTmp[1];
 		}
+	} else {
+		$fas_box{$candidateIds[0]} = 1;
 	}
 	return %fas_box;
 }
@@ -1593,8 +1596,9 @@ sub getBestOrtholog {
 					## candidates alnScore is high enought, that it would be better with a fasScore of one
 					## -> evaluate
 					if ($alnScores{$candiKey} > $rankScore * (1 + $distDeviation) - 1){
+						%fas_box = getFasScore();
 						if (!$gotFasScore and $fas_support){
-							%fas_box = getFasScore();
+							# %fas_box = getFasScore();
 							$gotFasScore = 1;
 						}
 						## get rankscore
@@ -1619,8 +1623,9 @@ sub getBestOrtholog {
 				}
 				## candidate has the same distance, as the last one and could be better, with a fasScore of one
 				elsif (defined $hashTree{$newNoRankDistNode}{$key->id} and $alnScores{$candiKey} > $rankScore - 1){
+					%fas_box = getFasScore();
 					if (!$gotFasScore and $fas_support){
-						%fas_box = getFasScore();
+						# %fas_box = getFasScore();
 						$gotFasScore = 1;
 					}
 					## get rankscore
