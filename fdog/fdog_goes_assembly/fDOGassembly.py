@@ -198,7 +198,7 @@ def augustus_ppx(regions, outfile, length_extension, profile_path, augustus_ref_
     output.close()
 
 def searching_for_db(assembly_path):
-    print("test: " + str(assembly_path) + "\n")
+    #print("test: " + str(assembly_path) + "\n")
     db_endings = ['.ndb', '.nhr', '.nin', '.nog', '.nos', '.not', '.nsq', '.ntf', '.nto']
     check = True
     for end in db_endings:
@@ -267,6 +267,7 @@ def main():
     #open core_ortholog group
     msa_path = "../data/core_orthologs/" + group +"/"+ group + ".aln"
     hmm_path = "../data/core_orthologs/" + group +"/hmm_dir/"+ group + ".hmm"
+    fasta_path = "../data/core_orthologs/" + group +"/"+ group + ".fa"
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = assembly_path
@@ -335,8 +336,9 @@ def main():
     print("augustus is finished \n")
 
 
-
-
+    ############### make Annotation with FAS ###################################
+    os.system('mkdir tmp/anno_dir')
+    os.system('calcFAS --seed ' + fasta_path + '--query ' + outfile + '--annotation tmp/anno_dir --out_dir .' )
 
 
     ################# remove tmp folder ########################################
