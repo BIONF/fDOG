@@ -339,7 +339,7 @@ def main():
     ############### make Annotation with FAS ###################################
     os.system('mkdir tmp/anno_dir')
     print('calcFAS --seed ' + fasta_path + ' --query ' + outfile + ' --annotation_dir tmp/anno_dir --out_dir .')
-    os.system('calcFAS --seed ' + fasta_path + '--query ' + outfile + '--annotation_dir tmp/anno_dir --out_dir .' )
+    os.system('calcFAS --seed ' + fasta_path + ' --query ' + outfile + ' --annotation_dir tmp/anno_dir --out_dir .' )
 
 
     ################# remove tmp folder ########################################
