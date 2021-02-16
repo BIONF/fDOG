@@ -189,13 +189,22 @@ def augustus_ppx(regions, outfile, length_extension, profile_path, augustus_ref_
             for line in lines:
                 if line[0] == ">":
                     id = line.replace(">", "")
-                    header = ">" + name + " " + id
+                    header = ">" + name + "_" + id
                     output.write(header)
                 else:
                     output.write(line)
             sequence_file.close()
 
     output.close()
+
+def searching_for_db(assembly_path):
+
+    for files in os.walk(assembly_path):
+        for file in files:
+            print(file)
+
+    return 0
+
 
 
 def main():
@@ -284,13 +293,19 @@ def main():
     ######################## tBLASTn ###########################################
 
     #database anlegen
-    print("creating a blast database \n")
-    os.system('makeblastdb -in ' + path_assembly + ' -dbtype nucl -parse_seqids -out ' + path_assembly)
-    print("database is finished \n")
+
+    db_check = searching_for_db(path_assembly)
+    if db_check == 0:
+        print("creating a blast data base \n")
+        os.system('makeblastdb -in ' + path_assembly + ' -dbtype nucl -parse_seqids -out ' + path_assembly)
+        print("database is finished \n")
+    else:
+        print('blast data base exists already, continuing...')
+
 
     #make a tBLASTn search against the new database
 
-    print("tBLASTn search against new created database")
+    print("tBLASTn search against new created data base")
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
     print("tBLASTn search is finished")
 
