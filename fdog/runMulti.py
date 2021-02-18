@@ -372,12 +372,13 @@ def main():
             dataPath = 'config'
 
     if hmmpath == '':
-        hmmpath = dataPath + '/core_orthologs'
-        if dataPath == 'config':
-            try:
-                hmmpath = cfg['hmmpath']
-            except:
-                sys.exit('hmmpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
+        hmmpath = outpath + '/core_orthologs'
+        # hmmpath = dataPath + '/core_orthologs'
+        # if dataPath == 'config':
+        #     try:
+        #         hmmpath = cfg['hmmpath']
+        #     except:
+        #         sys.exit('hmmpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
     if blastpath == '':
         blastpath = dataPath + '/blast_dir'
         if dataPath == 'config':

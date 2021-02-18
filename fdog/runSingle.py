@@ -35,6 +35,9 @@ def load_config(config_file):
 
 def checkInput(args):
     (fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath) = args
+    # create output directory
+    Path(outpath).mkdir(parents=True, exist_ok=True)
+    Path(hmmpath).mkdir(parents=True, exist_ok=True)
     # check path existing
     for path in [hmmpath, blastpath, searchpath, weightpath]:
         checkFileExist(path)
@@ -46,8 +49,6 @@ def checkInput(args):
             seqFile = fdogPath + '/data/' + seqFile
     else:
         seqFile = os.path.abspath(seqFile)
-    # create output directory
-    Path(outpath).mkdir(parents=True, exist_ok=True)
     # check refspec
     if not os.path.exists(os.path.abspath(blastpath+'/'+refspec)):
         exit('Reference taxon %s not found in %s' % (refspec, blastpath))
@@ -358,12 +359,14 @@ def main():
             dataPath = 'config'
 
     if hmmpath == '':
-        hmmpath = dataPath + '/core_orthologs'
-        if dataPath == 'config':
-            try:
-                hmmpath = cfg['hmmpath']
-            except:
-                sys.exit('hmmpath not found in %s' % pathFile)
+        hmmpath = outpath + '/core_orthologs'
+    #     hmmpath = dataPath + '/core_orthologs'
+    #     if dataPath == 'config':
+    #         try:
+    #             hmmpath = cfg['hmmpath']
+    #         except:
+    #             sys.exit('hmmpath not found in %s' % pathFile)
+
     if blastpath == '':
         blastpath = dataPath + '/blast_dir'
         if dataPath == 'config':
