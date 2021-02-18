@@ -122,9 +122,10 @@ my $startTime = gettime();
 ## Modified 23. Sep 2020 v2.2.3 (Vinh)	- use full taxonomy name instead of abbr taxon name for LOG
 ## Modified 01. Dec 2020 v2.2.4 (Vinh)	- fixed bug while creating final extended.fa (and replaced grep and sed by bioperl)
 ## Modified 16. Feb 2021 v2.2.5 (Vinh)	- core compilation works with fasoff
+## Modified 18. Feb 2021 v2.2.6 (Vinh)	- fixed searchTaxa and coreTaxa options
 
 ############ General settings
-my $version = 'oneSeq v.2.2.5';
+my $version = 'oneSeq v.2.2.6';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -567,7 +568,7 @@ if (!$coreex) {
 
 		my $addedTaxon = getBestOrtholog();
 		my $addedTaxonName = getTaxonName($addedTaxon);
-		print "Added TAXON: $addedTaxon\_$addedTaxonName\n";
+		print "Added TAXON: $addedTaxon\t$addedTaxonName\n";
 		#if a new core ortholog was found
 		if($addedTaxon ne "") {
 			$hamstrSpecies = $hamstrSpecies . "," . $addedTaxon;
@@ -611,10 +612,10 @@ if (!$coreOnly) {
 
 	$taxaPath = $genome_dir;
 	my @searchTaxa;
-	unless($groupNode) {
-		@searchTaxa = keys %taxa;
-	} else {
-		unless ($searchTaxa) {
+	unless ($searchTaxa) {
+		unless($groupNode) {
+			@searchTaxa = keys %taxa;
+		} else {
 			# %taxa = getTaxa();
 			# print "GET TAXA TIME: ", roundtime(gettime() - $startTmp),"\n";
 			my $tree = getTree();
@@ -630,11 +631,11 @@ if (!$coreOnly) {
 			foreach (get_leaves($tree)) {
 				push(@searchTaxa, @{$_->name('supplied')}[0]);
 			}
-		} else {
-			open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
-			@searchTaxa = <SEARCH>;
-			close (SEARCH);
 		}
+	} else {
+		open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
+		@searchTaxa = <SEARCH>;
+		close (SEARCH);
 	}
 	# print "PREPARE TIME: ", roundtime(gettime() - $startTmp),"\n";
 
@@ -646,12 +647,23 @@ if (!$coreOnly) {
 	foreach (sort @searchTaxa) {
 		chomp(my $searchTaxon = $_);
 		my $pid = $pm->start and next;
+		if ($coreex) {
+			$db = Bio::DB::Taxonomy->new(-source    => 'flatfile',
+				-nodesfile => $idx_dir . 'nodes.dmp',
+				-namesfile => $idx_dir . 'names.dmp',
+				-directory => $idx_dir);
+			$db_bkp = $db;
+		}
 		my $searchTaxonName = getTaxonName($searchTaxon);
 		if (defined($searchTaxonName)) {
 			unless ($silent) {
 				print $searchTaxon, "\t", $searchTaxonName, "\n";
 			} else {
-				print $searchTaxonName, "\n";
+				unless ($searchTaxonName eq "Unk") {
+					print $searchTaxonName, "\n";
+				} else {
+					print $searchTaxon, "\n";
+				}
 			}
 		}
 		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
@@ -1244,13 +1256,13 @@ sub checkOptions {
 			print "Please specify a valid file with taxa for the core orthologs search\n";
 			exit;
 		}
-		my @userTaxa = parseTaxaFile();
+		my @userTaxa = parseTaxaFile($coreTaxa);
 		my %newTaxa = ();
 		foreach (@userTaxa) {
 			$newTaxa{$_} = $taxa{$_};
 		}
 		$newTaxa{$refSpec} = $refTaxa{$refSpec};
-		%taxa = %newTaxa;
+		%refTaxa = %newTaxa;
 	}
 
 	if($group) {
@@ -1911,7 +1923,7 @@ sub getTaxonName {
 	if (defined($taxon)) {
 		return($taxon->scientific_name);
 	} else {
-		return("Unk NCBI taxon for $taxAbbr");
+		return("Unk");
 	}
 }
 
@@ -2103,17 +2115,19 @@ sub parseInput {
 }
 ##########################
 sub parseTaxaFile {
-	open (INPUT, "<$coreTaxa") or die print "Error opening file with taxa for core orthologs search\n";
+	my $coreTaxaFile = $_[0];
+	open (INPUT, "<$coreTaxaFile") or die print "Error opening file with taxa for core orthologs search\n";
 	my @userTaxa;
 	while(<INPUT>) {
 		my $line = $_;
 		chomp($line);
-		if(!$taxa{$line}) {
-			print "You specified " . $line . " in your core orthologs file but the taxon is not in the database!\n";
-			exit;
-		}
-		else {
-			push(@userTaxa, $line);
+		if (length($line) > 0) {
+			if(!$taxa{$line}) {
+				print "You specified " . $line . " in your core orthologs file but the taxon is not in the database!\n";
+				exit;
+			} else {
+				push(@userTaxa, $line);
+			}
 		}
 	}
 	close INPUT;
