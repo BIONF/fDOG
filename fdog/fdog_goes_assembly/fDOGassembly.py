@@ -39,8 +39,6 @@ def merge(blast_results, insert_length):
         number_regions += len(locations)
         blast_results[key] = locations
 
-
-
     print(blast_results)
     return blast_results, number_regions
 
@@ -140,7 +138,6 @@ def candidate_regions(cut_off, intron_length):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
     blast_file = open("tmp/blast_results.out", "r")
-
     evalue = 0
     blast_results = {}
     #parsing blast output
@@ -169,8 +166,8 @@ def extract_seq(region_dic, path):
         print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
-def augustus_ppx(regions, outfile, length_extension, profile_path, augustus_ref_species):
-    output = open(outfile, "w")
+def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species):
+    output = open(candidatesOutFile, "w")
 
     for key in regions:
         locations = regions[key]
@@ -205,10 +202,22 @@ def searching_for_db(assembly_path):
         #print(assembly_path + end + "\n")
         check = check and os.path.exists(assembly_path + end)
         #print(check)
-
-
-
     return check
+
+def readFasta(candidatesOutFile):
+    seq_records = SeqIO.parse(candidatesOutFile, "fasta"):
+    return seq_records
+
+def backward_search(candidatesOutFile, group, fasta_path):
+    candidates = readFasta(candidatesOutFile)
+    seedSequences= readFasta(fasta_path)
+
+    for c in candidates:
+        print(c.id)
+        print(c.seq)
+        for s in seedSequences:
+            ##do blast and check ID
+            pass
 
 
 
@@ -224,7 +233,7 @@ def main():
     assembly_name = "contigs.fa"
     assembly_path = "../data/assembly_dir/"+ species_name + "/" + assembly_name
     augustus_ref_species = "saccharomyces_cerevisiae_S288C"
-    cut_off_merging_candidates = 500
+    #cut_off_merging_candidates = 500
     average_intron_length = 5000
     length_extension = 5000
     tmp = False
@@ -250,6 +259,8 @@ def main():
             tmp = True
         elif input[i] == "--name":
             fdog_name =  input[i+1]
+        elif input[i] == "--out":
+            out = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -259,6 +270,7 @@ def main():
             print("--lengthExtension: length extension of the candidate regions in bp (default:5000)\n")
             print("--tmp: tmp files will not be deleted")
             print("--name: Species name according to the fdog naming schema [Species acronym]@[NCBI ID]@[Proteome version]")
+            print("--out: path to the output folder")
             return 0
 
 
@@ -271,7 +283,7 @@ def main():
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = assembly_path
-    outfile = group + ".candidates.fa"
+    candidatesOutFile = group + ".candidates.fa"
 
     os.system('mkdir tmp')
 
@@ -310,6 +322,7 @@ def main():
 
 
     #make a tBLASTn search against the new database
+    #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
     print("tBLASTn search against new created data base")
     os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
@@ -332,14 +345,23 @@ def main():
 
     ############### make Augustus PPX search ###################################
     print("starting augustus ppx \n")
-    augustus_ppx(regions, outfile, length_extension, profile_path, augustus_ref_species)
+    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species)
     print("augustus is finished \n")
+
+    ################# bachward search to filter for orthologs##############
+
+    #verschiede Modi beachten!
+    backward_search(candidatesOutFile, group, fasta_path)
+
 
 
     ############### make Annotation with FAS ###################################
+
+    #umschreiben, benötige dann fas von bestätigten Kandidaten gegen Rest!
+
     os.system('mkdir tmp/anno_dir')
-    print('calcFAS --seed ' + fasta_path + ' --query ' + outfile + ' --annotation_dir tmp/anno_dir --out_dir .')
-    os.system('calcFAS --seed ' + fasta_path + ' --query ' + outfile + ' --annotation_dir tmp/anno_dir --out_dir .' )
+    #print('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .')
+    os.system('calcFAS --seed ' + fasta_path + ' --query ' + candidatescandidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .' )
 
 
     ################# remove tmp folder ########################################
