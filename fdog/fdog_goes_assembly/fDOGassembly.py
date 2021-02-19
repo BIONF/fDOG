@@ -134,7 +134,7 @@ def parse_blast(line, blast_results):
     return blast_results, evalue
 
 
-def candidate_regions(cut_off, intron_length):
+def candidate_regions(intron_length):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
     blast_file = open("tmp/blast_results.out", "r")
@@ -331,7 +331,7 @@ def main():
     ################### search for candidate regions and extract seq ###########
 
     # parse blast and filter for candiate regions
-    regions, number_regions = candidate_regions(cut_off_merging_candidates, average_intron_length)
+    regions, number_regions = candidate_regions(average_intron_length)
 
     if regions == 1:
         #no candidat region are available, no ortholog can be found
