@@ -365,7 +365,7 @@ def main():
         with open(pathconfigFile) as f:
             dataPath = f.readline().strip()
     else:
-        cfg = load_config(pathFile)
+        cfg = fdogFn.load_config(pathFile)
         try:
             dataPath = cfg['dataPath']
         except:
