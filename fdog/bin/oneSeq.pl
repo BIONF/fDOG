@@ -135,10 +135,10 @@ if ($configure == 0){
 my $hostname = `hostname`;
 chomp $hostname;
 #############
-my $termios = new POSIX::Termios; $termios->getattr;
-my $ospeed = $termios->getospeed;
-my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
-my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
+# my $termios = new POSIX::Termios; $termios->getattr;
+# my $ospeed = $termios->getospeed;
+# my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
+# my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
 #### Paths
 my $path = abs_path(dirname(__FILE__));
 $path =~ s/\/bin//;
@@ -2662,23 +2662,23 @@ sub roundtime { sprintf("%.2f", $_[0]); }
 ###########################
 sub helpMessage {
 	my $helpmessage = "
-${bold}YOU ARE RUNNING $version on $hostname$norm
+YOU ARE RUNNING $version on $hostname
 
 This program is freely distributed under a GPL.
 Copyright (c) GRL limited: portions of the code are from separate copyrights
 
-\n${bold}USAGE:${norm} oneSeq.pl -seqFile=<> -seqId=<>  -seqName=<> -refSpec=<> -minDist=<> -maxDist=<> [OPTIONS]
+\nUSAGE: oneSeq.pl -seqFile=<> -seqId=<>  -seqName=<> -refSpec=<> -minDist=<> -maxDist=<> [OPTIONS]
 
-${bold}OPTIONS:$norm
+OPTIONS:
 
-${bold}GENERAL$norm
+GENERAL
 
 -h
 	Invoke this help method
 -version
 	Print the program version
 
-${bold}REQUIRED$norm
+REQUIRED
 
 -seqFile=<>
 	Specifies the file containing the seed sequence (protein only) in fasta format.
@@ -2698,7 +2698,7 @@ ${bold}REQUIRED$norm
 -coreOrth=<>
 	Specify the number of orthologs added to the core set.
 
-${bold}USING NON-DEFAULT PATHS$norm
+USING NON-DEFAULT PATHS
 
 -outpath=<>
 	Specifies the path for the output directory. Default is $outputPath;
@@ -2711,7 +2711,7 @@ ${bold}USING NON-DEFAULT PATHS$norm
 -weightpath=<>
 	Specifies the path for the pre-calculated feature annotion directory. Default is $weightPath;
 
-${bold}ADDITIONAL OPTIONS$norm
+ADDITIONAL OPTIONS
 
 -append
 	Set this flag to append the output to existing output files
@@ -2798,7 +2798,7 @@ ${bold}ADDITIONAL OPTIONS$norm
 	Set the alignment strategy during core ortholog compilation to glocal.
 -searchTaxa
 	Input file containing list of search taxa.
-${bold}SPECIFYING FAS SUPPORT OPTIONS$norm
+SPECIFYING FAS SUPPORT OPTIONS
 
 -fasoff
 	Turn OFF FAS support. Default is ON.
@@ -2811,7 +2811,7 @@ ${bold}SPECIFYING FAS SUPPORT OPTIONS$norm
 -countercheck
 	Set this flag to counter-check your final profile. The FAS score will be computed in two ways (seed vs. hit and hit vs. seed).
 
-${bold}SPECIFYING EXTENT OF OUTPUT TO SCREEN$norm
+SPECIFYING EXTENT OF OUTPUT TO SCREEN
 
 -debug
 	Set this flag to obtain more detailed information about the programs actions
