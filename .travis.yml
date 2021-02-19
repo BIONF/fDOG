@@ -13,10 +13,10 @@ branches:
   only:
     - master
     - /^v.*$/
-deploy:
-  provider: pypi
-  username: __token__
-  password:
-    secure: or/c8/8BANMAQRSa6W3d1CV4mNBULQMR1SJ9l8YSR5o2ufcKO43Jf6apZq+0qb4805516ihpEGceKJ1aiM7bMHru66qlqtj/Jv1QOr40bjsbfCXlHXp8sJ74boWIhk3BzQCtbM1CbO6IKceITNmHslwABMNRSSOELYoJoxJ9w4NfsiYdeVPu1TNSzxRfLzNI3q2Ku2uei+vLlDxvpjYeasKfQlWBb/aydFo8TI403ftmIIeX9ATOmWHssRYGYnNKE8XHU5AX4ka5gzm1fzgjyv4h3NmD0MAaJlEJjdYYE0WGvRvmKEMtUzlCAcQnyU1ALVm4mC/4fAceuVfr7uvRZojVlS2zdTXFQpkHR6dwZ0B74+Z3p2bSdjTV+glt1nZ3DUpxWfaCrFX8viIZE30HtMaGD3Gii142cK9kdpmBQDrmPlVdinKz/NI7bY39/lWcTX4PO0SQsZUoXlb0JmVYGwPpvlAk83Ba7ZglQ802PWI2AEPXdnlvttSP7+2xfG5B/2CRpt+EzIaw/zl1hfy8ZEHfJT1h8hQXNsbqNKELd1A0Q9L/5x8YQ/TIcm/gpPjmT6Exx5qNJ91lNhQE9MordjzjT4uU91v1e3NZa/Ar39ZH6I/wtW44rcGqpqKqalGGzQ8fNScasoE9POCVNiA3GnjYe4PZqlS3sr8mM+G6+3A=
-  on:
-    tags: true
+# deploy:
+#   provider: pypi
+#   username: __token__
+#   password:
+#     secure: or/c8/8BANMAQRSa6W3d1CV4mNBULQMR1SJ9l8YSR5o2ufcKO43Jf6apZq+0qb4805516ihpEGceKJ1aiM7bMHru66qlqtj/Jv1QOr40bjsbfCXlHXp8sJ74boWIhk3BzQCtbM1CbO6IKceITNmHslwABMNRSSOELYoJoxJ9w4NfsiYdeVPu1TNSzxRfLzNI3q2Ku2uei+vLlDxvpjYeasKfQlWBb/aydFo8TI403ftmIIeX9ATOmWHssRYGYnNKE8XHU5AX4ka5gzm1fzgjyv4h3NmD0MAaJlEJjdYYE0WGvRvmKEMtUzlCAcQnyU1ALVm4mC/4fAceuVfr7uvRZojVlS2zdTXFQpkHR6dwZ0B74+Z3p2bSdjTV+glt1nZ3DUpxWfaCrFX8viIZE30HtMaGD3Gii142cK9kdpmBQDrmPlVdinKz/NI7bY39/lWcTX4PO0SQsZUoXlb0JmVYGwPpvlAk83Ba7ZglQ802PWI2AEPXdnlvttSP7+2xfG5B/2CRpt+EzIaw/zl1hfy8ZEHfJT1h8hQXNsbqNKELd1A0Q9L/5x8YQ/TIcm/gpPjmT6Exx5qNJ91lNhQE9MordjzjT4uU91v1e3NZa/Ar39ZH6I/wtW44rcGqpqKqalGGzQ8fNScasoE9POCVNiA3GnjYe4PZqlS3sr8mM+G6+3A=
+#   on:
+#     tags: true

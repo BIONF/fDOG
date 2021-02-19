@@ -2,6 +2,7 @@
 [![PyPI version](https://badge.fury.io/py/fdog.svg)](https://pypi.org/project/fdog/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Build Status](https://travis-ci.com/BIONF/fDOG.svg?branch=master)](https://travis-ci.com/BIONF/fDOG)
+![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
 
 # Table of Contents
 * [How to install](#how-to-install)
@@ -41,7 +42,7 @@ export PATH=$HOME/.local/bin:$PATH
 
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
 
-**NOTE**: in case you haven't installed [greedyFAS](https://github.com/BIONF/FAS) before, it will be installed automatically within *fDOG* setup. However, you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) after *fDOG* setup finished before actually using *fDOG*! 
+**NOTE**: in case you haven't installed [greedyFAS](https://github.com/BIONF/FAS) before, it will be installed automatically within *fDOG* setup. However, you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) after *fDOG* setup finished before actually using *fDOG*!
 
 You can setup fDOG by running this command
 ```
