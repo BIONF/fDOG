@@ -205,7 +205,7 @@ def searching_for_db(assembly_path):
     return check
 
 def readFasta(candidatesOutFile):
-    seq_records = SeqIO.parse(candidatesOutFile, "fasta"):
+    seq_records = SeqIO.parse(candidatesOutFile, "fasta")
     return seq_records
 
 def backward_search(candidatesOutFile, group, fasta_path):
