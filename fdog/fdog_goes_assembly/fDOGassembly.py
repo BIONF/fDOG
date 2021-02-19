@@ -2,6 +2,7 @@
 import os
 import os.path
 import sys
+from BIO import SeqIO
 ########################### functions ##########################################
 
 def merge(blast_results, insert_length):
