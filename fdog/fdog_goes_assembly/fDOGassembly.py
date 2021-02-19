@@ -209,16 +209,31 @@ def readFasta(candidatesOutFile):
     seq_records = SeqIO.parse(candidatesOutFile, "fasta")
     return seq_records
 
-def backward_search(candidatesOutFile, group, fasta_path):
-    candidates = readFasta(candidatesOutFile)
-    seedSequences= readFasta(fasta_path)
+def getSeedInfo(path):
+    dic = {}
+    seq_records = readFasta(path)
+    for entry in seq_records:
+        species = entry.id.split("|")[1]
+        geneID = entry.id.split("|")[2]
 
-    for c in candidates:
-        print(c.id)
-        print(c.seq)
-        for s in seedSequences:
-            ##do blast and check ID
-            pass
+        try:
+            dic[species].append(geneID)
+        except KeyError:
+            dic[species] = [geneID]
+
+    return dic
+
+
+
+
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species):
+    #candidates = readFasta(candidatesOutFile)
+    #seedSequences= readFasta(fasta_path)
+    #os.systen("blastp -db ")
+    seedDic = getSeedInfo(fasta_path)
+    print(seedDic)
+
+
 
 
 
@@ -238,6 +253,7 @@ def main():
     average_intron_length = 5000
     length_extension = 5000
     tmp = False
+    strict = False
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -250,7 +266,7 @@ def main():
             assembly_path = input[i+1]
         elif input[i] == "--gene":
             group = input[i+1]
-        elif input[i] == "--refSpecies":
+        elif input[i] == "--augRefSpecies":
             augustus_ref_species = input[i+1]
         elif input[i] == "--avIntron":
             average_intron_length = int(input[i+1])
@@ -262,15 +278,20 @@ def main():
             fdog_name =  input[i+1]
         elif input[i] == "--out":
             out = input[i+1]
+        elif input[i] == "--RefSpecies":
+            fdog_ref_species = input[i+1]
+        elif input[i] == "strict":
+            strict = True
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
             print("--gene: core_ortholog group name. Has to be located in data/core_orthologs\n")
-            print("--refSpecies: reference species for augustus\n")
+            print("--augRefSpecies: reference species for augustus\n")
             print("--avIntron: average intron length of the selected species in bp (default: 5000)\n")
             print("--lengthExtension: length extension of the candidate regions in bp (default:5000)\n")
             print("--tmp: tmp files will not be deleted")
             print("--name: Species name according to the fdog naming schema [Species acronym]@[NCBI ID]@[Proteome version]")
+            print("--RefSpecies: fDOG reference species")
             print("--out: path to the output folder")
             return 0
 
@@ -352,7 +373,7 @@ def main():
     ################# bachward search to filter for orthologs##############
 
     #verschiede Modi beachten!
-    backward_search(candidatesOutFile, group, fasta_path)
+    backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species)
 
 
 
@@ -362,7 +383,7 @@ def main():
 
     os.system('mkdir tmp/anno_dir')
     #print('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .')
-    os.system('calcFAS --seed ' + fasta_path + ' --query ' + candidatescandidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .' )
+    os.system('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .' )
 
 
     ################# remove tmp folder ########################################
