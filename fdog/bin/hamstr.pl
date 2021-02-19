@@ -224,10 +224,10 @@ my $idsep = '__'; #character used to replace whitespaces in the sequence header 
 my $hmm_dir = 'hmm_dir';
 my $fa_dir  = 'fa_dir';
 ##############################
-my $termios = new POSIX::Termios; $termios->getattr;
-my $ospeed = $termios->getospeed;
-my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
-my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
+# my $termios = new POSIX::Termios; $termios->getattr;
+# my $ospeed = $termios->getospeed;
+# my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
+# my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
 
 ############################## Variables ##############
 my $fileobj;
@@ -323,16 +323,16 @@ if (@ARGV==0) {
 }
 ## help message
 my $helpmessage = "
-${bold}YOU ARE RUNNING $version on $hostname$norm
+YOU ARE RUNNING $version on $hostname
 
 This program is freely distributed under a GPL.
 Copyright (c) GRL limited: portions of the code are from separate copyrights
 
-\n${bold}USAGE:${norm} hamstr -sequence_file=<> -hmmset=<> -taxon=<>  -refspec=<> [OPTIONS]
+\nUSAGE: hamstr -sequence_file=<> -hmmset=<> -taxon=<>  -refspec=<> [OPTIONS]
 
-${bold}OPTIONS:$norm
+OPTIONS:
 
-${bold}REQUIRED$norm
+REQUIRED
 -sequence_file=<>
 		path and name of the file containing the sequences hmmer is run against.
 -hmmset=<>
@@ -360,7 +360,7 @@ ${bold}REQUIRED$norm
 		set this flag if you are searching in protein sequences. Note, if neither the -est nor the -protein flag is set, HaMStR will
 		guess the sequence type.
 
-${bold}USING NON-DEFAULT PATHS$norm
+USING NON-DEFAULT PATHS
 
 -blastpath=<>
 		Lets you specify the absolute or relative path to the blast databases. DEFAULT: $blastpath
@@ -369,7 +369,7 @@ ${bold}USING NON-DEFAULT PATHS$norm
 -outpath=<>
 		You can determine the path to the HaMStR output. Default: current directory.
 
-${bold}ADDITIONAL OPTIONS$norm
+ADDITIONAL OPTIONS
 
 -append
 		set this flag if the output should be appended to the files *.out and *_cds.out. This becomes relevant when running
@@ -413,7 +413,7 @@ ${bold}ADDITIONAL OPTIONS$norm
 -hmm
 		Option to provide only a single hmm to be used for the search.
 		Note, this file has to end with .hmm
--intron=<${bold}k${norm}eep|${bold}m${norm}ask|${bold}r${norm}emove>
+-intron=<keep|mask|remove>
 		Specify how to deal with introns that may occur in transcript sequences. Default: keep - Introns will be retained in the transcript
 		but will be identified by lower case letters.
 -longhead
@@ -513,7 +513,7 @@ elsif($ver){
 ## 1) check if all information is available to run HaMStR
 ($check, @log) = &checkInput();
 if ($check == 0) {
-	print "\n\n${bold}There was an error running $version$norm\n\n";
+	print "\n\nThere was an error running $version\n\n";
 	print join "\n", @log;
 	exit;
 }
@@ -784,11 +784,11 @@ sub checkInput {
 		my @coresets = (`ls $hmmpath`);
 		chomp @coresets;
 		if (scalar(@coresets > 0)){
-			print "\n${bold}THE FOLLOWING CORE ORTHOLOG SETS ARE AVAILABLE IN $hmmpath:${norm}\n\n";
+			print "\nTHE FOLLOWING CORE ORTHOLOG SETS ARE AVAILABLE IN $hmmpath:\n\n";
 			for (my $i = 0; $i < @coresets; $i++){
 				my @available = qw();
 				my @unavailable = qw();
-				print "\n${bold}$coresets[$i]${norm}\n\n";
+				print "\n$coresets[$i]\n\n";
 				my @refspec = `head -n 20 $hmmpath/$coresets[$i]/$coresets[$i].fa |$grepprog '>' |cut -d '|' -f 2 |sort |uniq`;
 				chomp @refspec;
 				for (my $j = 0; $j < @refspec; $j++){
@@ -808,7 +808,7 @@ sub checkInput {
 			}
 		}
 		else {
-			print "\n${bold}NO CORE ORTHOLOG SETS ARE AVAILABLE! CHECK $hmmpath!${norm}\n\n";
+			print "\nNO CORE ORTHOLOG SETS ARE AVAILABLE! CHECK $hmmpath!\n\n";
 		}
 		print "\n\n";
 		exit;
@@ -892,7 +892,7 @@ sub checkInput {
 	}
 	else {
 		#the provided infile does not exist:
-		push @log, "${bold}FATAL:${norm} The specified infile $dbpath/$dbfile does not exist. PLEASE PROVIDE A VALID INFILE!\n";
+		push @log, "FATAL: The specified infile $dbpath/$dbfile does not exist. PLEASE PROVIDE A VALID INFILE!\n";
 		$check = 0;
 		return ($check, @log);
 	}
@@ -958,7 +958,7 @@ sub checkInput {
 			push @log, "Translated file already exists, using this one";
 		}
 		if (! -e "$dboutpath/$dbfile") {
-			push @log, "${bold}FATAL:${norm} The translation of $dbfile_base failed. Check the script translate.pl";
+			push @log, "FATAL: The translation of $dbfile_base failed. Check the script translate.pl";
 			print "failed\n";
 			$check = 0;
 		}
@@ -971,7 +971,7 @@ sub checkInput {
 	push @log, "\nCHECKING FOR PROGRAMS\n";
 	printOUT("checking for the blast program:\t");
 	if (`which $blast_prog` =~ / no /) {
-		push @log, "${bold}FATAL:${norm} could not execute $blast_prog. Please check if this program is installed and executable";
+		push @log, "FATAL: could not execute $blast_prog. Please check if this program is installed and executable";
 		print "failed\n";
 		$check = 0;
 	}
@@ -985,12 +985,12 @@ sub checkInput {
 	printOUT("checking for hmmsearch:\t");
 	my $hmmcheck = `$prog -h |$grepprog -c 'HMMER 3'`;
 	if (! `$prog -h`) {
-		push @log, "${bold}FATAL:${norm} could not execute $prog. Please check if this program is installed and executable";
+		push @log, "FATAL: could not execute $prog. Please check if this program is installed and executable";
 		print "failed: $prog is not installed or not executable\n";
 		$check = 0;
 	}
 	elsif ($hmmcheck != 1) {
-		push @log, "${bold}FATAL:${norm} It seems that $prog is not from the HMMER 3 package. Please check!";
+		push @log, "FATAL: It seems that $prog is not from the HMMER 3 package. Please check!";
 		print "failed: $prog is not from the HMMER 3 package\n";
 		$check = 0;
 	}
@@ -1002,14 +1002,14 @@ sub checkInput {
 	if ($check_genewise) {
 		printOUT("checking for genewise:\t");
 		if (! `genewise -help`) {
-			push @log, "${bold}FATAL:${norm} Could not execute genewise. Please check if this program is installed and executable";
+			push @log, "FATAL: Could not execute genewise. Please check if this program is installed and executable";
 			print "failed: genewise is not executable\n";
 			$check = 0;
 		}
 		else {
 			my $gwcheck = `echo \$WISECONFIGDIR`;
 			if (length($gwcheck) < 1) {
-				push @log, "${bold}FATAL:${norm} The environmental variable WISECONFIGDIR has not been set. I am expecting troubles when invoking genewise.
+				push @log, "FATAL: The environmental variable WISECONFIGDIR has not been set. I am expecting troubles when invoking genewise.
 				Please consult the installation manual for genewise and set this variable";
 				print "failed: the environmental variable WISECONFIGDIR has not been set.\n";
 				$check = 0;
@@ -1020,14 +1020,14 @@ sub checkInput {
 		}
 	}
 	else {
-		push @log, "${bold}GENEWISE-CHECK skipped:${norm} The hamstr-script has been configured with the option --protein_only. To override this setting set reconfigure the script or set the variable $check_genewise to 1";
+		push @log, "GENEWISE-CHECK skipped: The hamstr-script has been configured with the option --protein_only. To override this setting set reconfigure the script or set the variable $check_genewise to 1";
 	}
 	## 4) Check for presence of the directory structure
 
 	push @log, "\nCHECKING FOR HMMs\n";
 	printOUT("checking for presence of the hmm files:\t");
 	if ( ! defined $hmmset or ! -e "$hmmpath/$hmmset") {
-		push @log, "${bold}FATAL:${norm} You need to specify a valid core ortholog set. Make also sure that you provide the path to this set if it is not in the default location $hmmpath. You can check available core ortholog sets using the option -show_hmmsets.";
+		push @log, "FATAL: You need to specify a valid core ortholog set. Make also sure that you provide the path to this set if it is not in the default location $hmmpath. You can check available core ortholog sets using the option -show_hmmsets.";
 		print "failed\n";
 		$check = 0;
 	}
@@ -1039,7 +1039,7 @@ sub checkInput {
 
 		## 4b) check for the presence of the hmm-files and the fasta-file
 		if (!(-e "$hmm_dir")) {
-			push @log, "${bold}FATAL:${norm} Could not find $hmm_dir";
+			push @log, "FATAL: Could not find $hmm_dir";
 			print "failed\n";
 			$check = 0;
 		} else {
@@ -1049,7 +1049,7 @@ sub checkInput {
 				### check for the presence of all hmms
 				for (my $k = 0; $k < @hmms; $k++) {
 					if (! -e "$hmm_dir/$hmms[$k]") {
-						push @log, "${bold}FATAL:${norm} $hmms[$k] has been defined but could not be found in $hmm_dir/$hmms[$k]";
+						push @log, "FATAL: $hmms[$k] has been defined but could not be found in $hmm_dir/$hmms[$k]";
 						$check = 0;
 						last;
 					} else {
@@ -1079,7 +1079,7 @@ sub checkInput {
 		}
 	}
 	else {
-		push @log, "${bold}FATAL:${norm} Please provide path and name of fasta file containing the core-ortholog sequences";
+		push @log, "FATAL: Please provide path and name of fasta file containing the core-ortholog sequences";
 		$check = 0;
 		print "failed\n";
 	}
@@ -1092,7 +1092,7 @@ sub checkInput {
 		$taxon_check = 2;
 	}
 	else {
-		push @log, "${bold}FATAL:${norm} No taxon_file found. Please provide a global taxon name using the option -taxon";
+		push @log, "FATAL: No taxon_file found. Please provide a global taxon name using the option -taxon";
 		print "failed\n";
 		$check = 0;
 	}
@@ -1100,7 +1100,7 @@ sub checkInput {
 	push @log, "\nCHECKING FOR REFERENCE TAXON\n";
 	printOUT("checking for reference species and blast-dbs:\t");
 	if (!(defined $refspec_string) and (! defined $strict and ! defined $relaxed)) {
-		push @log, "${bold}FATAL:${norm} Please provide a reference species for the reblast!";
+		push @log, "FATAL: Please provide a reference species for the reblast!";
 		print "failed\n";
 		$check = 0;
 	}
@@ -1152,7 +1152,7 @@ sub checkInput {
 			printOUT("succeeded\n");
 		}
 		else {
-			push @log, "${bold}FATAL:${norm} please edit the blastpath. Could not find $blastpathtmp or blast database blastpathtmp.pin does not exist.";
+			push @log, "FATAL: please edit the blastpath. Could not find $blastpathtmp or blast database blastpathtmp.pin does not exist.";
 			print "$blastpathtmp failed\n";
 			$check = 0;
 		}
@@ -1180,7 +1180,7 @@ sub checkInput {
 			push  @log, "\tinfile ready";
 		} else {
 			#the provided reference fasta file does not exist or link to file does not exist:
-			push @log, "${bold}FATAL:${norm} FASTA file for the specified reference $refspec[$i] does not exist. PLEASE PROVIDE A VALID REFERENCE SPECIES!\n";
+			push @log, "FATAL: FASTA file for the specified reference $refspec[$i] does not exist. PLEASE PROVIDE A VALID REFERENCE SPECIES!\n";
 			$check = 0;
 			return ($check, @log);
 		}
@@ -1247,7 +1247,7 @@ sub checkInput {
 	printOUT("checking for low complexity filter setting:\t");
 	$filter =~ tr/ft/FT/;
 	if ($filter ne 'T' and $filter ne 'F') {
-		push @log, "${bold}FATAL:${norm} Filter is set to $filter. Please set the low complexity filter either to F or T.";
+		push @log, "FATAL: Filter is set to $filter. Please set the low complexity filter either to F or T.";
 		print "low complexity filter check failed\n";
 		$check = 0;
 	}
