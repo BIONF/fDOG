@@ -90,6 +90,7 @@ def checkValidSeqs(faFile):
     faSeq = SeqIO.parse(open(faFile),'fasta')
     for fa in faSeq:
         id, seq = fa.description, str(fa.seq)
+        c = ''
         if any(e in id for e in spaceChr):
             sys.exit('*** ERROR: Invalid character found in \">%s\" in %s' % (id, faFile))
         if any(c for c in seq if not c.isalpha()):
