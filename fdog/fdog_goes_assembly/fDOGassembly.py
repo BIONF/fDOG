@@ -389,7 +389,7 @@ def main():
     ################# bachward search to filter for orthologs##############
 
     #verschiede Modi beachten!
-    backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species)
+    backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue)
 
 
 
