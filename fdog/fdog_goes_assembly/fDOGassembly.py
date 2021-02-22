@@ -135,7 +135,7 @@ def parse_blast(line, blast_results):
     return blast_results, evalue
 
 
-def candidate_regions(intron_length):
+def candidate_regions(intron_length, evalue):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
     blast_file = open("tmp/blast_results.out", "r")
@@ -150,7 +150,7 @@ def candidate_regions(intron_length):
         #parsing blast output
         blast_results, evalue = parse_blast(line, blast_results)
         #evalue cut-off
-        if not evalue <= 0.00001:
+        if not evalue <= evalue:
             break
     if blast_results == {}:
         return 1,0
@@ -226,12 +226,21 @@ def getSeedInfo(path):
 
 
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue):
     #candidates = readFasta(candidatesOutFile)
     #seedSequences= readFasta(fasta_path)
     #os.systen("blastp -db ")
     seedDic = getSeedInfo(fasta_path)
     print(seedDic)
+    blast_dir_path = "../data/blast_dir/"
+    if strict != True:
+        try:
+            seed_list = seed_dic[fdog_ref_species]
+        except KeyError:
+            print("The fdog reference species isn't part of the core ortholog group, ... exciting")
+            return 0
+        os.system("blastp -db " + blast_dir_path + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + evalue + " -query " + candidatesOutFile)
+
 
 
 
@@ -254,6 +263,7 @@ def main():
     length_extension = 5000
     tmp = False
     strict = False
+    evalue = 0.00001
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -278,10 +288,12 @@ def main():
             fdog_name =  input[i+1]
         elif input[i] == "--out":
             out = input[i+1]
-        elif input[i] == "--RefSpecies":
+        elif input[i] == "--refSpecies":
             fdog_ref_species = input[i+1]
-        elif input[i] == "strict":
+        elif input[i] == "--strict":
             strict = True
+        elif input[i] == "--evalue":
+            evalue = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -291,8 +303,9 @@ def main():
             print("--lengthExtension: length extension of the candidate regions in bp (default:5000)\n")
             print("--tmp: tmp files will not be deleted")
             print("--name: Species name according to the fdog naming schema [Species acronym]@[NCBI ID]@[Proteome version]")
-            print("--RefSpecies: fDOG reference species")
+            print("--refSpecies: fDOG reference species")
             print("--out: path to the output folder")
+            print("--evalue: evalue cut off for every blast search, default = 0.00001")
             return 0
 
 
@@ -353,7 +366,7 @@ def main():
     ################### search for candidate regions and extract seq ###########
 
     # parse blast and filter for candiate regions
-    regions, number_regions = candidate_regions(average_intron_length)
+    regions, number_regions = candidate_regions(average_intron_length, evalue)
 
     if regions == 1:
         #no candidat region are available, no ortholog can be found
