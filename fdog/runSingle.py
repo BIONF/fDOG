@@ -107,7 +107,7 @@ def runSingle(args):
     if not distDeviation == 0.05:
         cmd = cmd + ' -distDeviation=%s' % distDeviation
     # add ortholo search options
-    (strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa) = orthoArgs
+    (strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa) = orthoArgs
     if strict == True:
         cmd = cmd + ' -strict'
     if checkCoorthologsRef == True:
@@ -118,8 +118,8 @@ def runSingle(args):
         cmd = cmd + ' -rep'
     if ignoreDistance == True:
         cmd = cmd + ' -ignoreDistance'
-    if lowComplexityFilterOff == True:
-        cmd = cmd + ' -filter=F'
+    if lowComplexityFilter == True:
+        cmd = cmd + ' -filter=T'
     if not evalBlast == 0.00005:
         cmd = cmd + ' -evalBlast=%s' % evalBlast
     if not evalHmmer == 0.00005:
@@ -170,7 +170,7 @@ def runSingle(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.23'
+    version = '0.0.24'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -232,7 +232,7 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--ignoreDistance', help='Ignore the distance between Taxa and to choose orthologs only based on score',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--lowComplexityFilterOff', help='Switch on or off the low complexity filter for the blast search. Default: False',
+    ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
     ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00005',
                                 action='store', default=0.00005, type=float)
@@ -313,7 +313,7 @@ def main():
     rbh = args.rbh
     rep = args.rep
     ignoreDistance = args.ignoreDistance
-    lowComplexityFilterOff = args.lowComplexityFilterOff
+    lowComplexityFilter = args.lowComplexityFilter
     evalBlast = args.evalBlast
     evalHmmer = args.evalHmmer
     evalRelaxfac = args.evalRelaxfac
@@ -397,7 +397,7 @@ def main():
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
-    orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
+    orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, debug, silent]
 
     ### run fdog

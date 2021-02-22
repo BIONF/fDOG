@@ -47,7 +47,7 @@ def prepare(args, step):
     outpath, hmmpath, blastpath, searchpath, weightpath,
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
-    strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
+    strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
     cpu, hyperthread, debug, silent) = args
 
     mute = False
@@ -68,7 +68,7 @@ def prepare(args, step):
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
-    orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
+    orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, debug, True]
     return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute)
 
@@ -181,7 +181,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.23'
+    version = '0.0.24'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -243,7 +243,7 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--ignoreDistance', help='Ignore the distance between Taxa and to choose orthologs only based on score',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--lowComplexityFilterOff', help='Switch on or off the low complexity filter for the blast search. Default: False',
+    ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
     ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00005',
                                 action='store', default=0.00005, type=float)
@@ -326,7 +326,7 @@ def main():
     rbh = args.rbh
     rep = args.rep
     ignoreDistance = args.ignoreDistance
-    lowComplexityFilterOff = args.lowComplexityFilterOff
+    lowComplexityFilter = args.lowComplexityFilter
     evalBlast = args.evalBlast
     evalHmmer = args.evalHmmer
     evalRelaxfac = args.evalRelaxfac
@@ -408,7 +408,7 @@ def main():
                 outpath, hmmpath, blastpath, searchpath, weightpath,
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,
-                strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
+                strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
                 cpu, hyperthread, debug, silent]
 
     ### START
