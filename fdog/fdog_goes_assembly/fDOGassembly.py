@@ -235,7 +235,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     blast_dir_path = "../data/blast_dir/"
     if strict != True:
         try:
-            seed_list = seed_dic[fdog_ref_species]
+            seed_list = seedDic[fdog_ref_species]
         except KeyError:
             print("The fdog reference species isn't part of the core ortholog group, ... exciting")
             return 0
