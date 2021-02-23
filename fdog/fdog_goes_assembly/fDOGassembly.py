@@ -226,12 +226,13 @@ def getSeedInfo(path):
 
 
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off):
     #candidates = readFasta(candidatesOutFile)
     #seedSequences= readFasta(fasta_path)
     #os.systen("blastp -db ")
     seedDic = getSeedInfo(fasta_path)
-    print(seedDic)
+    orthologs = []
+    #print(seedDic)
     blast_dir_path = "../data/blast_dir/"
     if strict != True:
         try:
@@ -239,10 +240,29 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         except KeyError:
             print("The fdog reference species isn't part of the core ortholog group, ... exciting")
             return 0
-        os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + str(evalue) + " -query " + candidatesOutFile)
+        os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue_cut_off " + str(evalue) + " -query " + candidatesOutFile)
+        blast_file = open("tmp/blast_" + fdog_ref_species, "r")
+        lines = blast_file.readlines()
+        blast_file.close()
+        old_name = None
+        min = 10
+        id_ref = seedDic[fdog_ref_species]
+        for line in lines:
+            line = line.replace("\n", "")
+            id, gene_name, evalue = line.split("\t")
+            if gene_name != old_name:
+                min = float(evalue)
+                if id in id_ref:
+                    orthologs.append(gene_name)
+            elif (gene_name == old_name) and float(evalue) == min:
+                if id in id_ref:
+                    orthologs.append(gene_name)
+
+
+
     else:
         for key in seedDic:
-            os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue " + str(evalue) + " -query " + candidatesOutFile)
+            os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue_cut_off " + str(evalue) + " -query " + candidatesOutFile)
 
 
 
@@ -397,9 +417,9 @@ def main():
 
     #umschreiben, benötige dann fas von bestätigten Kandidaten gegen Rest!
 
-    os.system('mkdir tmp/anno_dir')
+    #os.system('mkdir tmp/anno_dir')
     #print('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .')
-    os.system('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .' )
+    #os.system('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .' )
 
 
     ################# remove tmp folder ########################################
