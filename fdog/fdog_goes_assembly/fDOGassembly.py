@@ -40,62 +40,8 @@ def merge(blast_results, insert_length):
         number_regions += len(locations)
         blast_results[key] = locations
 
-    print(blast_results)
+    #print(blast_results)
     return blast_results, number_regions
-
-
-def merge_regions(blast_results, cut_off):
-    number_regions = 0
-    for key in blast_results:
-        locations = blast_results[key]
-        size_list = len(locations)
-        i = 0
-        j = 1
-        old_size = 0
-        while size_list != old_size and i < size_list:
-            old_size = size_list
-            #print(locations)
-            while j < size_list:
-
-                # breakup point? or we have to skip this j
-                if (i == j) and (j + 1 < size_list):
-                    j+=1
-                elif (i == j):
-                    break
-
-                if (locations[i][0] < locations[j][0]) and (locations[i][1] > locations[j][0]):
-                    # start is between start and end -> merge
-                    locations[i][1] = max(locations[j][1], locations[i][1])
-                    locations[i][2] = min(locations[j][2], locations[i][2])
-                    locations.pop(j)
-                    j -= 1
-                elif (locations[i][0] < locations[j][1]) and (locations[i][1] > locations[j][1]):
-                    #end is between start and end -> merge
-                    locations[i][0] = min(locations[j][0], locations[i][0])
-                    locations[i][2] = min(locations[j][2], locations[i][2])
-                    locations.pop(j)
-                    j -= 1
-                elif (locations[i][0] > locations[j][1]) and (locations[i][0] - locations[j][1] <= cut_off):
-                    # end is not more than cut-off distanced
-                    locations[i][0] = locations[j][0]
-                    locations[i][2] = min(locations[j][2], locations[i][2])
-                    locations.pop(j)
-                    j -= 1
-                elif (locations[i][1] < locations[j][0] and locations[j][0] - locations[i][1] <= cut_off):
-                    # start is not more than cut-off distanced
-                    locations[i][0] = locations[j][0]
-                    locations[i][2] = min(locations[j][2], locations[i][2])
-                    locations.pop(j)
-                    j -= 1
-                j += 1
-                size_list = len(locations)
-
-            i += 1
-            j = 0
-        number_regions += size_list
-
-    return blast_results, number_regions
-
 
 def parse_blast(line, blast_results):
     # format blast line:  <contig> <sstart> <send> <evalue> <qstart> <qend> <strand>
@@ -134,7 +80,6 @@ def parse_blast(line, blast_results):
 
     return blast_results, evalue
 
-
 def candidate_regions(intron_length, evalue):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
@@ -160,11 +105,10 @@ def candidate_regions(intron_length, evalue):
         #print(candidate_regions, number_regions)
         return candidate_regions, number_regions
 
-
 def extract_seq(region_dic, path):
     #print(region_dic)
     for key in region_dic:
-        print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
+        #print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
 def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species):
@@ -223,13 +167,10 @@ def getSeedInfo(path):
 
     return dic
 
-
-
-
 def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off):
-    #candidates = readFasta(candidatesOutFile)
-    #seedSequences= readFasta(fasta_path)
-    #os.systen("blastp -db ")
+    # the backward search uses the genes predicted from augustus and makes a blastp searched
+    #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref Taxon_Name
+
     seedDic = getSeedInfo(fasta_path)
     orthologs = []
     #print(seedDic)
@@ -260,13 +201,22 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     orthologs.append(gene_name)
 
 
-
     else:
         for key in seedDic:
             os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
 
-    print(orthologs)
     return orthologs
+
+def addSequences(sequenceIds, candidate_file, output):
+    seq_records = readFasta(candidate_file)
+
+
+    for entry in seq_records:
+        print(entry.id)
+        print(sequenceIds)
+        if entry.id in sequenceIds:
+            pass
+            #write sequence in file
 
 
 
@@ -288,6 +238,7 @@ def main():
     tmp = False
     strict = False
     evalue = 0.00001
+    out = "."
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -407,10 +358,13 @@ def main():
     augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species)
     print("augustus is finished \n")
 
-    ################# bachward search to filter for orthologs##############
+    ################# bachward search to filter for orthologs###################
 
     #verschiede Modi beachten!
-    backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue)
+    extended_sequences = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue)
+
+    ################ add sequences to extended.fa in the output folder##########
+    addSequences(extended_sequences, candidatesOutFile, out)
 
 
 
