@@ -240,7 +240,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         except KeyError:
             print("The fdog reference species isn't part of the core ortholog group, ... exciting")
             return 0
-        os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue_cut_off " + str(evalue) + " -query " + candidatesOutFile)
+        os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue_cut_off " + str(evalue_cut_off) + " -query " + candidatesOutFile)
         blast_file = open("tmp/blast_" + fdog_ref_species, "r")
         lines = blast_file.readlines()
         blast_file.close()
@@ -262,7 +262,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
     else:
         for key in seedDic:
-            os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue_cut_off " + str(evalue) + " -query " + candidatesOutFile)
+            os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue_cut_off " + str(evalue_cut_off) + " -query " + candidatesOutFile)
 
 
 
