@@ -111,7 +111,7 @@ def extract_seq(region_dic, path):
         #print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         os.system("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
 
-def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species):
+def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group):
     output = open(candidatesOutFile, "w")
 
     for key in regions:
@@ -131,7 +131,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             for line in lines:
                 if line[0] == ">":
                     id = line.replace(">", "")
-                    header = ">" + name + "_" + id
+                    header = ">" + group + "|" + ass_name + "|" + name + "_" + id
                     output.write(header)
                 else:
                     output.write(line)
@@ -165,22 +165,24 @@ def getSeedInfo(path):
         except KeyError:
             dic[species] = [geneID]
 
+    del seq_records
     return dic
 
 def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off):
-    # the backward search uses the genes predicted from augustus and makes a blastp searched
-    #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref Taxon_Name
+    # the backward search uses the genes predicted from augustus and makes a blastp search
+    #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
     seedDic = getSeedInfo(fasta_path)
     orthologs = []
+    seed = []
     #print(seedDic)
     blast_dir_path = "../data/blast_dir/"
     if strict != True:
         try:
             seed_list = seedDic[fdog_ref_species]
         except KeyError:
-            print("The fdog reference species isn't part of the core ortholog group, ... exciting")
-            return 0
+            print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
+            return 0, 0
         os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
         blast_file = open("tmp/blast_" + fdog_ref_species, "r")
         lines = blast_file.readlines()
@@ -188,35 +190,49 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         old_name = None
         min = 10
         id_ref = seedDic[fdog_ref_species]
+        seed.append(fdog_ref_species)
         print(id_ref)
         for line in lines:
-            line = line.replace("\n", "")
-            id, gene_name, evalue = line.split("\t")
+            id, gene_name, evalue = (line.replace("\n", "")).split("\t")
             if gene_name != old_name:
                 min = float(evalue)
                 if id in id_ref:
                     orthologs.append(gene_name)
+                    #position = id_ref.index(id)
+
             elif (gene_name == old_name) and float(evalue) == min:
                 if id in id_ref:
                     orthologs.append(gene_name)
 
 
+        if orthologs == []:
+            print("No hit in the backward search, ...exciting")
+            return 0, 0
+
     else:
         for key in seedDic:
             os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
 
-    return orthologs
+    return orthologs, seed
 
-def addSequences(sequenceIds, candidate_file, output):
-    seq_records = readFasta(candidate_file)
+def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
+    seq_records_candidate = readFasta(candidate_fasta)
+    seq_records_core = readFasta(output)
+    output_file = open(output + "/" + name + ".extended.fa", "a+")
 
+    for species in species_list:
+        for entry in seq_records_core:
+            if species in entry.id:
+                output_file.write(entry.id)
+                output_file.write(entry.seq)
 
     for entry in seq_records:
-        print(entry.id)
-        print(sequenceIds)
+        #print(entry.id)
+        #print(sequenceIds)
         if entry.id in sequenceIds:
-            pass
-            #write sequence in file
+            output_file.write(entry.id)
+            output_file.write(entry.seq)
+
 
 
 
@@ -242,7 +258,7 @@ def main():
 
     ########################### handle user input ##############################
     #user input core_ortholog group
-    #have to add an input option
+    # I nedd a function that checks if user input is allowed
     #print(sys.argv)
     input = sys.argv
 
@@ -355,16 +371,16 @@ def main():
 
     ############### make Augustus PPX search ###################################
     print("starting augustus ppx \n")
-    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species)
+    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, name, group)
     print("augustus is finished \n")
 
     ################# bachward search to filter for orthologs###################
 
     #verschiede Modi beachten!
-    extended_sequences = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue)
+    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, name, group)
 
     ################ add sequences to extended.fa in the output folder##########
-    addSequences(extended_sequences, candidatesOutFile, out)
+    addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, species_list)
 
 
 
