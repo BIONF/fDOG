@@ -121,9 +121,11 @@ my $startTime = gettime();
 ## Modified 22. Sep 2020 v2.2.1 (Vinh)	- make sure that seed sequence always at the beginning of extended.fa output
 ## Modified 23. Sep 2020 v2.2.3 (Vinh)	- use full taxonomy name instead of abbr taxon name for LOG
 ## Modified 01. Dec 2020 v2.2.4 (Vinh)	- fixed bug while creating final extended.fa (and replaced grep and sed by bioperl)
+## Modified 16. Feb 2021 v2.2.5 (Vinh)	- core compilation works with fasoff
+## Modified 18. Feb 2021 v2.2.6 (Vinh)	- fixed searchTaxa and coreTaxa options
 
 ############ General settings
-my $version = 'oneSeq v.2.2.4';
+my $version = 'oneSeq v.2.2.6';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -133,10 +135,10 @@ if ($configure == 0){
 my $hostname = `hostname`;
 chomp $hostname;
 #############
-my $termios = new POSIX::Termios; $termios->getattr;
-my $ospeed = $termios->getospeed;
-my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
-my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
+# my $termios = new POSIX::Termios; $termios->getattr;
+# my $ospeed = $termios->getospeed;
+# my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
+# my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
 #### Paths
 my $path = abs_path(dirname(__FILE__));
 $path =~ s/\/bin//;
@@ -166,7 +168,7 @@ my $algorithm = "blastp";
 my $blast_prog = 'blastp';
 my $outputfmt = 'blastxml';
 my $eval_blast_query = 0.0001;
-my $filter = 'T';
+my $filter = 'F'; # default for blastp
 my $annotation_prog = "annoFAS";
 my $fas_prog = "calcFAS";
 my $fdogFAS_prog = "fdogFAS";
@@ -566,7 +568,7 @@ if (!$coreex) {
 
 		my $addedTaxon = getBestOrtholog();
 		my $addedTaxonName = getTaxonName($addedTaxon);
-		print "Added TAXON: $addedTaxon\_$addedTaxonName\n";
+		print "Added TAXON: $addedTaxon\t$addedTaxonName\n";
 		#if a new core ortholog was found
 		if($addedTaxon ne "") {
 			$hamstrSpecies = $hamstrSpecies . "," . $addedTaxon;
@@ -610,10 +612,10 @@ if (!$coreOnly) {
 
 	$taxaPath = $genome_dir;
 	my @searchTaxa;
-	unless($groupNode) {
-		@searchTaxa = keys %taxa;
-	} else {
-		unless ($searchTaxa) {
+	unless ($searchTaxa) {
+		unless($groupNode) {
+			@searchTaxa = keys %taxa;
+		} else {
 			# %taxa = getTaxa();
 			# print "GET TAXA TIME: ", roundtime(gettime() - $startTmp),"\n";
 			my $tree = getTree();
@@ -629,11 +631,11 @@ if (!$coreOnly) {
 			foreach (get_leaves($tree)) {
 				push(@searchTaxa, @{$_->name('supplied')}[0]);
 			}
-		} else {
-			open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
-			@searchTaxa = <SEARCH>;
-			close (SEARCH);
 		}
+	} else {
+		open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
+		@searchTaxa = <SEARCH>;
+		close (SEARCH);
 	}
 	# print "PREPARE TIME: ", roundtime(gettime() - $startTmp),"\n";
 
@@ -645,12 +647,23 @@ if (!$coreOnly) {
 	foreach (sort @searchTaxa) {
 		chomp(my $searchTaxon = $_);
 		my $pid = $pm->start and next;
+		if ($coreex) {
+			$db = Bio::DB::Taxonomy->new(-source    => 'flatfile',
+				-nodesfile => $idx_dir . 'nodes.dmp',
+				-namesfile => $idx_dir . 'names.dmp',
+				-directory => $idx_dir);
+			$db_bkp = $db;
+		}
 		my $searchTaxonName = getTaxonName($searchTaxon);
 		if (defined($searchTaxonName)) {
 			unless ($silent) {
 				print $searchTaxon, "\t", $searchTaxonName, "\n";
 			} else {
-				print $searchTaxonName, "\n";
+				unless ($searchTaxonName eq "Unk") {
+					print $searchTaxonName, "\n";
+				} else {
+					print $searchTaxon, "\n";
+				}
 			}
 		}
 		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
@@ -671,7 +684,7 @@ if(!$coreOnly){
 		die "ERROR: Could not find $finalOutput\n";
 	}
 	# check and add seed to final extended.fa if needed
-	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput); # BLABLABLABLA
+	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 
 	# calculate FAS scores for final extended.fa
 	if ($fas_support) {
@@ -885,8 +898,8 @@ sub getFasScore{
 	## step: 2
 	## get FAS score
 	## fas support: on/off
+	my @candidateIds = keys(%candicontent);
 	if ($fas_support){
-		my @candidateIds = keys(%candicontent);
 		my ($name,$gene_set,$gene_id,$rep_id) = split(/\|/, $candidateIds[0]);
 		unless (-e "$weightPath/$gene_set.json") {
 			print "ERROR: $weightPath/$gene_set.json not found! FAS Score will be set as zero.\n";
@@ -898,6 +911,8 @@ sub getFasScore{
 			my @fasOutTmp = split(/\t/,$fasOutTmp);
 			$fas_box{$candidateIds[0]} = $fasOutTmp[1];
 		}
+	} else {
+		$fas_box{$candidateIds[0]} = 1;
 	}
 	return %fas_box;
 }
@@ -1155,7 +1170,7 @@ sub checkOptions {
 	### end move up
 	### adding new routine to generate the input sequence if -reuseCore has been set
 	if ($coreex) {
-		my @refseq=`$grepprog -A 1 ">$seqName|$refSpec" $coreOrthologsPath/$seqName/$seqName.fa`;
+		my @refseq=`$grepprog -A 1 ">$seqName|$refSpec" $coreOrthologsPath/$seqName/$seqName.fa | grep -v "^\-\-\$"`;
 		chomp @refseq;
 		unless ($silent) {
 			print "$refseq[0]\n";
@@ -1241,13 +1256,13 @@ sub checkOptions {
 			print "Please specify a valid file with taxa for the core orthologs search\n";
 			exit;
 		}
-		my @userTaxa = parseTaxaFile();
+		my @userTaxa = parseTaxaFile($coreTaxa);
 		my %newTaxa = ();
 		foreach (@userTaxa) {
 			$newTaxa{$_} = $taxa{$_};
 		}
 		$newTaxa{$refSpec} = $refTaxa{$refSpec};
-		%taxa = %newTaxa;
+		%refTaxa = %newTaxa;
 	}
 
 	if($group) {
@@ -1334,14 +1349,13 @@ sub checkOptions {
 		}
 	}
 
-	my $node;
-	$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
-	$node->name('supplied', $refSpec);
-
 	#### checking for the min and max distance for the core set compilation
 	#### omit this check, if the option reuseCore has been selected (added 2019-02-04)
 	$optbreaker = 0;
 	if (!$coreex) {
+		my $node;
+		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
+		$node->name('supplied', $refSpec);
 		if (lc($maxDist) eq "root"){
 			$maxDist = 'no rank';
 		}
@@ -1357,9 +1371,6 @@ sub checkOptions {
 			$maxDist = parseInput($node, $in);
 			print "You selected ". $maxDist . " as maximum rank\n\n";
 		}
-	}
-	$optbreaker = 0;
-	if (!$coreex){
 		while (!$minDist or (checkRank($minDist, $node) == 0)) {
 			if ($optbreaker >= 3){
 				print "No proper minDist given ... exiting.\n";
@@ -1373,6 +1384,7 @@ sub checkOptions {
 			print "You selected " . $minDist . " as minimum rank\n\n";
 		}
 	}
+	$optbreaker = 0;
 
 	#### checking in fas options
 	if($fasoff){
@@ -1596,8 +1608,9 @@ sub getBestOrtholog {
 					## candidates alnScore is high enought, that it would be better with a fasScore of one
 					## -> evaluate
 					if ($alnScores{$candiKey} > $rankScore * (1 + $distDeviation) - 1){
+						%fas_box = getFasScore();
 						if (!$gotFasScore and $fas_support){
-							%fas_box = getFasScore();
+							# %fas_box = getFasScore();
 							$gotFasScore = 1;
 						}
 						## get rankscore
@@ -1622,8 +1635,9 @@ sub getBestOrtholog {
 				}
 				## candidate has the same distance, as the last one and could be better, with a fasScore of one
 				elsif (defined $hashTree{$newNoRankDistNode}{$key->id} and $alnScores{$candiKey} > $rankScore - 1){
+					%fas_box = getFasScore();
 					if (!$gotFasScore and $fas_support){
-						%fas_box = getFasScore();
+						# %fas_box = getFasScore();
 						$gotFasScore = 1;
 					}
 					## get rankscore
@@ -1909,7 +1923,7 @@ sub getTaxonName {
 	if (defined($taxon)) {
 		return($taxon->scientific_name);
 	} else {
-		return("Unk NCBI taxon for $taxAbbr");
+		return("Unk");
 	}
 }
 
@@ -2008,6 +2022,7 @@ sub runHamstr {
 						print EXTENDEDFA ">$tmpId[0]\|$tmpId[-3]\|$tmpId[-2]\|$tmpId[-1]\n",$resultSeq->seq,"\n";
 					}
 				}
+				# addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
 			} else {
 				# add seed sequence to output extended.fa if no ortholog was found in refSpec
 				if ($taxon eq $refSpec) {
@@ -2054,11 +2069,13 @@ sub addSeedSeq {
 	# get seed sequence and add it to the beginning of the fasta output
 	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
 	my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
+	my %idTmp; # used to check which seq has already been written to output
 	while(my $seq = $seqio->next_seq) {
 		my $id = $seq->id;
 		if ($id =~ /$refSpec/) {
+			$idTmp{"$id|1"} = 1;
 			print TEMP ">$id|1\n", $seq->seq, "\n";
-			last;
+			#last;
 		}
 	}
 	# then write other sequences
@@ -2066,7 +2083,9 @@ sub addSeedSeq {
 	while(my $seq = $seqio2->next_seq) {
 		my $id = $seq->id;
 		unless ($id =~ /$refSpec\|$seqId/) { # /$refSpec/) {
-			print TEMP ">$id\n", $seq->seq, "\n";
+			unless ($idTmp{$id}) {
+				print TEMP ">$id\n", $seq->seq, "\n";
+			}
 		}
 	}
 	close(TEMP);
@@ -2096,17 +2115,19 @@ sub parseInput {
 }
 ##########################
 sub parseTaxaFile {
-	open (INPUT, "<$coreTaxa") or die print "Error opening file with taxa for core orthologs search\n";
+	my $coreTaxaFile = $_[0];
+	open (INPUT, "<$coreTaxaFile") or die print "Error opening file with taxa for core orthologs search\n";
 	my @userTaxa;
 	while(<INPUT>) {
 		my $line = $_;
 		chomp($line);
-		if(!$taxa{$line}) {
-			print "You specified " . $line . " in your core orthologs file but the taxon is not in the database!\n";
-			exit;
-		}
-		else {
-			push(@userTaxa, $line);
+		if (length($line) > 0) {
+			if(!$taxa{$line}) {
+				print "You specified " . $line . " in your core orthologs file but the taxon is not in the database!\n";
+				exit;
+			} else {
+				push(@userTaxa, $line);
+			}
 		}
 	}
 	close INPUT;
@@ -2641,23 +2662,23 @@ sub roundtime { sprintf("%.2f", $_[0]); }
 ###########################
 sub helpMessage {
 	my $helpmessage = "
-${bold}YOU ARE RUNNING $version on $hostname$norm
+YOU ARE RUNNING $version on $hostname
 
 This program is freely distributed under a GPL.
 Copyright (c) GRL limited: portions of the code are from separate copyrights
 
-\n${bold}USAGE:${norm} oneSeq.pl -seqFile=<> -seqId=<>  -seqName=<> -refSpec=<> -minDist=<> -maxDist=<> [OPTIONS]
+\nUSAGE: oneSeq.pl -seqFile=<> -seqId=<>  -seqName=<> -refSpec=<> -minDist=<> -maxDist=<> [OPTIONS]
 
-${bold}OPTIONS:$norm
+OPTIONS:
 
-${bold}GENERAL$norm
+GENERAL
 
 -h
 	Invoke this help method
 -version
 	Print the program version
 
-${bold}REQUIRED$norm
+REQUIRED
 
 -seqFile=<>
 	Specifies the file containing the seed sequence (protein only) in fasta format.
@@ -2677,7 +2698,7 @@ ${bold}REQUIRED$norm
 -coreOrth=<>
 	Specify the number of orthologs added to the core set.
 
-${bold}USING NON-DEFAULT PATHS$norm
+USING NON-DEFAULT PATHS
 
 -outpath=<>
 	Specifies the path for the output directory. Default is $outputPath;
@@ -2690,7 +2711,7 @@ ${bold}USING NON-DEFAULT PATHS$norm
 -weightpath=<>
 	Specifies the path for the pre-calculated feature annotion directory. Default is $weightPath;
 
-${bold}ADDITIONAL OPTIONS$norm
+ADDITIONAL OPTIONS
 
 -append
 	Set this flag to append the output to existing output files
@@ -2777,7 +2798,7 @@ ${bold}ADDITIONAL OPTIONS$norm
 	Set the alignment strategy during core ortholog compilation to glocal.
 -searchTaxa
 	Input file containing list of search taxa.
-${bold}SPECIFYING FAS SUPPORT OPTIONS$norm
+SPECIFYING FAS SUPPORT OPTIONS
 
 -fasoff
 	Turn OFF FAS support. Default is ON.
@@ -2790,7 +2811,7 @@ ${bold}SPECIFYING FAS SUPPORT OPTIONS$norm
 -countercheck
 	Set this flag to counter-check your final profile. The FAS score will be computed in two ways (seed vs. hit and hit vs. seed).
 
-${bold}SPECIFYING EXTENT OF OUTPUT TO SCREEN$norm
+SPECIFYING EXTENT OF OUTPUT TO SCREEN
 
 -debug
 	Set this flag to obtain more detailed information about the programs actions
