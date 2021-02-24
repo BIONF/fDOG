@@ -371,13 +371,13 @@ def main():
 
     ############### make Augustus PPX search ###################################
     print("starting augustus ppx \n")
-    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, name, group)
+    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, fdog_name, group)
     print("augustus is finished \n")
 
     ################# bachward search to filter for orthologs###################
 
     #verschiede Modi beachten!
-    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, name, group)
+    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, fdog_name, group)
 
     ################ add sequences to extended.fa in the output folder##########
     addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, species_list)
