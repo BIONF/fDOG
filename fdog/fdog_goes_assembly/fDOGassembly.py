@@ -217,7 +217,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
     seq_records_candidate = readFasta(candidate_fasta)
-    seq_records_core = readFasta(output)
+    seq_records_core = readFasta(core_fasta)
     output_file = open(output + "/" + name + ".extended.fa", "a+")
 
     for species in species_list:
