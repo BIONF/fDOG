@@ -226,7 +226,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
                 output_file.write(entry.id)
                 output_file.write(str(entry.seq))
 
-    for entry in seq_records:
+    for entry in seq_records_candidate:
         #print(entry.id)
         #print(sequenceIds)
         if entry.id in sequenceIds:
