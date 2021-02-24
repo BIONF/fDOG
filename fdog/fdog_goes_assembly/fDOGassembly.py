@@ -223,14 +223,14 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     for species in species_list:
         for entry in seq_records_core:
             if species in entry.id:
-                output_file.write(entry.id + "\n")
+                output_file.write(">" + entry.id + "\n")
                 output_file.write(str(entry.seq) + "\n")
 
     for entry in seq_records_candidate:
         #print(entry.id)
         #print(sequenceIds)
         if entry.id in sequenceIds:
-            output_file.write(entry.id + "\n")
+            output_file.write(">" + entry.id + "\n")
             output_file.write(str(entry.seq) + "\n")
 
 
