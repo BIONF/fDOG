@@ -254,7 +254,7 @@ def main():
     tmp = False
     strict = False
     evalue = 0.00001
-    out = "."
+    out = os.getcwd()
 
     ########################### handle user input ##############################
     #user input core_ortholog group
