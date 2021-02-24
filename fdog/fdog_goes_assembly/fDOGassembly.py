@@ -377,7 +377,7 @@ def main():
     ################# bachward search to filter for orthologs###################
 
     #verschiede Modi beachten!
-    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, fdog_name, group)
+    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue)
 
     ################ add sequences to extended.fa in the output folder##########
     addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, species_list)
