@@ -234,8 +234,6 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
             output_file.write(str(entry.seq) + "\n")
 
 
-
-
 def main():
 
     #################### some variables ########################################
@@ -388,9 +386,9 @@ def main():
 
     #umschreiben, benötige dann fas von bestätigten Kandidaten gegen Rest!
 
-    #os.system('mkdir tmp/anno_dir')
-    #print('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .')
-    #os.system('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .' )
+    os.system('mkdir tmp/anno_dir')
+    print('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .')
+    os.system('calcFAS --seed ' + fasta_path + ' --query ' + out + "/" + group + ".extended.fa" + ' --annotation_dir tmp/anno_dir --out_dir .' )
 
 
     ################# remove tmp folder ########################################
