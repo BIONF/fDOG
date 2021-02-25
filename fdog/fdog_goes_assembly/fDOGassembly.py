@@ -237,7 +237,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
 
 def createFasInput(out, group, orthologsOutFile):
     with open(out + "/" + group + ".extended.fa") as f:
-        fas_seed_id = ((f.readline()).split("|"))[2]
+        fas_seed_id = ((f.readline()).split(">"))[1]
 
     return fas_seed_id
 
