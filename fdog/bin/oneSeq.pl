@@ -375,7 +375,6 @@ GetOptions (
 	"lengthExtension=s" \$lengthExtension,
 	"tmp" => \$tmp,
 	"assemblyName=s" => \$asName
-
 );
 
 $outputPath = abs_path($outputPath);

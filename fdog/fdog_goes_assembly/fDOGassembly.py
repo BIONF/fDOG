@@ -168,13 +168,12 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
     seedDic = getSeedInfo(fasta_path)
     orthologs = []
-    seed = []
     #print(seedDic)
     blast_dir_path = "../data/blast_dir/"
     if strict != True:
@@ -190,7 +189,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         old_name = None
         min = 10
         id_ref = seedDic[fdog_ref_species]
-        seed.append(fdog_ref_species)
+        seed = [fdog_ref_species]
         print(id_ref)
         for line in lines:
             id, gene_name, evalue = (line.replace("\n", "")).split("\t")
@@ -210,10 +209,11 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             return 0, 0
 
     else:
+        seed = taxa
         for key in seedDic:
             os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
 
-    return orthologs, seed
+    return orthologs
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
     seq_records_candidate = readFasta(candidate_fasta)
@@ -232,6 +232,14 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
         if entry.id in sequenceIds:
             output_file.write(">" + entry.id + "\n")
             output_file.write(str(entry.seq) + "\n")
+    del seq_records_candidate
+    del seq_records_core
+
+def createFasInput(out, group, orthologsOutFile):
+    with open(out + "/" + group + ".extended.fa") as f:
+        fas_seed_id = ((f.readline()).split("|"))[2]
+
+    return fas_seed_id
 
 
 def main():
@@ -283,6 +291,8 @@ def main():
             strict = True
         elif input[i] == "--evalue":
             evalue = input[i+1]
+        elif input[i] == "--searchTaxa":
+            taxa = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -307,7 +317,9 @@ def main():
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = assembly_path
-    candidatesOutFile = group + ".candidates.fa"
+    candidatesOutFile = "tmp/" + group + ".candidates.fa"
+    orthologsOutFile = out + "/" + group + ".extended.fa"
+    fasOutFile = out + "/" + group
 
     os.system('mkdir tmp')
 
@@ -378,17 +390,17 @@ def main():
     reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue)
 
     ################ add sequences to extended.fa in the output folder##########
-    addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, species_list)
+    addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa)
+
 
 
 
     ############### make Annotation with FAS ###################################
+    fas_seed_id = createFasInput(out, group, orthologsOutFile)
 
-    #umschreiben, benötige dann fas von bestätigten Kandidaten gegen Rest!
 
     os.system('mkdir tmp/anno_dir')
-    print('calcFAS --seed ' + fasta_path + ' --query ' + candidatesOutFile + ' --annotation_dir tmp/anno_dir --out_dir .')
-    os.system('calcFAS --seed ' + fasta_path + ' --query ' + out + "/" + group + ".extended.fa" + ' --annotation_dir tmp/anno_dir --out_dir .' )
+    os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile IK.mapping.txt --seed_id ' + fas_seed_id + ' --out_dir ' out )
 
 
     ################# remove tmp folder ########################################
