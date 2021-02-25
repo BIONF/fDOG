@@ -392,7 +392,7 @@ def main():
 
 
     #verschiede Modi beachten!
-    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa)
+    reciprocal_sequences = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa)
 
     ################ add sequences to extended.fa in the output folder##########
     addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa)
