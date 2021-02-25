@@ -197,7 +197,6 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 min = float(evalue)
                 if id in id_ref:
                     orthologs.append(gene_name)
-                    #position = id_ref.index(id)
 
             elif (gene_name == old_name) and float(evalue) == min:
                 if id in id_ref:
@@ -213,6 +212,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         for key in seedDic:
             os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
 
+    print(orthologs)
     return orthologs
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
