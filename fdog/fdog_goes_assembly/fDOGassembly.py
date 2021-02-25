@@ -229,7 +229,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
 
     for entry_candidate in seq_records_candidate:
         print(entry_candidate.id)
-        #print(sequenceIds)
+        print(sequenceIds)
         if entry_candidate.id in sequenceIds:
             output_file.write(">" + entry_candidate.id + "\n")
             output_file.write(str(entry_candidate.seq) + "\n")
@@ -240,6 +240,7 @@ def createFasInput(out, group, orthologsOutFile):
     with open(out + "/" + group + ".extended.fa", "r") as f:
         fas_seed_id = f.readline(). replace(">", "")
 
+    print(fas_seed_id)
     return fas_seed_id
 
 
@@ -405,7 +406,7 @@ def main():
 
 
     os.system('mkdir tmp/anno_dir')
-    os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile IK.mapping.txt --seed_id ' + fas_seed_id + ' --out_dir ' + out )
+    os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile IK.mapping.txt --seed_id "' + fas_seed_id + '" --out_dir ' + out )
 
 
     ################# remove tmp folder ########################################
