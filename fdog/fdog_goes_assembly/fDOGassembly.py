@@ -261,6 +261,7 @@ def main():
     strict = False
     evalue = 0.00001
     out = os.getcwd()
+    taxa = []
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -385,9 +386,12 @@ def main():
     print("augustus is finished \n")
 
     ################# bachward search to filter for orthologs###################
+    if taxa == []:
+        taxa.append(fdog_ref_species)
+
 
     #verschiede Modi beachten!
-    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue)
+    reciprocal_sequences, species_list = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa)
 
     ################ add sequences to extended.fa in the output folder##########
     addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa)
