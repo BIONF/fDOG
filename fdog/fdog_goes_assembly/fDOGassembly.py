@@ -405,6 +405,7 @@ def main():
 
 
     os.system('mkdir tmp/anno_dir')
+    print(('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile IK.mapping.txt --seed_id "' + fas_seed_id + '" --out_dir ' + out ))
     os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile IK.mapping.txt --seed_id "' + fas_seed_id + '" --out_dir ' + out )
 
 
