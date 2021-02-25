@@ -409,7 +409,7 @@ def main():
 
 
     ############### make Annotation with FAS ###################################
-    fas_seed_id = createFasInput(out, group)
+    fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
     os.system('mkdir tmp/anno_dir')
     os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
