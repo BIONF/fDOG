@@ -216,8 +216,6 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     return orthologs
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
-    print(sequenceIds)
-    seq_records_candidate = readFasta(candidate_fasta)
     seq_records_core = readFasta(core_fasta)
     output_file = open(output + "/" + name + ".extended.fa", "a+")
 
@@ -227,8 +225,9 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
                 output_file.write(">" + entry_core.id + "\n")
                 output_file.write(str(entry_core.seq) + "\n")
 
+    seq_records_candidate = readFasta(candidate_fasta)
     for entry_candidate in seq_records_candidate:
-        print(entry_candidate.id)
+        print(entry_candidate.id + "\n")
         print(sequenceIds)
         if entry_candidate.id in sequenceIds:
             output_file.write(">" + entry_candidate.id + "\n")
