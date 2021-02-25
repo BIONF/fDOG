@@ -222,21 +222,22 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     output_file = open(output + "/" + name + ".extended.fa", "a+")
 
     for species in species_list:
-        for entry in seq_records_core:
-            if species in entry.id:
-                output_file.write(">" + entry.id + "\n")
-                output_file.write(str(entry.seq) + "\n")
+        for entry_core in seq_records_core:
+            if species in entry_core.id:
+                output_file.write(">" + entry_core.id + "\n")
+                output_file.write(str(entry_core.seq) + "\n")
 
-    for entry in seq_records_candidate:
-        print(entry.id)
+    for entry_candidate in seq_records_candidate:
+        print(entry_candidate.id)
         #print(sequenceIds)
         if entry.id in sequenceIds:
-            output_file.write(">" + entry.id + "\n")
-            output_file.write(str(entry.seq) + "\n")
+            output_file.write(">" + entry_candidate.id + "\n")
+            output_file.write(str(entry_candidate.seq) + "\n")
+    output_file.close()
     return 0
 
 def createFasInput(out, group, orthologsOutFile):
-    with open(out + "/" + group + ".extended.fa") as f:
+    with open(out + "/" + group + ".extended.fa", "r") as f:
         fas_seed_id = f.readline(). replace(">", "")
 
     return fas_seed_id
