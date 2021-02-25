@@ -190,7 +190,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         min = 10
         id_ref = seedDic[fdog_ref_species]
         seed = [fdog_ref_species]
-        print(id_ref)
+        #print(id_ref)
         for line in lines:
             id, gene_name, evalue = (line.replace("\n", "")).split("\t")
             if gene_name != old_name:
@@ -212,7 +212,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         for key in seedDic:
             os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
 
-    print(orthologs)
+    #print(orthologs)
     return orthologs
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
@@ -244,7 +244,7 @@ def createFasInput(orthologsOutFile, mappingFile):
     seq_records = readFasta(orthologsOutFile)
     for seq in seq_records:
         ncbi_id = (seq.id.split("@"))[1]
-        mappingFile.write(seq.id + "\t" + ncbiId + "\n")
+        mappingFile.write(seq.id + "\t" + ncbi_id + "\n")
 
 
     return fas_seed_id
