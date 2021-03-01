@@ -232,6 +232,13 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
         for species in seed:
             orthologs_new = set({})
+
+            try:
+                id_ref = seedDic[species]
+            except KeyError:
+                print("The species " + species + " isn't part of the core ortholog group, ... exciting")
+                return 0, seed
+
             os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
             alg_file = open("tmp/blast_" + species, "r")
             lines = alg_file.readlines()
