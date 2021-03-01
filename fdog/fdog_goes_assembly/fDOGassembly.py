@@ -232,6 +232,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         orthologs = set({})
 
         for species in seed:
+            print("backward search in species " + species + "/n")
             orthologs_new = set({})
             try:
                 id_ref = seedDic[species]
@@ -262,6 +263,10 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 orthologs = orthologs_new
             else:
                 orthologs = orthologs & orthologs_new
+                if orthologs == {}:
+                    print("No ortholog was found with option --strict")
+                    return 0, seed
+
 
 
     #print(orthologs)
@@ -274,7 +279,9 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     output_file = open(output + "/" + name + ".extended.fa", "a+")
 
     for species in species_list:
+        print(species)
         for entry_core in seq_records_core:
+            print(entry_core.id)
             if species in entry_core.id:
                 output_file.write(">" + entry_core.id + "\n")
                 output_file.write(str(entry_core.seq) + "\n")
