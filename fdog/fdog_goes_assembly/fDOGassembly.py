@@ -321,7 +321,8 @@ def main():
         elif input[i] == "--evalue":
             evalue = input[i+1]
         elif input[i] == "--searchTaxa":
-            taxa = input[i+1]
+            taxa = input[i+1].split(",")
+            print(taxa)
         elif input[i] == "--aligner":
             aligner = input[i+1]
         elif input[i] == "--help":
