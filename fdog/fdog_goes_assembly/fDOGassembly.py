@@ -218,7 +218,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 seed.insert(0,seed.pop(i))
             except ValueError:
                 seed.insert(0,fdog_ref_species)
-            print(seed)
+            #print(seed)
             print("with taxa list from user input")
 
         else:
@@ -273,8 +273,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     return orthologs, seed
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
-    print("addSequences")
-    print(species_list)
+    #print("addSequences")
+    #print(species_list)
     seq_records_core = readFasta(core_fasta)
     output_file = open(output + "/" + name + ".extended.fa", "a+")
 
@@ -474,7 +474,6 @@ def main():
     ################# bachward search to filter for orthologs###################
     #verschiede Modi beachten!
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner)
-    print(taxa)
     if reciprocal_sequences == 0:
         cleanup(tmp)
         return 0
