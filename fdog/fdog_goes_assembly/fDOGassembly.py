@@ -255,6 +255,9 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 elif (gene_name == old_name) and float(evalue) == min:
                     if id in id_ref:
                         orthologs_new.add(gene_name)
+
+            print(species)
+            print(orthologs)
             if species == fdog_ref_species:
                 orthologs = orthologs_new
             else:
@@ -464,6 +467,7 @@ def main():
     ################# bachward search to filter for orthologs###################
     #verschiede Modi beachten!
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner)
+    print(taxa)
     if reciprocal_sequences == 0:
         cleanup(tmp)
         return 0
