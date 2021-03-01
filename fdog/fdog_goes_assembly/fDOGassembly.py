@@ -189,7 +189,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             print("diamonds are the girls best friends")
             ##### diamond call
         alg_file = open("tmp/blast_" + fdog_ref_species, "r")
-        lines = blast_file.readlines()
+        lines = alg_file.readlines()
         alg_file.close()
         old_name = None
         min = 10
