@@ -186,6 +186,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         if aligner == "blast":
             os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
         else:
+            print("diamonds are the girls best friends")
             ##### diamond call
         alg_file = open("tmp/blast_" + fdog_ref_species, "r")
         lines = blast_file.readlines()
@@ -221,7 +222,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
         for species in seed:
             os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
-            
+
     #print(orthologs)
     return orthologs, seed
 
