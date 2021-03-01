@@ -278,13 +278,14 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_core = readFasta(core_fasta)
     output_file = open(output + "/" + name + ".extended.fa", "a+")
 
-
+    test = list(seq_records_core)
     for species in species_list:
         print(species)
-        print(len(list(seq_records_core)))
+
+        print(len(test))
         for entry_core in seq_records_core:
             #print(entry_core.id)
-            print(len(list(seq_records_core)))
+            print(len(test)))
             if species in entry_core.id:
                 output_file.write(">" + entry_core.id + "\n")
                 output_file.write(str(entry_core.seq) + "\n")
