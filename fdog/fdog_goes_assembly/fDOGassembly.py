@@ -217,7 +217,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 i = seed.index(fdog_ref_species)
                 seed.insert(0,seed.pop(i))
             except ValueError:
-                seed.insert(0,key)
+                seed.insert(0,fdog_ref_species)
             print(seed)
             print("with already exisitng taxa list")
 
@@ -257,7 +257,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                         orthologs_new.add(gene_name)
 
             print(species)
-            print(orthologs)
+            print(orthologs_new)
             if species == fdog_ref_species:
                 orthologs = orthologs_new
             else:
