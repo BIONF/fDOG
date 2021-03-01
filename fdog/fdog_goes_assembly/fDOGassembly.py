@@ -98,7 +98,7 @@ def candidate_regions(intron_length, evalue):
         if not evalue <= evalue:
             break
     if blast_results == {}:
-        return 1,0
+        return 0,0
     else:
         candidate_regions, number_regions = merge(blast_results, intron_length)
         #candidate_regions, number_regions = merge_regions(blast_results, cut_off)
@@ -168,7 +168,7 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
@@ -177,19 +177,21 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     #print(seedDic)
     blast_dir_path = "../data/blast_dir/"
     if strict != True:
+        seed = [fdog_ref_species]
         try:
-            seed_list = seedDic[fdog_ref_species]
+            id_ref = seedDic[fdog_ref_species]
         except KeyError:
             print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
-            return 0, 0
-        os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
-        blast_file = open("tmp/blast_" + fdog_ref_species, "r")
+            return 0, seed
+        if aligner == "blast":
+            os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+        else:
+            ##### diamond call
+        alg_file = open("tmp/blast_" + fdog_ref_species, "r")
         lines = blast_file.readlines()
-        blast_file.close()
+        alg_file.close()
         old_name = None
         min = 10
-        id_ref = seedDic[fdog_ref_species]
-        seed = [fdog_ref_species]
         #print(id_ref)
         for line in lines:
             id, gene_name, evalue = (line.replace("\n", "")).split("\t")
@@ -205,15 +207,23 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
         if orthologs == []:
             print("No hit in the backward search, ...exciting")
-            return 0, 0
+            return 0, seed
 
     else:
-        seed = taxa
-        for key in seedDic:
-            os.system("blastp -db " + blast_dir_path + key + "/" + key + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + key + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+        if taxa != []:
+            seed = taxa
+        else:
+            for key in seedDic:
+                if key == fdog_ref_species:
+                    seed.insert(0,key)
+                else:
+                    seed.append(key)
 
+        for species in seed:
+            os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            
     #print(orthologs)
-    return orthologs
+    return orthologs, seed
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
     seq_records_core = readFasta(core_fasta)
@@ -249,6 +259,14 @@ def createFasInput(orthologsOutFile, mappingFile):
 
     return fas_seed_id
 
+def cleanup(tmp):
+    if tmp == False:
+        os.system('rm -r tmp/')
+
+def checkOptions():
+    pass
+    #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
+
 
 def main():
 
@@ -270,6 +288,7 @@ def main():
     evalue = 0.00001
     out = os.getcwd()
     taxa = []
+    aligner = "blast"
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -302,6 +321,8 @@ def main():
             evalue = input[i+1]
         elif input[i] == "--searchTaxa":
             taxa = input[i+1]
+        elif input[i] == "--aligner":
+            aligner = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -313,7 +334,8 @@ def main():
             print("--name: Species name according to the fdog naming schema [Species acronym]@[NCBI ID]@[Proteome version]")
             print("--refSpecies: fDOG reference species")
             print("--out: path to the output folder")
-            print("--evalue: evalue cut off for every blast search, default = 0.00001")
+            print("--aligner: can use blast or diamond as an aligner in the vbackward search (default: blast)")
+            print("--evalue: evalue cut off for every blast search, (default: 0.00001)")
             return 0
 
 
@@ -332,6 +354,10 @@ def main():
     mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
     os.system('mkdir tmp')
+
+    ######################## check user input ##################################
+
+    #the user input has to be checked!!
 
     ######################## consensus sequence ################################
 
@@ -379,11 +405,11 @@ def main():
     # parse blast and filter for candiate regions
     regions, number_regions = candidate_regions(average_intron_length, evalue)
 
-    if regions == 1:
+    if regions == 0:
         #no candidat region are available, no ortholog can be found
         print("No candidate region found")
-        os.system('rm -r tmp/')
-        return 1
+        cleanup(tmp)
+        return 0
 
     else:
         print(str(number_regions) + " candiate regions were found. Extracting sequences.")
@@ -395,18 +421,14 @@ def main():
     print("augustus is finished \n")
 
     ################# bachward search to filter for orthologs###################
-    if taxa == []:
-        taxa.append(fdog_ref_species)
-
-
     #verschiede Modi beachten!
-    reciprocal_sequences = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa)
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner)
+    if reciprocal_sequences == 0:
+        cleanup(tmp)
+        return 0
 
     ################ add sequences to extended.fa in the output folder##########
     addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa)
-
-
-
 
     ############### make Annotation with FAS ###################################
     fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
@@ -417,8 +439,7 @@ def main():
 
     ################# remove tmp folder ########################################
 
-    if tmp == False:
-        os.system('rm -r tmp/')
+    cleanup(tmp)
 
 
 if __name__ == '__main__':
