@@ -283,7 +283,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
         print(species)
 
         print(len(test))
-        for entry_core in seq_records_core:
+        for entry_core in test:
             #print(entry_core.id)
             print(len(test))
             if species in entry_core.id:
