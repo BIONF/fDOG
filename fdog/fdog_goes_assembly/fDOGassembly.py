@@ -219,9 +219,10 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             except ValueError:
                 seed.insert(0,fdog_ref_species)
             print(seed)
-            print("with already exisitng taxa list")
+            print("with taxa list from user input")
 
         else:
+            seed = []
             for key in seedDic:
                 if key == fdog_ref_species:
                     seed.insert(0,key)
@@ -232,7 +233,6 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
         for species in seed:
             orthologs_new = set({})
-
             try:
                 id_ref = seedDic[species]
             except KeyError:
@@ -256,8 +256,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     if id in id_ref:
                         orthologs_new.add(gene_name)
 
-            print(species)
-            print(orthologs_new)
+            #print(species)
+            #print(orthologs_new)
             if species == fdog_ref_species:
                 orthologs = orthologs_new
             else:
