@@ -213,6 +213,14 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     else:
         if taxa != []:
             seed = taxa
+            try:
+                i = seed.index(fdog_ref_species)
+                seed.insert(0,seed.pop(i))
+            except ValueError:
+                seed.insert(0,key)
+            print(seed)
+            print("with already exisitng taxa list")
+
         else:
             for key in seedDic:
                 if key == fdog_ref_species:
@@ -220,13 +228,37 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 else:
                     seed.append(key)
 
+        orthologs = set({})
+
         for species in seed:
+            orthologs_new = set({})
             os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            alg_file = open("tmp/blast_" + species, "r")
+            lines = alg_file.readlines()
+            alg_file.close()
+            old_name = None
+            min = 10
+            for line in lines:
+                id, gene_name, evalue = (line.replace("\n", "")).split("\t")
+                if gene_name != old_name:
+                    min = float(evalue)
+                    if id in id_ref:
+                        orthologs_new.add(gene_name)
+
+                elif (gene_name == old_name) and float(evalue) == min:
+                    if id in id_ref:
+                        orthologs_new.add(gene_name)
+            if species == fdog_ref_species:
+                orthologs = orthologs_new
+            else:
+                orthologs = orthologs & orthologs_new
+
 
     #print(orthologs)
     return orthologs, seed
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
+    print(species_list)
     seq_records_core = readFasta(core_fasta)
     output_file = open(output + "/" + name + ".extended.fa", "a+")
 
