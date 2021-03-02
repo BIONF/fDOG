@@ -182,7 +182,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     sequences = []
     candidates = readFasta(candidatesOutFile)
     ref = readFasta(fasta_path)
-    records = (r for r in SeqIO.parse(fasta_path, "fasta") if ref or best_hit in r.id
+    records = (r for r in SeqIO.parse(fasta_path, "fasta") if ref or best_hit in r.id)
     print(type(records))
 
 
