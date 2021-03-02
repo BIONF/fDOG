@@ -3,6 +3,7 @@ import os
 import os.path
 import sys
 from Bio import SeqIO
+from cogent3 import import load_aligned_seqs, get_distance_calculator
 ########################### functions ##########################################
 
 def merge(blast_results, insert_length):
@@ -149,6 +150,15 @@ def searching_for_db(assembly_path):
         #print(check)
     return check
 
+def get_distance_dic(file, x, y):
+    aln = load_aligned_seqs('test_msa.fa')
+    dist_calc = get_distance_calculator("paralinear", alignment=aln)
+    dist_calc.run(show_progress=False)
+    dists = dist_calc.get_pairwise_distances()
+    dic = dists.to_dict()
+
+    return dic[(x,y)]
+
 def readFasta(candidatesOutFile):
     seq_records = SeqIO.parse(candidatesOutFile, "fasta")
     return seq_records
@@ -168,7 +178,15 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, fasta_path):
+    sequences = []
+    candidates = readFasta(candidatesOutFile)
+    ref = readFasta(fasta_path)
+    records = (r for r in SeqIO.parse(fasta_path, "fasta") if ref or best_hit in r.id
+    print(type(records))
+
+
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
@@ -193,13 +211,15 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         alg_file.close()
         old_name = None
         min = 10
-        #print(id_ref)
         for line in lines:
             id, gene_name, evalue = (line.replace("\n", "")).split("\t")
             if gene_name != old_name:
                 min = float(evalue)
                 if id in id_ref:
                     orthologs.append(gene_name)
+                    if checkCo == True:
+                        for i in id_ref:
+                            co_orthologs_result = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, fasta_path)
 
             elif (gene_name == old_name) and float(evalue) == min:
                 if id in id_ref:
@@ -318,6 +338,7 @@ def checkOptions():
     #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
 
 
+
 def main():
 
     #################### some variables ########################################
@@ -339,6 +360,7 @@ def main():
     out = os.getcwd()
     taxa = []
     aligner = "blast"
+    checkCoorthologs = False
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -374,6 +396,8 @@ def main():
             print(taxa)
         elif input[i] == "--aligner":
             aligner = input[i+1]
+        elif input[i] == "--checkCoOrthologsRef":
+            checkCoorthologs = True
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
