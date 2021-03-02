@@ -186,7 +186,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     records_core_1 = (r for r in SeqIO.parse(fasta_path, "fasta") if ref in r.id)
     records_core_2 = (r for r in SeqIO.parse(fasta_path, "fasta") if best_hit in r.id)
     records_candidates = (r for r in SeqIO.parse(candidatesOutFile, "fasta") if candidate_name in r.id)
-    records = chain(records_core, records_candidates)
+    records = chain(records_core_1, records_core_2, records_candidates)
     SeqIO.write(records, output_file, "fasta")
 
 def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo):
