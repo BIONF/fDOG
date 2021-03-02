@@ -4,6 +4,7 @@ import os.path
 import sys
 from Bio import SeqIO
 from cogent3 import load_aligned_seqs, get_distance_calculator
+from itertools import chain
 ########################### functions ##########################################
 
 def merge(blast_results, insert_length):
@@ -179,12 +180,13 @@ def getSeedInfo(path):
     return dic
 
 def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, fasta_path):
-    sequences = []
+    output_file = "tmp/co_" + candidate_name + "_" + best_hit
     candidates = readFasta(candidatesOutFile)
     ref = readFasta(fasta_path)
-    records = (r for r in SeqIO.parse(fasta_path, "fasta") if ref or best_hit in r.id)
-    print(type(records))
-
+    records_core = (r for r in SeqIO.parse(fasta_path, "fasta") if (ref or best_hit) in r.id)
+    records_candidates = (r for r in SeqIO.parse(candidatesOutFile, "fasta") if candidate_name in r.id)
+    records = chain(records_core, records_candidates)
+    SeqIO.write(records, output_file, "fasta")
 
 def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo):
     # the backward search uses the genes predicted from augustus and makes a blastp search
