@@ -3,7 +3,7 @@ import os
 import os.path
 import sys
 from Bio import SeqIO
-from cogent3 import import load_aligned_seqs, get_distance_calculator
+from cogent3 import load_aligned_seqs, get_distance_calculator
 ########################### functions ##########################################
 
 def merge(blast_results, insert_length):
