@@ -183,7 +183,8 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     output_file = "tmp/co_" + candidate_name + "_" + best_hit
     candidates = readFasta(candidatesOutFile)
     ref = readFasta(fasta_path)
-    records_core = (r for r in SeqIO.parse(fasta_path, "fasta") if (ref or best_hit) in r.id)
+    records_core_1 = (r for r in SeqIO.parse(fasta_path, "fasta") if ref in r.id)
+    records_core_2 = (r for r in SeqIO.parse(fasta_path, "fasta") if best_hit in r.id)
     records_candidates = (r for r in SeqIO.parse(candidatesOutFile, "fasta") if candidate_name in r.id)
     records = chain(records_core, records_candidates)
     SeqIO.write(records, output_file, "fasta")
