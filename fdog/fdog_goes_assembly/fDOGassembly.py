@@ -497,7 +497,7 @@ def main():
 
     ################# bachward search to filter for orthologs###################
     #verschiede Modi beachten!
-    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner, checkCo)
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner, checkCoorthologs)
     if reciprocal_sequences == 0:
         cleanup(tmp)
         return 0
