@@ -216,6 +216,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         else:
             print("diamonds are the girls best friends")
             ##### diamond call
+
+        print(id_ref)
         alg_file = open("tmp/blast_" + fdog_ref_species, "r")
         lines = alg_file.readlines()
         alg_file.close()
@@ -235,6 +237,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             elif (gene_name == old_name) and float(evalue) == min:
                 if id in id_ref:
                     orthologs.append(gene_name)
+            old_name = gene_name
 
 
         if orthologs == []:
@@ -404,7 +407,7 @@ def main():
             evalue = input[i+1]
         elif input[i] == "--searchTaxa":
             taxa = input[i+1].split(",")
-            print(taxa)
+            #print(taxa)
         elif input[i] == "--aligner":
             aligner = input[i+1]
         elif input[i] == "--checkCoOrthologsRef":
