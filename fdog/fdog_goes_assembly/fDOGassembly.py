@@ -180,7 +180,14 @@ def getSeedInfo(path):
     return dic
 
 def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, fasta_path):
-    output_file = "tmp/co_" + candidate_name + "_" + best_hit
+    print(best_hit)
+    print(candidate_name)
+    print(ref)
+    name_file = "co_" + str(candidate_name) + "_" + str(best_hit)
+    print(name_file)
+    output_file = "tmp/co_" + str(candidate_name) + "_" + str(best_hit)
+    print(output_file)
+
     candidates = readFasta(candidatesOutFile)
     ref = readFasta(fasta_path)
     records_core_1 = (r for r in SeqIO.parse(fasta_path, "fasta") if str(ref) in r.id)
@@ -220,6 +227,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 min = float(evalue)
                 if id in id_ref:
                     orthologs.append(gene_name)
+                else:
                     if checkCo == True:
                         for i in id_ref:
                             co_orthologs_result = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, fasta_path)
