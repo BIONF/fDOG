@@ -5,6 +5,8 @@ import sys
 from Bio import SeqIO
 from cogent3 import load_aligned_seqs, get_distance_calculator
 from itertools import chain
+from Bio.Phylo.TreeConstruction import DistanceCalculator
+from Bio import AlignIO
 ########################### functions ##########################################
 
 def merge(blast_results, insert_length):
@@ -151,14 +153,21 @@ def searching_for_db(assembly_path):
         #print(check)
     return check
 
-def get_distance_dic(file, x, y):
-    aln = load_aligned_seqs('test_msa.fa')
+def get_distance_cogent(file, x, y):
+    print(file)
+    aln = load_aligned_seqs(file)
     dist_calc = get_distance_calculator("paralinear", alignment=aln)
     dist_calc.run(show_progress=False)
     dists = dist_calc.get_pairwise_distances()
     dic = dists.to_dict()
 
     return dic[(x,y)]
+
+def get_distance_biopython(file):
+    aln = AlignIO.read(open(file), 'fasta')
+    calculator = DistanceCalculator('blosum62')
+    dm = calculator.get_distance(aln)
+    return dm[0][1], dm[0][2]
 
 def readFasta(candidatesOutFile):
     seq_records = SeqIO.parse(candidatesOutFile, "fasta")
@@ -179,24 +188,49 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, fasta_path):
-    print(best_hit)
-    print(candidate_name)
-    print(ref)
-    name_file = "co_" + str(candidate_name) + "_" + str(best_hit)
-    print(name_file)
-    output_file = "tmp/co_" + str(candidate_name) + "_" + str(best_hit)
-    print(output_file)
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, aligner):
+    ###########getting sequences and write all in one file to make msa #########
+    name_file = candidate_name + ".co"
+    output_file = 'tmp/' + name_file + '.fasta'
+    aln_file = 'tmp/' + name_file + '.aln'
+    genome_dir_path = '../data/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
+    #print(aligner)
+
+    out = open(output_file, "w")
+    inSeq = SeqIO.to_dict((SeqIO.parse(open(genome_dir_path), 'fasta')))
+    out.write(">" + best_hit + "\n")
+    out.write(str(inSeq[best_hit].seq) + "\n")
+    out.write(">" + ref + "\n")
+    out.write(str(inSeq[ref].seq )+ "\n")
 
     candidates = readFasta(candidatesOutFile)
-    ref = readFasta(fasta_path)
-    records_core_1 = (r for r in SeqIO.parse(fasta_path, "fasta") if str(ref) in r.id)
-    records_core_2 = (r for r in SeqIO.parse(fasta_path, "fasta") if str(best_hit) in r.id)
-    records_candidates = (r for r in SeqIO.parse(candidatesOutFile, "fasta") if str(candidate_name) in r.id)
-    records = chain(records_core_1, records_core_2, records_candidates)
-    SeqIO.write(records, output_file, "fasta")
+    for record in candidates:
+        if candidate_name in record.id:
+            out.write(">" + candidate_name + "\n")
+            out.write(str(record.seq) + "\n")
+            break
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo):
+    out.close()
+
+    if aligner == "muscle":
+        os.system("muscle -quiet -in " + output_file + " -out " + aln_file)
+        #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+    elif aligner == "mafft-linsi":
+        #print("mafft-linsi")
+        os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
+
+    #d_ref = get_distance(aln_file, best_hit, ref)
+    #d = get_distance(aln_file, best_hit, candidate_name)
+    d_ref, d = get_distance_biopython(aln_file)
+
+    if d_ref < d:
+        return 1, d_ref, d
+        #accepted
+    else:
+        return 0, d_ref, d
+        #rejected
+
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo, msaTool):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
@@ -225,6 +259,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         min = 10
         for line in lines:
             id, gene_name, evalue = (line.replace("\n", "")).split("\t")
+            gene_name = gene_name.split("|")[2]
             if gene_name != old_name:
                 min = float(evalue)
                 if id in id_ref:
@@ -232,9 +267,12 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 else:
                     if checkCo == True:
                         for i in id_ref:
-                            co_orthologs_result = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, fasta_path)
-
-            elif (gene_name == old_name) and float(evalue) == min:
+                            co_orthologs_result, distance_ref, distance_candidate = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool)
+                            if co_orthologs_result == 1:
+                                print("accepted")
+                            elif co_orthologs_result == 0:
+                                print("rejected")
+            elif (gene_name == old_name) and float(evalue) == min and gene_name not in orthologs:
                 if id in id_ref:
                     orthologs.append(gene_name)
             old_name = gene_name
@@ -375,6 +413,7 @@ def main():
     taxa = []
     aligner = "blast"
     checkCoorthologs = False
+    msaTool = "muscle"
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -412,6 +451,8 @@ def main():
             aligner = input[i+1]
         elif input[i] == "--checkCoOrthologsRef":
             checkCoorthologs = True
+        elif input[i] == "--msaTool":
+            msaTool = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -423,7 +464,8 @@ def main():
             print("--name: Species name according to the fdog naming schema [Species acronym]@[NCBI ID]@[Proteome version]")
             print("--refSpecies: fDOG reference species")
             print("--out: path to the output folder")
-            print("--aligner: can use blast or diamond as an aligner in the vbackward search (default: blast)")
+            print("--aligner: can use blast or diamond as an aligner in the backward search (default: blast)")
+            print("--msaTool: {mafft-linsi, muscle}. Choose between mafft-linsi and muscle for the multiple seqeunce alignemnts. (default:muscle)")
             print("--evalue: evalue cut off for every blast search, (default: 0.00001)")
             return 0
 
@@ -511,7 +553,7 @@ def main():
 
     ################# bachward search to filter for orthologs###################
     #verschiede Modi beachten!
-    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner, checkCoorthologs)
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner, checkCoorthologs, msaTool)
     if reciprocal_sequences == 0:
         cleanup(tmp)
         return 0
