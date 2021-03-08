@@ -266,6 +266,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 min = float(evalue)
                 if id in id_ref:
                     orthologs.append(gene_name)
+                    print("\thitting\n")
                 else:
                     if checkCo == True:
                         for i in id_ref:
@@ -276,9 +277,12 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                                 orthologs.append(gene_name)
                             elif co_orthologs_result == 0:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit))
+                    else:
+                        print("\tnothitting\n")
             elif (gene_name == old_name) and float(evalue) == min and gene_name not in orthologs:
                 if id in id_ref:
                     orthologs.append(gene_name)
+                    print("\thitting\n")
                 else:
                     if checkCo == True:
                         for i in id_ref:
@@ -289,7 +293,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                                 orthologs.append(gene_name)
                             elif co_orthologs_result == 0:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit))
-
+                    else:
+                        print("\tnot hitting\n")
             old_name = gene_name
 
 
@@ -393,7 +398,7 @@ def createFasInput(orthologsOutFile, mappingFile):
     seq_records = readFasta(orthologsOutFile)
     for seq in seq_records:
         ncbi_id = (seq.id.split("@"))[1]
-        mappingFile.write(seq.id + "\t" + ncbi_id + "\n")
+        mappingFile.write(seq.id + "\t" + "ncbi" + ncbi_id + "\n")
 
 
     return fas_seed_id
