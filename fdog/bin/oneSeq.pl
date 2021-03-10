@@ -302,6 +302,13 @@ my $breakAfter = 5; 		## Number of Significantly bad candidates after which the 
 my %hashTree;
 my $aln = 'muscle';
 my $searchTaxa;
+#variable for fdog_goes_assembly
+my $assemblyPath = '';
+my $augustusRefSpecies;
+my $avIntron;
+my $lengthExtension;
+my $tmp;
+my $assemblyName;
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -363,7 +370,13 @@ GetOptions (
 	"distDeviation=s"	=> \$distDeviation,
 	"aligner=s"	=> \$aln,
 	"hyperthread" => \$hyperthread,
-	"searchTaxa=s" => \$searchTaxa
+	"searchTaxa=s" => \$searchTaxa,
+	"assembly=s" => \$assemblyPath,
+	"augRefSpecies=s" => \$augustusRefSpecies,
+	"avIntron=s" => \$avIntron,
+	"lengthExtension=s" \$lengthExtension,
+	"tmp" => \$tmp,
+	"assemblyName=s" => \$asName
 );
 
 $outputPath = abs_path($outputPath);
@@ -602,6 +615,7 @@ push @logOUT, "Core set compilation finished in " . roundtime(gettime() - $coreS
 # my $finalOutput = $outputPath . '/' . $seqName . '.extended.fa';
 my $orthoStTime = gettime();
 if (!$coreOnly) {
+	#abfrage assembly oder gene set
 	$coremode = 0;
 	push @logOUT, "Performing the final ortholog search...";
 	print "\nPerforming the final ortholog search...\n";
@@ -674,6 +688,7 @@ if (!$coreOnly) {
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
 
+#if abändern zum abbruch wenn assembly
 ## Evaluation of all orthologs that are predicted by the final run
 if(!$coreOnly){
 	my $fasStTime = gettime();
