@@ -151,16 +151,6 @@ def searching_for_db(assembly_path):
         #print(check)
     return check
 
-def get_distance_cogent(file, x, y):
-    print(file)
-    aln = load_aligned_seqs(file)
-    dist_calc = get_distance_calculator("paralinear", alignment=aln)
-    dist_calc.run(show_progress=False)
-    dists = dist_calc.get_pairwise_distances()
-    dic = dists.to_dict()
-
-    return dic[(x,y)]
-
 def get_distance_biopython(file):
     aln = AlignIO.read(open(file), 'fasta')
     calculator = DistanceCalculator('blosum62')
