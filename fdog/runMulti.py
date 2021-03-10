@@ -28,6 +28,7 @@ import re
 from tqdm import tqdm
 import fdog.runSingle as fdogFn
 import shutil
+import yaml
 
 def getSortedFiles(directory):
     list = os.listdir(directory)
@@ -46,7 +47,7 @@ def prepare(args, step):
     outpath, hmmpath, blastpath, searchpath, weightpath,
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
-    strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
+    strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
     cpu, hyperthread, debug, silent) = args
 
     mute = False
@@ -67,7 +68,7 @@ def prepare(args, step):
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
-    orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
+    orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, debug, True]
     return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute)
 
@@ -180,7 +181,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.13'
+    version = '0.0.25'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -197,6 +198,7 @@ def main():
     optional_paths.add_argument('--blastpath', help='Path for the blastDB directory', action='store', default='')
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
     optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
+    optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
@@ -229,8 +231,15 @@ def main():
                                 action='store', default=3, type=int)
     core_options.add_argument('--distDeviation', help='The deviation in score in percent (0 = 0 percent, 1 = 100 percent) allowed for two taxa to be considered similar. Default: 0.05',
                                 action='store', default=0.05, type=float)
+    core_options.add_argument('--ignoreDistance', help='Ignore the distance between Taxa and to choose orthologs only based on score',
+                                action='store_true', default=False)
+    core_options.add_argument('--local', help='Specify the alignment strategy during core ortholog compilation. Default: True',
+                                action='store_true', default=True)
+    core_options.add_argument('--glocal', help='Specify the alignment strategy during core ortholog compilation. Default: False',
+                                action='store_true', default=False)
 
     ortho_options = parser.add_argument_group('Search strategy options')
+    ortho_options.add_argument('--searchTaxa', help='Specify list of search taxa', action='store', default='')
     ortho_options.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     ortho_options.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
@@ -239,9 +248,7 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--rep', help='Obtain only the sequence being most similar to the corresponding sequence in the core set rather than all putative co-orthologs',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--ignoreDistance', help='Ignore the distance between Taxa and to choose orthologs only based on score',
-                                action='store_true', default=False)
-    ortho_options.add_argument('--lowComplexityFilterOff', help='Switch on or off the low complexity filter for the blast search. Default: False',
+    ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
     ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00005',
                                 action='store', default=0.00005, type=float)
@@ -257,13 +264,6 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--scoreCutoff', help='In combination with -scoreThreshold you can define the percent range of the hmms core of the best hit up to which a candidate of the hmmsearch will be subjected for further evaluation. Default: 10',
                                 action='store', default=10, type=int)
-    ortho_options.add_argument('--aligner', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. DEFAULT: muscle',
-                                choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
-    ortho_options.add_argument('--local', help='Specify the alignment strategy during core ortholog compilation. Default: True',
-                                action='store_true', default=True)
-    ortho_options.add_argument('--glocal', help='Specify the alignment strategy during core ortholog compilation. Default: False',
-                                action='store_true', default=False)
-    ortho_options.add_argument('--searchTaxa', help='Specify list of search taxa', action='store', default='')
 
     fas_options = parser.add_argument_group('FAS options')
     fas_options.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
@@ -274,6 +274,8 @@ def main():
     fas_options.add_argument('--minScore', help='Specify the threshold for coreFilter. Default: 0.75', action='store', default=0.75, type=float)
 
     optional = parser.add_argument_group('Other options')
+    optional.add_argument('--aligner', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. DEFAULT: muscle',
+        choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
     optional.add_argument('--cpu', help='Determine the number of threads to be run in parallel. Default: 4', action='store', default=4, type=int)
     optional.add_argument('--hyperthread', help='Set this flag to use hyper threading. Default: False', action='store_true', default=False)
     optional.add_argument('--debug', help='Set this flag to obtain more detailed information about the programs actions', action='store_true', default=False)
@@ -297,6 +299,7 @@ def main():
     blastpath = args.blastpath
     searchpath = args.searchpath
     weightpath = args.weightpath
+    pathFile = args.pathFile
 
     # other I/O arguments
     append = args.append
@@ -323,7 +326,7 @@ def main():
     rbh = args.rbh
     rep = args.rep
     ignoreDistance = args.ignoreDistance
-    lowComplexityFilterOff = args.lowComplexityFilterOff
+    lowComplexityFilter = args.lowComplexityFilter
     evalBlast = args.evalBlast
     evalHmmer = args.evalHmmer
     evalRelaxfac = args.evalRelaxfac
@@ -353,20 +356,51 @@ def main():
         silent = True
 
     ### get fdog and data path
+    dataPath = ''
     fdogPath = os.path.realpath(__file__).replace('/runMulti.py','')
     pathconfigFile = fdogPath + '/bin/pathconfig.txt'
     if not os.path.exists(pathconfigFile):
         sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-    with open(pathconfigFile) as f:
-        dataPath = f.readline().strip()
+    if pathFile == '':
+        with open(pathconfigFile) as f:
+            dataPath = f.readline().strip()
+    else:
+        cfg = fdogFn.load_config(pathFile)
+        try:
+            dataPath = cfg['dataPath']
+        except:
+            dataPath = 'config'
+
     if hmmpath == '':
-        hmmpath = dataPath + '/core_orthologs'
+        hmmpath = outpath + '/core_orthologs'
+        # hmmpath = dataPath + '/core_orthologs'
+        # if dataPath == 'config':
+        #     try:
+        #         hmmpath = cfg['hmmpath']
+        #     except:
+        #         sys.exit('hmmpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
     if blastpath == '':
         blastpath = dataPath + '/blast_dir'
+        if dataPath == 'config':
+            try:
+                blastpath = cfg['blastpath']
+            except:
+                sys.exit('blastpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
     if searchpath == '':
         searchpath = dataPath + '/genome_dir'
+        if dataPath == 'config':
+            try:
+                searchpath = cfg['searchpath']
+            except:
+                sys.exit('searchpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
     if weightpath == '':
         weightpath = dataPath + '/weight_dir'
+        if dataPath == 'config':
+            try:
+                weightpath = cfg['weightpath']
+            except:
+                sys.exit('weightpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
+
 
     ### join options
     options = [fdogPath, refspec, minDist, maxDist, coreOrth,
@@ -374,7 +408,7 @@ def main():
                 outpath, hmmpath, blastpath, searchpath, weightpath,
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,
-                strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilterOff, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
+                strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
                 cpu, hyperthread, debug, silent]
 
     ### START

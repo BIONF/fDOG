@@ -20,6 +20,7 @@ import sys
 import os
 import argparse
 import subprocess
+from ete3 import NCBITaxa
 from pathlib import Path
 
 def checkOptConflict(lib, conda):
@@ -28,7 +29,7 @@ def checkOptConflict(lib, conda):
             sys.exit('*** ERROR: --lib and --conda cannot be used at the same time!')
 
 def main():
-    version = '0.0.2'
+    version = '0.0.3'
     parser = argparse.ArgumentParser(description='You are running fdog.setup version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -60,6 +61,9 @@ def main():
                 dataPath = f.readline().strip()
                 print(dataPath)
         sys.exit()
+    ### get ncbi taxonomy database for ete3
+    print('Creating local NCBI taxonomy database...')
+    ncbi = NCBITaxa()
     ### run setup
     if conda:
         setupFile = '%s/setup/setup_conda.sh -o %s' % (fdogPath, outPath)
