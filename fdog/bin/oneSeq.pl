@@ -302,13 +302,13 @@ my $breakAfter = 5; 		## Number of Significantly bad candidates after which the 
 my %hashTree;
 my $aln = 'muscle';
 my $searchTaxa;
-#variable for fdog_goes_assembly
-my $assemblyPath = '';
+#variables for fdog_goes_assembly
+my $assembly;
 my $augustusRefSpecies;
 my $avIntron;
 my $lengthExtension;
-my $tmp;
 my $assemblyName;
+my $searchTool = 'blast';
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -371,12 +371,12 @@ GetOptions (
 	"aligner=s"	=> \$aln,
 	"hyperthread" => \$hyperthread,
 	"searchTaxa=s" => \$searchTaxa,
-	"assembly=s" => \$assemblyPath,
+	"assembly" => \$assembly,
 	"augRefSpecies=s" => \$augustusRefSpecies,
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" \$lengthExtension,
-	"tmp" => \$tmp,
-	"assemblyName=s" => \$asName
+	"assemblyName=s" => \$asName,
+	"searchTool=s" => \$searchTool
 );
 
 $outputPath = abs_path($outputPath);
@@ -479,7 +479,7 @@ my $maxAlnScore = 0;
 
 # create weight_dir in oneseq's home dir (used for annotations,weighting,feature extraction)
 # get annotations for seed sequence if fas support is on
-if ($fas_support){
+if ($fas_support && !$assembly){
 	if (!$weightPath) {
 		createWeightFolder();
 	}
@@ -488,7 +488,7 @@ if ($fas_support){
 
 my $coreStTime = gettime(); #time;
 #core-ortholog search
-if (!$coreex) {
+if (!$coreex && !$assembly) {
 	print "\nCore compiling...\n";
 	$coremode = 1;
 	$taxaPath = $blastPath;
@@ -616,74 +616,87 @@ push @logOUT, "Core set compilation finished in " . roundtime(gettime() - $coreS
 my $orthoStTime = gettime();
 if (!$coreOnly) {
 	#abfrage assembly oder gene set
-	$coremode = 0;
-	push @logOUT, "Performing the final ortholog search...";
-	print "\nPerforming the final ortholog search...\n";
-	my $startTmp = gettime();
-	#using $eval_relaxfac to relax the evalues for final search
-	my $final_eval_blast = $eval_blast*$eval_relaxfac;
-	my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
+	if ($assembly){
+		#python aufruf
+		print "fdog_goes_assembly";
+		print $seqFile;
+		print $assemblyName;
+		print $seqName;
+		print $augRefSpecies;
+		print $refSpec;
+		print $assembly;
+		print $outpath;
+	}
+	else {
+		$coremode = 0;
+		push @logOUT, "Performing the final ortholog search...";
+		print "\nPerforming the final ortholog search...\n";
+		my $startTmp = gettime();
+		#using $eval_relaxfac to relax the evalues for final search
+		my $final_eval_blast = $eval_blast*$eval_relaxfac;
+		my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
 
-	$taxaPath = $genome_dir;
-	my @searchTaxa;
-	unless ($searchTaxa) {
-		unless($groupNode) {
-			@searchTaxa = keys %taxa;
+		$taxaPath = $genome_dir;
+		my @searchTaxa;
+		unless ($searchTaxa) {
+			unless($groupNode) {
+				@searchTaxa = keys %taxa;
+			} else {
+				# %taxa = getTaxa();
+				# print "GET TAXA TIME: ", roundtime(gettime() - $startTmp),"\n";
+				my $tree = getTree();
+				# print "GET TREE TIME: ", roundtime(gettime() - $startTmp),"\n";
+				if($groupNode) {
+					foreach($tree->get_nodes()) {
+						if($_->id == $groupNode->id) {
+							$groupNode = $_;
+						}
+					}
+					$tree->set_root_node($groupNode);
+				}
+				foreach (get_leaves($tree)) {
+					push(@searchTaxa, @{$_->name('supplied')}[0]);
+				}
+			}
 		} else {
-			# %taxa = getTaxa();
-			# print "GET TAXA TIME: ", roundtime(gettime() - $startTmp),"\n";
-			my $tree = getTree();
-			# print "GET TREE TIME: ", roundtime(gettime() - $startTmp),"\n";
-			if($groupNode) {
-				foreach($tree->get_nodes()) {
-					if($_->id == $groupNode->id) {
-						$groupNode = $_;
+			open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
+			@searchTaxa = <SEARCH>;
+			close (SEARCH);
+		}
+		# print "PREPARE TIME: ", roundtime(gettime() - $startTmp),"\n";
+
+		my $pm = new Parallel::ForkManager($cpu);
+		if ($hyperthread) {
+			$pm = new Parallel::ForkManager($cpu*2);
+		}
+
+		foreach (sort @searchTaxa) {
+			chomp(my $searchTaxon = $_);
+			my $pid = $pm->start and next;
+			if ($coreex) {
+				$db = Bio::DB::Taxonomy->new(-source    => 'flatfile',
+					-nodesfile => $idx_dir . 'nodes.dmp',
+					-namesfile => $idx_dir . 'names.dmp',
+					-directory => $idx_dir);
+				$db_bkp = $db;
+			}
+			my $searchTaxonName = getTaxonName($searchTaxon);
+			if (defined($searchTaxonName)) {
+				unless ($silent) {
+					print $searchTaxon, "\t", $searchTaxonName, "\n";
+				} else {
+					unless ($searchTaxonName eq "Unk") {
+						print $searchTaxonName, "\n";
+					} else {
+						print $searchTaxon, "\n";
 					}
 				}
-				$tree->set_root_node($groupNode);
 			}
-			foreach (get_leaves($tree)) {
-				push(@searchTaxa, @{$_->name('supplied')}[0]);
-			}
+			runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
+			$pm->finish;
 		}
-	} else {
-		open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
-		@searchTaxa = <SEARCH>;
-		close (SEARCH);
+		$pm->wait_all_children;
 	}
-	# print "PREPARE TIME: ", roundtime(gettime() - $startTmp),"\n";
-
-	my $pm = new Parallel::ForkManager($cpu);
-	if ($hyperthread) {
-		$pm = new Parallel::ForkManager($cpu*2);
-	}
-
-	foreach (sort @searchTaxa) {
-		chomp(my $searchTaxon = $_);
-		my $pid = $pm->start and next;
-		if ($coreex) {
-			$db = Bio::DB::Taxonomy->new(-source    => 'flatfile',
-				-nodesfile => $idx_dir . 'nodes.dmp',
-				-namesfile => $idx_dir . 'names.dmp',
-				-directory => $idx_dir);
-			$db_bkp = $db;
-		}
-		my $searchTaxonName = getTaxonName($searchTaxon);
-		if (defined($searchTaxonName)) {
-			unless ($silent) {
-				print $searchTaxon, "\t", $searchTaxonName, "\n";
-			} else {
-				unless ($searchTaxonName eq "Unk") {
-					print $searchTaxonName, "\n";
-				} else {
-					print $searchTaxon, "\n";
-				}
-			}
-		}
-		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
-		$pm->finish;
-	}
-	$pm->wait_all_children;
 }
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
@@ -1153,8 +1166,8 @@ sub checkOptions {
 	if ($force == 1 and $append ==1) {
 		$force = 0;
 	}
-	### check the presence of the pre-computed core set
-	if ($coreex) {
+	### check the presence of the pre-computed core set if options reuseCore or assembly is used
+	if ($coreex || $assembly) {
 		if (! -e "$coreOrthologsPath/$seqName/$seqName.fa") {
 			print "You selected the option -reuseCore, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
 			exit;
@@ -1227,7 +1240,7 @@ sub checkOptions {
 
 	### checking the number of core orthologs. Omit this check if the option -reuseCore has been selected
 	$optbreaker = 0;
-	while(!$minCoreOrthologs and !$coreex) {
+	while(!$minCoreOrthologs and (!$coreex || !$assembly)) {
 		if ($optbreaker >= 3){
 			print "No proper number given ... exiting.\n";
 			exit;
@@ -1242,7 +1255,9 @@ sub checkOptions {
 		$filter = 'no' if $filter eq 'F';
 	}
 
-	$inputSeq = fetchSequence($seqFile, $dataDir);
+	if (!$assembly){
+		$inputSeq = fetchSequence($seqFile, $dataDir);
+	}
 
 	## the user has not provided a sequence id, however, the refspec is determined.
 	if($seqId eq '') {
@@ -1367,7 +1382,7 @@ sub checkOptions {
 	#### checking for the min and max distance for the core set compilation
 	#### omit this check, if the option reuseCore has been selected (added 2019-02-04)
 	$optbreaker = 0;
-	if (!$coreex) {
+	if (!$coreex || !$assembly) {
 		my $node;
 		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
 		$node->name('supplied', $refSpec);
