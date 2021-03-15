@@ -435,7 +435,7 @@ def main():
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, debug, silent]
-    assemblyArgs = [assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool]
+    assemblyArgs = [assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix]
 
     ### run fdog
     runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, False])
