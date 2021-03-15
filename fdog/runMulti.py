@@ -48,7 +48,7 @@ def prepare(args, step):
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
     strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-    cpu, hyperthread, debug, silent) = args
+    cpu, hyperthread, debug, silent, assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix) = args
 
     mute = False
     if step == 'core':
@@ -70,7 +70,8 @@ def prepare(args, step):
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, debug, True]
-    return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute)
+    assemblyArgs = [assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix]
+    return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute)
 
 def getSeedName(seedFile):
     seqName = seedFile.split('.')[0]
@@ -105,8 +106,8 @@ def compileCore(options, seeds, inFol, cpu, outpath):
     for seed in seeds:
         seqFile = [inFol + '/' + seed]
         seqName = getSeedName(seed)
-        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'core')
-        coreCompilationJobs.append([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute])
+        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute) = prepare(seqFile + [seqName] + options, 'core')
+        coreCompilationJobs.append([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute])
     pool = mp.Pool(cpu)
     coreOut = []
     for _ in tqdm(pool.imap_unordered(fdogFn.runSingle, coreCompilationJobs), total=len(coreCompilationJobs)):
@@ -127,7 +128,7 @@ def searchOrtho(options, seeds, inFol, cpu, outpath):
     for seed in seeds:
         seqFile = [inFol + '/' + seed]
         seqName = getSeedName(seed)
-        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'ortholog')
+        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute) = prepare(seqFile + [seqName] + options, 'ortholog')
         if mute == True:
             print(seed)
         else:
@@ -426,7 +427,7 @@ def main():
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,
                 strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-                cpu, hyperthread, debug, silent]
+                cpu, hyperthread, debug, silent, assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix]
 
     ### START
     multiLog = open(outpath + '/' + jobName + '_log.txt', "w")

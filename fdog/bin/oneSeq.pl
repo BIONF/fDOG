@@ -309,6 +309,7 @@ my $avIntron;
 my $lengthExtension;
 my $assemblyName;
 my $searchTool = 'blast';
+my $matrix = 'blosum62';
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -376,7 +377,8 @@ GetOptions (
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" \$lengthExtension,
 	"assemblyName=s" => \$asName,
-	"searchTool=s" => \$searchTool
+	"searchTool=s" => \$searchTool,
+	"scoringmatrix=s" => \$matrix
 );
 
 $outputPath = abs_path($outputPath);

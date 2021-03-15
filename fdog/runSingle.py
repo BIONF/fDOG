@@ -65,7 +65,7 @@ def getfdogInfo(fdogPath, infoType):
         exit('%s not found' % (fdogPath + '/bin/oneSeq.pl'))
 
 def runSingle(args):
-    (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = args
+    (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute) = args
     # basic command
     (fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth) = basicArgs
     cmd = 'perl %s/bin/oneSeq.pl -seqFile=%s -seqName=%s -refspec=%s' % (fdogPath, seqFile, seqName, refspec)
@@ -161,6 +161,25 @@ def runSingle(args):
         cmd = cmd + ' -debug'
     if silent == True:
         cmd = cmd + ' -silent'
+    # add assembly options
+    (assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix) = assemblyArgs
+    if assembly == True:
+        cmd = cmd + ' -assembly'
+        if not augustusRefSpec == '':
+            cmd = cmd + ' -augustusRefSpec=%s' % augustusRefSpec
+        else:
+            sys.exit('An augutus reference species is requiered by using the option --assembly')
+        if not avIntron == '':
+            cmd = cmd + ' -avIntron=%s' % avIntron
+        if not lengthExtension == '':
+            cmd = cmd + ' -lengthExtension=%s' % lengthExtension
+        if not assemblyName == '':
+            cmd = cmd + ' -assemblyName=%s' % assemblyName
+        else: sys.exit('An assembly Name is requiered by using the option --asembly')
+        if not searchTool == '':
+            cmd = cmd + ' -searchTool=%s' % searchTool
+        if not matrix == '':
+            cmd = cmd + ' -scoringmatrix=%s' % matrix
     # print(cmd)
     if mute == True:
         cmd = cmd + ' > /dev/null 2>&1'
@@ -171,7 +190,6 @@ def runSingle(args):
 
 def main():
     version = '0.0.25'
-    print('test hannah 1234')
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
