@@ -171,6 +171,7 @@ def runSingle(args):
 
 def main():
     version = '0.0.25'
+    print('test hannah 1234')
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
