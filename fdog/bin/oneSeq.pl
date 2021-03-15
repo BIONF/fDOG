@@ -375,7 +375,7 @@ GetOptions (
 	"assembly" => \$assembly,
 	"augustusRefSpec=s" => \$augustusRefSpecies,
 	"avIntron=s" => \$avIntron,
-	"lengthExtension=s" \$lengthExtension,
+	"lengthExtension=s" => \$lengthExtension,
 	"assemblyName=s" => \$asName,
 	"searchTool=s" => \$searchTool,
 	"scoringmatrix=s" => \$matrix

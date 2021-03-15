@@ -175,7 +175,7 @@ def runSingle(args):
             cmd = cmd + ' -lengthExtension=%s' % lengthExtension
         if not assemblyName == '':
             cmd = cmd + ' -assemblyName=%s' % assemblyName
-        else: sys.exit('An assembly Name is requiered by using the option --asembly')
+        else: sys.exit('An assembly Name is requiered by using the option --assembly')
         if not searchTool == '':
             cmd = cmd + ' -searchTool=%s' % searchTool
         if not matrix == '':
