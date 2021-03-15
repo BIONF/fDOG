@@ -151,9 +151,9 @@ def searching_for_db(assembly_path):
         #print(check)
     return check
 
-def get_distance_biopython(file):
+def get_distance_biopython(file, matrix):
     aln = AlignIO.read(open(file), 'fasta')
-    calculator = DistanceCalculator('blosum62')
+    calculator = DistanceCalculator(matrix)
     dm = calculator.get_distance(aln)
     return dm
 
@@ -176,7 +176,7 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, aligner):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, aligner, matrix):
     ###########getting sequences and write all in one file to make msa #########
     name_file = candidate_name + ".co"
     output_file = 'tmp/' + name_file + '.fasta'
@@ -209,7 +209,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     #d_ref = get_distance(aln_file, best_hit, ref)
     #d = get_distance(aln_file, best_hit, candidate_name)
-    distances = get_distance_biopython(aln_file)
+    distances = get_distance_biopython(aln_file, matrix)
 
     distance_hit_query = distances[best_hit, candidate_name]
     distance_ref_hit = distances[best_hit, ref]
@@ -221,7 +221,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         return 0, distance_ref_hit, distance_hit_query
         #rejected
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo, msaTool):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo, msaTool, matrix):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
@@ -261,7 +261,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     if checkCo == True:
                         for i in id_ref:
                             print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
-                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool)
+                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
                                 orthologs.append(gene_name)
@@ -426,6 +426,7 @@ def main():
     aligner = "blast"
     checkCoorthologs = False
     msaTool = "muscle"
+    matrix = 'blosum62'
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -465,6 +466,8 @@ def main():
             checkCoorthologs = True
         elif input[i] == "--msaTool":
             msaTool = input[i+1]
+        elif input[i] == "--scoringmatrix":
+            matrix = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -479,6 +482,7 @@ def main():
             print("--aligner: can use blast or diamond as an aligner in the backward search (default: blast)")
             print("--msaTool: {mafft-linsi, muscle}. Choose between mafft-linsi and muscle for the multiple seqeunce alignemnts. (default:muscle)")
             print("--evalue: evalue cut off for every blast search, (default: 0.00001)")
+            print("--scoringmatrix: ..., (default:blosum62)")
             return 0
 
 
@@ -565,7 +569,7 @@ def main():
 
     ################# bachward search to filter for orthologs###################
     #verschiede Modi beachten!
-    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner, checkCoorthologs, msaTool)
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner, checkCoorthologs, msaTool, matrix)
     if reciprocal_sequences == 0:
         cleanup(tmp)
         return 0

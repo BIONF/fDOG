@@ -288,6 +288,7 @@ def main():
     assembly_options.add_argument('--lengthExtension', help='length extension of the candidate region', action='store', default=5000, type=int)
     assembly_options.add_argument('--assemblySpecName', help='name of the assembly species in fDOG format', action='store', default='')
     assembly_options.add_argument('--searchTool', help='Choose between BLAST or Diamond as a alignemnt search tool. DEFAULT: BLAST', choices=['blast', 'diamond'], action='store', default='blast')
+    assembly_options.add_argument('--scoringmatrix', help ='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     ### get arguments
     args = parser.parse_args()
 
@@ -361,6 +362,15 @@ def main():
         silent = False
     else:
         silent = True
+
+    #fdog_goes_assembly arguments
+    assembly = args.assembly
+    augustusRefSpec = args.augustusRefSpec
+    avIntron = args.avIntron
+    lengthExtension = args.lengthExtension
+    assemblyName = args.assemblySpecName
+    searchTool = args.searchTool
+    matrix = args.scoringmatrix
 
     ### get fdog and data path
     dataPath = ''
