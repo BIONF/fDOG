@@ -372,7 +372,7 @@ GetOptions (
 	"hyperthread" => \$hyperthread,
 	"searchTaxa=s" => \$searchTaxa,
 	"assembly" => \$assembly,
-	"augRefSpecies=s" => \$augustusRefSpecies,
+	"augustusRefSpec=s" => \$augustusRefSpecies,
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" \$lengthExtension,
 	"assemblyName=s" => \$asName,
@@ -396,7 +396,7 @@ if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 	initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
 	print "Check finished in " . roundtime(gettime() - $checkStTime). " sec!\n";
 
-	if (!defined $coreex) {
+	if (!defined $coreex && !defined $assembly) {
 		if (!grep(/$minDist/, @defaultRanks)) {
 			die "ERROR: minDist $minDist invalid!\n";
 		}

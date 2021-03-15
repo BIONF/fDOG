@@ -281,6 +281,13 @@ def main():
     optional.add_argument('--debug', help='Set this flag to obtain more detailed information about the programs actions', action='store_true', default=False)
     optional.add_argument('--silentOff', help='Show more output to terminal', action='store_true', default=False)
 
+    assembly_options = parser.add_argument_group('Assembly options')
+    assembly_options.add_argument('--assembly', help='Turn on support of assembly input files',action='store_true', default=False)
+    assembly_options.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
+    assembly_options.add_argument('--avIntron', help='average Intron length of the assembly species', action='store', default=5000, type=int)
+    assembly_options.add_argument('--lengthExtension', help='length extension of the candidate region', action='store', default=5000, type=int)
+    assembly_options.add_argument('--assemblySpecName', help='name of the assembly species in fDOG format', action='store', default='')
+    assembly_options.add_argument('--searchTool', help='Choose between BLAST or Diamond as a alignemnt search tool. DEFAULT: BLAST', choices=['blast', 'diamond'], action='store', default='blast')
     ### get arguments
     args = parser.parse_args()
 
