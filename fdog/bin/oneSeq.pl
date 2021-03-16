@@ -304,10 +304,10 @@ my $aln = 'muscle';
 my $searchTaxa;
 #variables for fdog_goes_assembly
 my $assembly;
-my $augustusRefSpecies;
+my $augustusRefSpec;
 my $avIntron;
 my $lengthExtension;
-my $assemblyName;
+my $asName;
 my $searchTool = 'blast';
 my $matrix = 'blosum62';
 ################# Command line options
@@ -373,7 +373,7 @@ GetOptions (
 	"hyperthread" => \$hyperthread,
 	"searchTaxa=s" => \$searchTaxa,
 	"assembly" => \$assembly,
-	"augustusRefSpec=s" => \$augustusRefSpecies,
+	"augustusRefSpec=s" => \$augustusRefSpec,
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" => \$lengthExtension,
 	"assemblyName=s" => \$asName,
@@ -622,12 +622,15 @@ if (!$coreOnly) {
 		#python aufruf
 		print "fdog_goes_assembly";
 		print $seqFile;
-		print $assemblyName;
+		print $asName;
 		print $seqName;
-		print $augRefSpecies;
+		print $augustusRefSpec;
 		print $refSpec;
 		print $assembly;
-		print $outpath;
+		print $outputPath;
+		print $avIntron,
+		print $searchTool,
+		print $scoringmatrix,
 	}
 	else {
 		$coremode = 0;
