@@ -181,7 +181,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     name_file = candidate_name + ".co"
     output_file = 'tmp/' + name_file + '.fasta'
     aln_file = 'tmp/' + name_file + '.aln'
-    genome_dir_path = '../data/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
+    genome_dir_path = 'data/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
     #print(aligner)
 
     out = open(output_file, "w")
@@ -228,7 +228,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     seedDic = getSeedInfo(fasta_path)
     orthologs = []
     #print(seedDic)
-    blast_dir_path = "../data/blast_dir/"
+    blast_dir_path = "data/blast_dir/"
     if strict != True:
         seed = [fdog_ref_species]
         try:
@@ -413,7 +413,7 @@ def main():
     species_name = "L.pustulata"
     #assembly species_name
     assembly_name = "contigs.fa"
-    assembly_path = "../data/assembly_dir/"+ species_name + "/" + assembly_name
+    assembly_path = "data/assembly_dir/"+ species_name + "/" + assembly_name
     augustus_ref_species = "saccharomyces_cerevisiae_S288C"
     #cut_off_merging_candidates = 500
     average_intron_length = 5000
