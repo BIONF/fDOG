@@ -630,7 +630,7 @@ if (!$coreOnly) {
 		print $outputPath;
 		print $avIntron,
 		print $searchTool,
-		print $scoringmatrix,
+		print $matrix,
 	}
 	else {
 		$coremode = 0;
