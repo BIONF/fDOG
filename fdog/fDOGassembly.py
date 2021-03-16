@@ -525,7 +525,7 @@ def main():
         print("block profile is finished \n")
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
-        new_path = hmmpath + "data/core_orthologs/" + group +"/"+ group + "_new.aln"
+        new_path = hmmpath + group +"/"+ group + "_new.aln"
         os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
         os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
         print("block profile is finished \n")
