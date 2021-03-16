@@ -620,7 +620,6 @@ if (!$coreOnly) {
 	#abfrage assembly oder gene set
 	if ($assembly){
 		#python aufruf
-		my $fdogAssemblyPath = "python fDOGassembly.py ";
 		print "fdog_goes_assembly \n";
 		print "SeqFile: $seqFile\n";
 		print "AssemblyName: $asName\n";
@@ -632,8 +631,8 @@ if (!$coreOnly) {
 		print "avIntron: $avIntron\n",
 		print "searchTool: $searchTool\n",
 		print "Matrix: $matrix\n",
-		if (seqFile ne ""){
-			my @assembly_cmd = ($fdogAssemblyPath, "--assembly " . $seqFile, "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--name ". $asName, "--refSpecies " . $refSpec);
+		if ($seqFile ne ""){
+			my @assembly_cmd = ("python fDOGassembly.py ", "--assembly " . $seqFile, "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--name ". $asName, "--refSpecies " . $refSpec);
 
 			if (defined $avIntron){
 				push(@assembly_cmd, "--avIntron $avIntron ");
