@@ -631,7 +631,7 @@ if (!$coreOnly) {
 		print "avIntron: $avIntron\n",
 		print "searchTool: $searchTool\n",
 		print "Matrix: $matrix\n",
-		if ($seqFile ne ""){
+		if ($seqFile ne "") {
 			my @assembly_cmd = ("python fDOGassembly.py ", "--assembly " . $seqFile, "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--name ". $asName, "--refSpecies " . $refSpec);
 
 			if (defined $avIntron){
