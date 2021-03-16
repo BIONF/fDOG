@@ -427,7 +427,7 @@ def main():
     checkCoorthologs = False
     msaTool = "muscle"
     matrix = 'blosum62'
-    hmmpath = "/data/core_orthologs/"
+    hmmpath = "./data/core_orthologs/"
 
     ########################### handle user input ##############################
     #user input core_ortholog group
