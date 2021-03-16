@@ -427,6 +427,7 @@ def main():
     checkCoorthologs = False
     msaTool = "muscle"
     matrix = 'blosum62'
+    hmmpath = "/data/core_orthologs/"
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -468,6 +469,8 @@ def main():
             msaTool = input[i+1]
         elif input[i] == "--scoringmatrix":
             matrix = input[i+1]
+        elif input[i] == "--hmmpath":
+            hmmpath = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -489,9 +492,9 @@ def main():
     ########################## paths ###########################################
 
     #open core_ortholog group
-    msa_path = "../data/core_orthologs/" + group +"/"+ group + ".aln"
-    hmm_path = "../data/core_orthologs/" + group +"/hmm_dir/"+ group + ".hmm"
-    fasta_path = "../data/core_orthologs/" + group +"/"+ group + ".fa"
+    msa_path = hmmpath + group +"/"+ group + ".aln"
+    hmm_path = hmmpath + group +"/hmm_dir/"+ group + ".hmm"
+    fasta_path = hmmpath + group +"/"+ group + ".fa"
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
     path_assembly = assembly_path
