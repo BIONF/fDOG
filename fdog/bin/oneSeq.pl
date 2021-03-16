@@ -620,7 +620,7 @@ if (!$coreOnly) {
 	#abfrage assembly oder gene set
 	if ($assembly){
 		#python aufruf
-		my fdogAssemblyPath = "python fDOGassembly.py ";
+		my $fdogAssemblyPath = "python fDOGassembly.py ";
 		print "fdog_goes_assembly \n";
 		print "SeqFile: $seqFile\n";
 		print "AssemblyName: $asName\n";
