@@ -221,14 +221,14 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         return 0, distance_ref_hit, distance_hit_query
         #rejected
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo, msaTool, matrix):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo, msaTool, matrix, fdogPath):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
     seedDic = getSeedInfo(fasta_path)
     orthologs = []
     #print(seedDic)
-    blast_dir_path = "data/blast_dir/"
+    blast_dir_path = fdogPath + "data/blast_dir/"
     if strict != True:
         seed = [fdog_ref_species]
         try:
@@ -406,16 +406,7 @@ def checkOptions():
 def main():
 
     #################### some variables ########################################
-    ### for testing only
-    #core-ortholog group name
-    group = "778452"
-    #species name assemblie (folder name in assemby folder)
-    species_name = "L.pustulata"
-    #assembly species_name
-    assembly_name = "contigs.fa"
-    assembly_path = "data/assembly_dir/"+ species_name + "/" + assembly_name
-    augustus_ref_species = "saccharomyces_cerevisiae_S288C"
-    #cut_off_merging_candidates = 500
+
     average_intron_length = 5000
     length_extension = 5000
     tmp = False
@@ -428,6 +419,7 @@ def main():
     msaTool = "muscle"
     matrix = 'blosum62'
     hmmpath = "./data/core_orthologs/"
+    fdog_path = ""
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -440,7 +432,7 @@ def main():
             assembly_path = input[i+1]
         elif input[i] == "--gene":
             group = input[i+1]
-        elif input[i] == "--augRefSpecies":
+        elif input[i] == "--augustusRefSpec":
             augustus_ref_species = input[i+1]
         elif input[i] == "--avIntron":
             average_intron_length = int(input[i+1])
@@ -463,7 +455,7 @@ def main():
             #print(taxa)
         elif input[i] == "--aligner":
             aligner = input[i+1]
-        elif input[i] == "--checkCoOrthologsRef":
+        elif input[i] == "--checkCoorthologsRef":
             checkCoorthologs = True
         elif input[i] == "--msaTool":
             msaTool = input[i+1]
@@ -471,6 +463,8 @@ def main():
             matrix = input[i+1]
         elif input[i] == "--hmmpath":
             hmmpath = input[i+1]
+        elif input[] = "--fdogpath":
+            fdog_path = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
