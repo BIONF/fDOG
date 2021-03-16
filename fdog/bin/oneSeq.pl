@@ -1173,6 +1173,8 @@ sub checkOptions {
 	}
 	### check the presence of the pre-computed core set if options reuseCore or assembly is used
 	if ($coreex || $assembly) {
+
+			print "$coreOrthologsPath\n";
 		if (! -e "$coreOrthologsPath/$seqName/$seqName.fa") {
 			print "You selected the option -reuseCore or -assembly, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
 			exit;
