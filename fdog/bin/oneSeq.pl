@@ -621,16 +621,16 @@ if (!$coreOnly) {
 	if ($assembly){
 		#python aufruf
 		print "fdog_goes_assembly \n";
-		print "SeqFile: %s\n" % $seqFile;
-		print "AssemblyName: %s\n" % $asName;
-		print "SeqName: %s\n" % $seqName;
-		print "Augustus Sepcies: %s\n" % $augustusRefSpec;
-		print "RefSpec: %s\n" % $refSpec;
-		print "Assembly: %s\n" % $assembly;
-		print "OutputPath: %s\n" % $outputPath;
-		print "avIntron: %s\n" % $avIntron,
-		print "searchTool: %s\n" % $searchTool,
-		print "Matrix: %s\n" % $matrix,
+		print "SeqFile: $seqFile\n";
+		print "AssemblyName: $asName\n";
+		print "SeqName: $seqName\n";
+		print "Augustus Sepcies: $augustusRefSpec\n";
+		print "RefSpec: $refSpec\n";
+		print "Assembly: $assembly\n";
+		print "OutputPath: $outputPath\n";
+		print "avIntron: $avIntron\n",
+		print "searchTool: $searchTool\n",
+		print "Matrix: $matrix\n",
 	}
 	else {
 		$coremode = 0;
