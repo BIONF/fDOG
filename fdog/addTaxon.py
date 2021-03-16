@@ -77,13 +77,13 @@ def runBlast(args):
         subprocess.call([blastCmd], shell = True)
     except:
         sys.exit('Problem with running %s' % blastCmd)
-    fileInGenome = "%s/genome_dir/%s/%s.fa" % (outPath, specName, specName)
+    fileInGenome = "../../genome_dir/%s/%s.fa" % (specName, specName)
     fileInBlast = "%s/blast_dir/%s/%s.fa" % (outPath, specName, specName)
     if not Path(fileInBlast).exists():
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.2'
+    version = '0.0.3'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -115,6 +115,7 @@ def main():
             sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
         with open(pathconfigFile) as f:
             outPath = f.readline().strip()
+    outPath = os.path.abspath(outPath)
     noAnno = args.noAnno
     coreTaxa = args.coreTaxa
     ver = str(args.verProt)
