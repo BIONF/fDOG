@@ -620,17 +620,17 @@ if (!$coreOnly) {
 	#abfrage assembly oder gene set
 	if ($assembly){
 		#python aufruf
-		print "fdog_goes_assembly";
-		print $seqFile;
-		print $asName;
-		print $seqName;
-		print $augustusRefSpec;
-		print $refSpec;
-		print $assembly;
-		print $outputPath;
-		print $avIntron,
-		print $searchTool,
-		print $matrix,
+		print "fdog_goes_assembly \n";
+		print "SeqFile: %s\n" % $seqFile;
+		print "AssemblyName: %s\n" % $asName;
+		print "SeqName: %s\n" % $seqName;
+		print "Augustus Sepcies: %s\n" % $augustusRefSpec;
+		print "RefSpec: %s\n" % $refSpec;
+		print "Assembly: %s\n" % $assembly;
+		print "OutputPath: %s\n" % $outputPath;
+		print "avIntron: %s\n" % $avIntron,
+		print "searchTool: %s\n" % $searchTool,
+		print "Matrix: %s\n" % $matrix,
 	}
 	else {
 		$coremode = 0;
