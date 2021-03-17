@@ -472,7 +472,7 @@ def main():
         fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
         print("fdog_path:" + fdog_path + "\n")
     if assembly_path == '':
-        assembly_path = fdog_path + 'assembly_dir/'
+        assembly_path = fdog_path + '/data/assembly_dir/'
         #for testing:
         assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa'
     if out == '':
