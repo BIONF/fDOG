@@ -470,7 +470,7 @@ def main():
     #checking paths
     if fdog_path == '':
         fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
-        print(fdog_path)
+        print("fdog_path:" + fdog_path + "\n")
     if assembly_path == '':
         assembly_path = fdog_path + 'assembly_dir/'
         #for testing:
@@ -479,7 +479,7 @@ def main():
         out = os.getcwd()
     if core_path == '':
         #only for testing, has to be changed in the end
-        core_path = '/home/hannah/fDOG/fdog/data/core_orthologs/'
+        core_path = './fdog/data/core_orthologs/'
 
     # user input has to be checked here before fDOGassembly continues
     #for testing:
