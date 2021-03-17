@@ -652,7 +652,7 @@ if (!$coreOnly) {
 			if ($eval_blast){
 				push(@assembly_cmd, "--evalue $eval_blast ");
 			}
-			if ($msaTool){
+			if ($searchTool){
 				push(@assembly_cmd, "--msaTool $searchTool ");
 			}
 			if (defined $checkcoorthologsref){
@@ -665,8 +665,8 @@ if (!$coreOnly) {
 				push(@assembly_cmd, "--scoringmatrix $matrix");
 			}
 
-			#printDebug(@assembly_cmd);
-			#system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
+			printDebug(@assembly_cmd);
+			system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
 		}
 	}
 	else {
