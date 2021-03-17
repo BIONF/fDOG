@@ -621,7 +621,7 @@ if (!$coreOnly) {
 	if ($assembly){
 		#python aufruf
 		print "fdog_goes_assembly \n";
-		print "SeqFile: $assemblyFile\n";
+		print "SeqFile: $seqFile\n";
 		print "AssemblyName: $asName\n";
 		print "SeqName: $seqName\n";
 		print "Augustus Species: $augustusRefSpec\n";
@@ -632,7 +632,7 @@ if (!$coreOnly) {
 		print "searchTool: $searchTool\n";
 		print "Matrix: $matrix\n";
 		if ($seqFile ne "") {
-			my @assembly_cmd = ("fdog.assembly ", "--assembly " . $assemblyFile, "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--name ". $asName, "--refSpecies " . $refSpec);
+			my @assembly_cmd = ("fdog.assembly ", "--assembly " . $seqFile, "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--name ". $asName, "--refSpecies " . $refSpec);
 
 			if (defined $avIntron){
 				push(@assembly_cmd, "--avIntron $avIntron ");
