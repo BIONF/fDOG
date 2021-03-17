@@ -464,8 +464,8 @@ def main():
     if taxa == '':
         taxa =[]
     else:
-        try:
-            taxa = taxa.split(",")
+        taxa = taxa.split(",")
+
 
     #checking paths
     if fdog_path == '':
@@ -473,7 +473,7 @@ def main():
     if assembly_path == '':
         assembly_path = fdog_path + '/assembly_dir/'
         #for testing:
-        assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa  '
+        assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa'
     if out == '':
         out = os.getcwd()
     if core_path == '':
