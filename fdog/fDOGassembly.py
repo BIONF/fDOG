@@ -420,6 +420,7 @@ def main():
     matrix = 'blosum62'
     hmmpath = "./data/core_orthologs/"
     fdog_path = ""
+    filter = False
 
     ########################### handle user input ##############################
     #user input core_ortholog group
@@ -463,8 +464,10 @@ def main():
             matrix = input[i+1]
         elif input[i] == "--hmmpath":
             hmmpath = input[i+1]
-        elif input[] = "--fdogpath":
+        elif input[i] == "--fdogpath":
             fdog_path = input[i+1]
+        elif input[i] == "--filter":
+            filter = input[i+1]
         elif input[i] == "--help":
             print("Parameters: \n")
             print("--assembly: path to assembly input file in fasta format \n")
@@ -480,6 +483,8 @@ def main():
             print("--msaTool: {mafft-linsi, muscle}. Choose between mafft-linsi and muscle for the multiple seqeunce alignemnts. (default:muscle)")
             print("--evalue: evalue cut off for every blast search, (default: 0.00001)")
             print("--scoringmatrix: ..., (default:blosum62)")
+            print("--fdogpath:")
+            print("--filter:")
             return 0
 
 
