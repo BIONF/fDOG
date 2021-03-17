@@ -373,7 +373,6 @@ GetOptions (
 	"hyperthread" => \$hyperthread,
 	"searchTaxa=s" => \$searchTaxa,
 	"assembly" => \$assembly,
-	"assemblyFile" => \$seqFile;
 	"augustusRefSpec=s" => \$augustusRefSpec,
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" => \$lengthExtension,
