@@ -471,7 +471,7 @@ def main():
     if fdog_path == '':
         fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
     if assembly_path == '':
-        assembly_path = fdog_path + '/assembly_dir/'
+        assembly_path = fdog_path + 'assembly_dir/'
         #for testing:
         assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa'
     if out == '':
@@ -530,6 +530,7 @@ def main():
     #database anlegen
 
     db_check = searching_for_db(assembly_path)
+    print(assembly_path)
     if db_check == 0:
         print("creating a blast data base \n")
         os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + assembly_path)
