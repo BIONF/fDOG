@@ -229,7 +229,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
     seedDic = getSeedInfo(fasta_path)
     orthologs = []
-    #print(seedDic)
+    print(seedDic)
     blast_dir_path = fdogPath + "data/blast_dir/"
     if strict != True:
         seed = [fdog_ref_species]
@@ -531,7 +531,7 @@ def main():
     #database anlegen
 
     db_check = searching_for_db(assembly_path)
-    print(assembly_path)
+    #print(assembly_path)
     if db_check == 0:
         print("creating a blast data base \n")
         os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + assembly_path)
