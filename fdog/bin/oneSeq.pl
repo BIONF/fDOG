@@ -653,7 +653,7 @@ if (!$coreOnly) {
 				push(@assembly_cmd, "--evalue $eval_blast ");
 			}
 			if ($msaTool){
-				push(@assembly_cmd, "--msaTool $msaTool ");
+				push(@assembly_cmd, "--msaTool $searchTool ");
 			}
 			if (defined $checkcoorthologsref){
 				push(@assembly_cmd, "--checkCoorthologsRef");
