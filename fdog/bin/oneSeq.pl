@@ -624,13 +624,13 @@ if (!$coreOnly) {
 		print "SeqFile: $seqFile\n";
 		print "AssemblyName: $asName\n";
 		print "SeqName: $seqName\n";
-		print "Augustus Sepcies: $augustusRefSpec\n";
+		print "Augustus Species: $augustusRefSpec\n";
 		print "RefSpec: $refSpec\n";
 		print "Assembly: $assembly\n";
 		print "OutputPath: $outputPath\n";
-		print "avIntron: $avIntron\n",
-		print "searchTool: $searchTool\n",
-		print "Matrix: $matrix\n",
+		print "avIntron: $avIntron\n";
+		print "searchTool: $searchTool\n";
+		print "Matrix: $matrix\n";
 		if ($seqFile ne "") {
 			my @assembly_cmd = ("python fDOGassembly.py ", "--assembly " . $seqFile, "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--name ". $asName, "--refSpecies " . $refSpec);
 
@@ -664,6 +664,7 @@ if (!$coreOnly) {
 			if ($matrix){
 				push(@assembly_cmd, "--scoringmatrix $matrix");
 			}
+
 			printDebug(@assembly_cmd);
 			system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
 		}
