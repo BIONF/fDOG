@@ -478,7 +478,7 @@ def main():
         out = os.getcwd()
     if core_path == '':
         #only for testing, has to be changed in the end
-        core_path = './data/core_orthologs/'
+        core_path = './fdog/data/core_orthologs/'
 
     # user input has to be checked here before fDOGassembly continues
     #for testing:
@@ -520,7 +520,7 @@ def main():
         print("block profile is finished \n")
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
-        new_path = hmmpath + group +"/"+ group + "_new.aln"
+        new_path = core_path + group +"/"+ group + "_new.aln"
         os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
         os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
         print("block profile is finished \n")
@@ -565,7 +565,7 @@ def main():
     augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group)
     print("augustus is finished \n")
 
-    ################# bachward search to filter for orthologs###################
+    ################# backward search to filter for orthologs###################
     #verschiede Modi beachten!
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix)
     if reciprocal_sequences == 0:
