@@ -471,7 +471,9 @@ def main():
     if fdog_path == '':
         fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
     if assembly_path == '':
-        assembly_path = fdog_path + '/assembly_dir'
+        assembly_path = fdog_path + '/assembly_dir/'
+        #for testing:
+        assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa  '
     if out == '':
         out = os.getcwd()
     if core_path == '':
@@ -479,6 +481,9 @@ def main():
         core_path = './data/core_orthologs/'
 
     # user input has to be checked here before fDOGassembly continues
+    #for testing:
+    asName = 'CHICK@9031@AS'
+
 
     ########################## some variables ##################################
 
@@ -557,7 +562,7 @@ def main():
 
     ############### make Augustus PPX search ###################################
     print("starting augustus ppx \n")
-    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, fdog_name, group)
+    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group)
     print("augustus is finished \n")
 
     ################# bachward search to filter for orthologs###################
