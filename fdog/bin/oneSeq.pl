@@ -634,39 +634,39 @@ if (!$coreOnly) {
 		if ($seqFile ne "") {
 			my @assembly_cmd = ("python fDOGassembly.py ", "--assembly " . $seqFile, "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--name ". $asName, "--refSpecies " . $refSpec);
 
-			if (defined $avIntron){
-				push(@assembly_cmd, "--avIntron $avIntron ");
-			}
-			if (defined $lengthExtension){
-				push(@assembly_cmd, "--lengthExtension $lengthExtension ");
-			}
-			if (!$autoclean){
-				push(@assembly_cmd, "--tmp ");
-			}
-			if ($outputPath){
-				push(@assembly_cmd, "--out $outputPath ");
-			}
-			if (defined $strict){
-				push(@assembly_cmd, "--strict");
-			}
-			if ($eval_blast){
-				push(@assembly_cmd, "--evalue $eval_blast ");
-			}
-			if ($msaTool){
-				push(@assembly_cmd, "--msaTool $msaTool ");
-			}
-			if (defined $checkcoorthologsref){
-				push(@assembly_cmd, "--checkCoorthologsRef");
-			}
-			if ($searchTool){
-				push(@assembly_cmd, "--searchTool $searchTool");
-			}
-			if ($matrix){
-				push(@assembly_cmd, "--scoringmatrix $matrix");
-			}
+			# if (defined $avIntron){
+			# 	push(@assembly_cmd, "--avIntron $avIntron ");
+			# }
+			# if (defined $lengthExtension){
+			# 	push(@assembly_cmd, "--lengthExtension $lengthExtension ");
+			# }
+			# if (!$autoclean){
+			# 	push(@assembly_cmd, "--tmp ");
+			# }
+			# if ($outputPath){
+			# 	push(@assembly_cmd, "--out $outputPath ");
+			# }
+			# if (defined $strict){
+			# 	push(@assembly_cmd, "--strict");
+			# }
+			# if ($eval_blast){
+			# 	push(@assembly_cmd, "--evalue $eval_blast ");
+			# }
+			# if ($msaTool){
+			# 	push(@assembly_cmd, "--msaTool $msaTool ");
+			# }
+			# if (defined $checkcoorthologsref){
+			# 	push(@assembly_cmd, "--checkCoorthologsRef");
+			# }
+			# if ($searchTool){
+			# 	push(@assembly_cmd, "--searchTool $searchTool");
+			# }
+			# if ($matrix){
+			# 	push(@assembly_cmd, "--scoringmatrix $matrix");
+			# }
 
-			printDebug(@assembly_cmd);
-			system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
+			#printDebug(@assembly_cmd);
+			#system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
 		}
 	}
 	else {
