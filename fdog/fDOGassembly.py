@@ -569,7 +569,7 @@ def main():
 
     ################# backward search to filter for orthologs###################
     #verschiede Modi beachten!
-    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix)
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, fdog_path)
     if reciprocal_sequences == 0:
         cleanup(tmp)
         return 0
