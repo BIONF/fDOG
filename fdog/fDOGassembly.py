@@ -228,6 +228,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
     seedDic = getSeedInfo(fasta_path)
+    print(fasta_path)
     orthologs = []
     print(seedDic)
     blast_dir_path = fdogPath + "data/blast_dir/"
