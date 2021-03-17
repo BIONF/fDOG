@@ -373,6 +373,7 @@ GetOptions (
 	"hyperthread" => \$hyperthread,
 	"searchTaxa=s" => \$searchTaxa,
 	"assembly" => \$assembly,
+	"assemblyFile" => \$seqFile;
 	"augustusRefSpec=s" => \$augustusRefSpec,
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" => \$lengthExtension,
@@ -621,7 +622,7 @@ if (!$coreOnly) {
 	if ($assembly){
 		#python aufruf
 		print "fdog_goes_assembly \n";
-		print "SeqFile: $seqFile\n";
+		print "AssemblyFile: $seqFile\n";
 		print "AssemblyName: $asName\n";
 		print "SeqName: $seqName\n";
 		print "Augustus Species: $augustusRefSpec\n";
