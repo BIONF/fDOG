@@ -5,6 +5,7 @@ import sys
 from Bio import SeqIO
 from Bio.Phylo.TreeConstruction import DistanceCalculator
 from Bio import AlignIO
+import argparse
 ########################### functions ##########################################
 
 def merge(blast_results, insert_length):
@@ -176,13 +177,13 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, aligner, matrix):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix):
     ###########getting sequences and write all in one file to make msa #########
     name_file = candidate_name + ".co"
     output_file = 'tmp/' + name_file + '.fasta'
     aln_file = 'tmp/' + name_file + '.aln'
     genome_dir_path = 'data/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
-    #print(aligner)
+    #print(searchTool)
 
     out = open(output_file, "w")
     inSeq = SeqIO.to_dict((SeqIO.parse(open(genome_dir_path), 'fasta')))
@@ -200,10 +201,10 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     out.close()
 
-    if aligner == "muscle":
+    if searchTool == "muscle":
         os.system("muscle -quiet -in " + output_file + " -out " + aln_file)
         #print("muscle -quiet -in " + output_file + " -out " + aln_file)
-    elif aligner == "mafft-linsi":
+    elif searchTool == "mafft-linsi":
         #print("mafft-linsi")
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
 
@@ -215,13 +216,14 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     distance_ref_hit = distances[best_hit, ref]
 
     if distance_ref_hit < distance_hit_query:
-        return 1, distance_ref_hit, distance_hit_query
         #accepted
-    else:
-        return 0, distance_ref_hit, distance_hit_query
-        #rejected
+        return 1, distance_ref_hit, distance_hit_query
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, aligner, checkCo, msaTool, matrix, fdogPath):
+    else:
+        #rejected
+        return 0, distance_ref_hit, distance_hit_query
+
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, fdogPath):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
 
@@ -236,7 +238,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         except KeyError:
             print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
             return 0, seed
-        if aligner == "blast":
+        if searchTool == "blast":
             os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
         else:
             print("diamonds are the girls best friends")
@@ -405,117 +407,106 @@ def checkOptions():
 
 def main():
 
-    #################### some variables ########################################
+    #################### handle user input ########################################
 
-    average_intron_length = 5000
-    length_extension = 5000
-    tmp = False
-    strict = False
-    evalue = 0.00001
-    out = os.getcwd()
-    taxa = []
-    aligner = "blast"
-    checkCoorthologs = False
-    msaTool = "muscle"
-    matrix = 'blosum62'
-    hmmpath = "./data/core_orthologs/"
-    fdog_path = ""
-    filter = False
+    version = '0.0.1'
 
-    ########################### handle user input ##############################
-    #user input core_ortholog group
-    # I nedd a function that checks if user input is allowed
-    #print(sys.argv)
-    input = sys.argv
+    parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
+    parser.add_argument('--version', action='version', version=str(version))
 
-    for i in range(1,len(input)):
-        if input[i] == "--assembly":
-            assembly_path = input[i+1]
-        elif input[i] == "--gene":
-            group = input[i+1]
-        elif input[i] == "--augustusRefSpec":
-            augustus_ref_species = input[i+1]
-        elif input[i] == "--avIntron":
-            average_intron_length = int(input[i+1])
-        elif input[i] == "--lengthExtension":
-            length_extension = int(input[i+1])
-        elif input[i] == "--tmp":
-            tmp = True
-        elif input[i] == "--name":
-            fdog_name =  input[i+1]
-        elif input[i] == "--out":
-            out = input[i+1]
-        elif input[i] == "--refSpecies":
-            fdog_ref_species = input[i+1]
-        elif input[i] == "--strict":
-            strict = True
-        elif input[i] == "--evalue":
-            evalue = input[i+1]
-        elif input[i] == "--searchTaxa":
-            taxa = input[i+1].split(",")
-            #print(taxa)
-        elif input[i] == "--aligner":
-            aligner = input[i+1]
-        elif input[i] == "--checkCoorthologsRef":
-            checkCoorthologs = True
-        elif input[i] == "--msaTool":
-            msaTool = input[i+1]
-        elif input[i] == "--scoringmatrix":
-            matrix = input[i+1]
-        elif input[i] == "--hmmpath":
-            hmmpath = input[i+1]
-        elif input[i] == "--fdogpath":
-            fdog_path = input[i+1]
-        elif input[i] == "--filter":
-            filter = input[i+1]
-        elif input[i] == "--help":
-            print("Parameters: \n")
-            print("--assembly: path to assembly input file in fasta format \n")
-            print("--gene: core_ortholog group name. Has to be located in data/core_orthologs\n")
-            print("--augRefSpecies: reference species for augustus\n")
-            print("--avIntron: average intron length of the selected species in bp (default: 5000)\n")
-            print("--lengthExtension: length extension of the candidate regions in bp (default:5000)\n")
-            print("--tmp: tmp files will not be deleted")
-            print("--name: Species name according to the fdog naming schema [Species acronym]@[NCBI ID]@[Proteome version]")
-            print("--refSpecies: fDOG reference species")
-            print("--out: path to the output folder")
-            print("--aligner: can use blast or diamond as an aligner in the backward search (default: blast)")
-            print("--msaTool: {mafft-linsi, muscle}. Choose between mafft-linsi and muscle for the multiple seqeunce alignemnts. (default:muscle)")
-            print("--evalue: evalue cut off for every blast search, (default: 0.00001)")
-            print("--scoringmatrix: ..., (default:blosum62)")
-            print("--fdogpath:")
-            print("--filter:")
-            return 0
+    required = parser.add_argument_group('Required arguments')
+    required.add_argument('--gene', help='Core_ortholog group name. Folder inlcuding the fasta file, hmm file and aln file has to be located in core_orthologs/',
+                            action='store', default='', required=True)
+    required.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='', required=True)
+    required.add_argument('--refSpec', help='Reference taxon for fDOG.', action='store', default='', required=True)
 
+    optional = parser.add_argument_group('Optional arguments')
+    optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 5000)',action='store', default=5000, type=int)
+    optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:5000)', action='store', default=5000, type=int)
+    optional.add_argument('--assemblyPath', help='Input file containing the assembly sequence', action='store', default='')
+    optional.add_argument('--tmp', help='tmp files will not be deleted', action='store_true', default = False)
+    optional.add_argument('--out', help='Output directory', action='store', default='')
+    optional.add_argument('--fdogPath', help='fDOG directory', action='store', default='')
+    optional.add_argument('--coregroupPath', help='core_ortholog directory', action='store', default='')
+    optional.add_argument('--searchTool', help='Choose between blast and diamond as alignemnt search tool(default:blast)', action='store', choices=['blast', 'diamond'], default='blast')
+    optional.add_argument('--evalBlast', help='E-value cut-off for the Blast search. (default: 0.00001)', action='store', default=0.00001, type=float)
+    optional.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set', action='store_true', default=False)
+    optional.add_argument('--msaTool', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. DEFAULT: muscle', choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
+    optional.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_true', default=False)
+    optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
+    optional.add_argument('--searchTaxa', help='List of search taxa names in fdog format', action='store', default='')
+    optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on. Default: False', action='store_true', default=False)
 
-    ########################## paths ###########################################
+    args = parser.parse_args()
 
-    #open core_ortholog group
-    msa_path = hmmpath + group +"/"+ group + ".aln"
-    hmm_path = hmmpath + group +"/hmm_dir/"+ group + ".hmm"
-    fasta_path = hmmpath + group +"/"+ group + ".fa"
+    # required
+    group = args.gene
+    augustus_ref_species = args.augustusRefSpec
+    fdog_ref_species = args.refSpec
+    #paths user input
+    assembly_path = args.assemblyPath
+    fdog_path = args.fdogPath
+    core_path = args.coregroupPath
+    out = args.out
+    #I/O
+    tmp = args.tmp
+    strict = args.strict
+    checkCoorthologs = args.checkCoorthologsRef
+    filter = args.filter
+    #others
+    average_intron_length = args.avIntron
+    length_extension = args.lengthExtension
+    searchTool = args.searchTool
+    evalue = args.evalBlast
+    msaTool = args.msaTool
+    matrix = args.scoringmatrix
+    taxa = args.searchTaxa
+    if taxa == '':
+        taxa =[]
+    else:
+        try:
+            taxa = taxa.split(",")
+
+    #checking paths
+    if fdog_path == '':
+        fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
+    if assembly_path == '':
+        assembly_path = fdog_path + '/assembly_dir'
+    if out == '':
+        out = os.getcwd()
+    if core_path == '':
+        #only for testing, has to be changed in the end
+        core_path = './data/core_orthologs/'
+
+    # user input has to be checked here before fDOGassembly continues
+
+    ########################## some variables ##################################
+
+    ########### paths ###########
+
+    msa_path = core_path + "/" + group +"/"+ group + ".aln"
+    hmm_path = core_path + "/" + group +"/hmm_dir/"+ group + ".hmm"
+    fasta_path = core_path + "/" + group +"/"+ group + ".fa"
     consensus_path = "tmp/" + group + ".con"
     profile_path = "tmp/" + group + ".prfl"
-    path_assembly = assembly_path
     candidatesOutFile = "tmp/" + group + ".candidates.fa"
     orthologsOutFile = out + "/" + group + ".extended.fa"
     fasOutFile = out + "/" + group
     mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
+    ###################### create tmp folder ###################################
+
     os.system('mkdir tmp')
-
-    ######################## check user input ##################################
-
-    #the user input has to be checked!!
 
     ######################## consensus sequence ################################
 
-    #make a majority-rule consensus seqeunce with the tool hmmemit from hmmer
+    #make a majority-rule consensus sequence with the tool hmmemit from hmmer
     print("Building a consensus sequence \n")
     os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path)
     print("consensus sequence is finished\n")
 
     ######################## block profile #####################################
+
     print("Building a block profile \n")
 
     os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
@@ -533,10 +524,10 @@ def main():
 
     #database anlegen
 
-    db_check = searching_for_db(path_assembly)
+    db_check = searching_for_db(assembly_path)
     if db_check == 0:
         print("creating a blast data base \n")
-        os.system('makeblastdb -in ' + path_assembly + ' -dbtype nucl -parse_seqids -out ' + path_assembly)
+        os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + assembly_path)
         print("database is finished \n")
     else:
         print('blast data base exists already, continuing...')
@@ -546,7 +537,7 @@ def main():
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
     print("tBLASTn search against new created data base")
-    os.system('tblastn -db ' + path_assembly + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
+    os.system('tblastn -db ' + assembly_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
     print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
@@ -562,7 +553,7 @@ def main():
 
     else:
         print(str(number_regions) + " candiate regions were found. Extracting sequences.")
-        extract_seq(regions, path_assembly)
+        extract_seq(regions, assembly_path)
 
     ############### make Augustus PPX search ###################################
     print("starting augustus ppx \n")
@@ -571,7 +562,7 @@ def main():
 
     ################# bachward search to filter for orthologs###################
     #verschiede Modi beachten!
-    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, aligner, checkCoorthologs, msaTool, matrix)
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix)
     if reciprocal_sequences == 0:
         cleanup(tmp)
         return 0
