@@ -290,6 +290,7 @@ def main():
 
     assembly_options = parser.add_argument_group('Assembly options')
     assembly_options.add_argument('--assembly', help='Turn on support of assembly input files',action='store_true', default=False)
+    assembly_options.add_argument('--assemblyFile', help='Input file containing the assembly seqeunce', action='store', default='')
     assembly_options.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
     assembly_options.add_argument('--avIntron', help='average Intron length of the assembly species', action='store', default=5000, type=int)
     assembly_options.add_argument('--lengthExtension', help='length extension of the candidate region', action='store', default=5000, type=int)
@@ -371,6 +372,7 @@ def main():
 
     #fdog_goes_assembly arguments
     assembly = args.assembly
+    assemblyFile = args.assemblyFile
     augustusRefSpec = args.augustusRefSpec
     avIntron = args.avIntron
     lengthExtension = args.lengthExtension
