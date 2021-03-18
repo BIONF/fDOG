@@ -381,6 +381,8 @@ GetOptions (
 	"scoringmatrix=s" => \$matrix
 );
 
+print "Testing AssemblyFile: $assemblyFile\n";
+
 $outputPath = abs_path($outputPath);
 unless (-d $coreOrthologsPath) {
 	make_path($coreOrthologsPath);
