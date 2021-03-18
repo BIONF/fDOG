@@ -163,6 +163,7 @@ def runSingle(args):
         cmd = cmd + ' -silent'
     # add assembly options
     (assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix) = assemblyArgs
+    print(assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix)
     if assembly == True:
         cmd = cmd + ' -assembly'
         if not augustusRefSpec == '':
@@ -175,6 +176,7 @@ def runSingle(args):
             cmd = cmd + ' -lengthExtension=%s' % lengthExtension
         if not assemblyFile == '':
             cmd = cmd + ' -assemblyFile=%s' % assemblyFile
+            print(assemblyFile)
         if not searchTool == '':
             cmd = cmd + ' -searchTool=%s' % searchTool
         if not matrix == '':
