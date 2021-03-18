@@ -48,7 +48,7 @@ def prepare(args, step):
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
     strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-    cpu, hyperthread, debug, silent, assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix) = args
+    cpu, hyperthread, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix) = args
 
     mute = False
     if step == 'core':
@@ -70,7 +70,7 @@ def prepare(args, step):
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, debug, True]
-    assemblyArgs = [assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix]
+    assemblyArgs = [assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
     return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute)
 
 def getSeedName(seedFile):
@@ -284,10 +284,10 @@ def main():
 
     assembly_options = parser.add_argument_group('Assembly options')
     assembly_options.add_argument('--assembly', help='Turn on support of assembly input files',action='store_true', default=False)
+    assembly_options.add_argument('--assemblyFile', help='Input file containing the assembly seqeunce', action='store', default='')
     assembly_options.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
     assembly_options.add_argument('--avIntron', help='average Intron length of the assembly species', action='store', default=5000, type=int)
     assembly_options.add_argument('--lengthExtension', help='length extension of the candidate region', action='store', default=5000, type=int)
-    assembly_options.add_argument('--assemblySpecName', help='name of the assembly species in fDOG format', action='store', default='')
     assembly_options.add_argument('--searchTool', help='Choose between BLAST or Diamond as a alignemnt search tool. DEFAULT: BLAST', choices=['blast', 'diamond'], action='store', default='blast')
     assembly_options.add_argument('--scoringmatrix', help ='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     ### get arguments
@@ -366,10 +366,10 @@ def main():
 
     #fdog_goes_assembly arguments
     assembly = args.assembly
+    assemblyFile = args.assemblyFile
     augustusRefSpec = args.augustusRefSpec
     avIntron = args.avIntron
     lengthExtension = args.lengthExtension
-    assemblyName = args.assemblySpecName
     searchTool = args.searchTool
     matrix = args.scoringmatrix
 
@@ -427,7 +427,7 @@ def main():
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,
                 strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-                cpu, hyperthread, debug, silent, assembly, augustusRefSpec, avIntron, lengthExtension, assemblyName, searchTool, matrix]
+                cpu, hyperthread, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
 
     ### START
     multiLog = open(outpath + '/' + jobName + '_log.txt', "w")
