@@ -174,7 +174,7 @@ def runSingle(args):
         if not lengthExtension == '':
             cmd = cmd + ' -lengthExtension=%s' % lengthExtension
         if not assemblyFile == '':
-            cmd = cmd + ' -assemblyFile=%s' % assemblFile
+            cmd = cmd + ' -assemblyFile=%s' % assemblyFile
         if not searchTool == '':
             cmd = cmd + ' -searchTool=%s' % searchTool
         if not matrix == '':
