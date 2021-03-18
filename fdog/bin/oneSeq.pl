@@ -669,8 +669,6 @@ if (!$coreOnly) {
 			}
 
 			printDebug(@assembly_cmd);
-			system('fdog.setup -h') or die "Error test\n";
-
 			system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
 		}
 	}
