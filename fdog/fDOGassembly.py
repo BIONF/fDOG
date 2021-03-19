@@ -480,7 +480,7 @@ def main():
         out = os.getcwd()
     if core_path == '':
         #only for testing, has to be changed in the end
-        core_path = '~/data/core_orthologs/'
+        core_path = '/home/hannah/test_fdog'
 
     # user input has to be checked here before fDOGassembly continues
     #for testing:

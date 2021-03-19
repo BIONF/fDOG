@@ -671,6 +671,7 @@ if (!$coreOnly) {
 			if ($matrix){
 				push(@assembly_cmd, "--scoringmatrix $matrix");
 			}
+			
 			printDebug(@assembly_cmd);
 			system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 		}
