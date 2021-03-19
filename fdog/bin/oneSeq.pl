@@ -635,8 +635,10 @@ if (!$coreOnly) {
 		print "Evalblast: $eval_blast\n";
 		$eval_blast = sprintf("%f", $eval_blast);
 		print "Evalblast: $eval_blast\n";
-		print "Filter: $filter";
-		print "searchTaxa: $searchTaxa";
+		print "Filter: $filter \n";
+		my $searchtaxa = join(" ", @searchTaxa)
+		print "searchTaxa:  $searchtaxa\n";
+		print "searchTaxa:  @searchtaxa\n";
 		if ($seqFile ne "") {
 			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--fdogPath " . $path);
 
@@ -674,7 +676,7 @@ if (!$coreOnly) {
 				push(@assembly_cmd, "--scoringmatrix $matrix");
 			}
 			if ($coreOrthologsPath){
-				push(@assembly_cmd, "--coregroupPath $$coreOrthologsPath");
+				push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
 			}
 
 			printDebug(@assembly_cmd);
