@@ -381,6 +381,7 @@ GetOptions (
 	"scoringmatrix=s" => \$matrix
 );
 
+print " Evalue: $eval_blast \n"
 $outputPath = abs_path($outputPath);
 unless (-d $coreOrthologsPath) {
 	make_path($coreOrthologsPath);
