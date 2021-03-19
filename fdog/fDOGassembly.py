@@ -475,12 +475,13 @@ def main():
     if assembly_path == '':
         assembly_path = fdog_path + '/data/assembly_dir/'
         #for testing:
-        assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa'
+        #assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa'
     if out == '':
         out = os.getcwd()
     if core_path == '':
+        core_path = out + '/core_orthologs/'
         #only for testing, has to be changed in the end
-        core_path = '/home/hannah/test_fdog'
+        #core_path = '/home/hannah/test_fdog/core_orthologs'
 
     # user input has to be checked here before fDOGassembly continues
     #for testing:

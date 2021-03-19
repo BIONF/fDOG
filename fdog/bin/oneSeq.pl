@@ -635,6 +635,8 @@ if (!$coreOnly) {
 		print "Evalblast: $eval_blast\n";
 		$eval_blast = sprintf("%f", $eval_blast);
 		print "Evalblast: $eval_blast\n";
+		print "Filter: $filter";
+		print "searchTaxa: $searchTaxa";
 		if ($seqFile ne "") {
 			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--fdogPath " . $path);
 
@@ -671,7 +673,10 @@ if (!$coreOnly) {
 			if ($matrix){
 				push(@assembly_cmd, "--scoringmatrix $matrix");
 			}
-			
+			if ($coreOrthologsPath){
+				push(@assembly_cmd, "--coregroupPath $$coreOrthologsPath");
+			}
+
 			printDebug(@assembly_cmd);
 			system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 		}
