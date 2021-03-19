@@ -667,6 +667,7 @@ if (!$coreOnly) {
 			if ($matrix){
 				push(@assembly_cmd, "--scoringmatrix $matrix");
 			}
+			system('echo $CONDA_DEFAULT_ENV')
 			system('fdog.assembly -h')
 			printDebug(@assembly_cmd);
 			system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
