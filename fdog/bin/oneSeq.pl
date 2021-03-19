@@ -633,7 +633,7 @@ if (!$coreOnly) {
 		print "Matrix: $matrix\n";
 		print "Fdog path: $path\n";
 		print "Evalblast: $eval_blast\n";
-		$eval_blast = sprintf("%d", $eval_blast);
+		$eval_blast = sprintf("%.10f", $eval_blast);
 		print "Evalblast: $eval_blast\n";
 		if ($seqFile ne "") {
 			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--fdogPath " . $path);
