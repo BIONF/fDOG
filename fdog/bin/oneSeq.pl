@@ -123,9 +123,10 @@ my $startTime = gettime();
 ## Modified 01. Dec 2020 v2.2.4 (Vinh)	- fixed bug while creating final extended.fa (and replaced grep and sed by bioperl)
 ## Modified 16. Feb 2021 v2.2.5 (Vinh)	- core compilation works with fasoff
 ## Modified 18. Feb 2021 v2.2.6 (Vinh)	- fixed searchTaxa and coreTaxa options
+## Modified 19. March 2021 v2.2.7 (Vinh)	- check for long sequence ID
 
 ############ General settings
-my $version = 'oneSeq v.2.2.6';
+my $version = 'oneSeq v.2.2.7';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -1245,6 +1246,9 @@ sub checkOptions {
 		$refSpec = $besthit->{species};
 		my $details = "Evalue: " . $besthit->{evalue};
 		printOut("Seq id has been determined as $seqId in $refSpec with $details", 2);
+		if(length("$seqName|$refSpec|$seqId") > 60) {
+			die "Output file will have header longer than 60 characters ($seqName|$refSpec|$seqId). Please consider shorten the sequence IDs! More at https://github.com/BIONF/fDOG/wiki/Check-data-validity\n";
+		}
 		if($seqId eq '') {
 			print "There was no significant hit for your sequence in " . $refSpec . ".\nPlease specify a sequence id on your own.\n";
 			exit;

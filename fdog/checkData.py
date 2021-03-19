@@ -70,6 +70,12 @@ def checkValidFasta(file):
         fasta = SeqIO.parse(f, 'fasta')
         if not any(fasta):
             return('notFasta')
+        else:
+            # check for long header
+            inSeq = SeqIO.to_dict((SeqIO.parse(open(file), 'fasta')))
+            for id in inSeq:
+                if len(id) > 30:
+                    return('longHeader')
         # check space or tab
         if any(s in f.read() for s in spaceChr):
             return('space')
@@ -132,6 +138,8 @@ def checkDataFolder(checkDir, replace, delete, concat):
                             checkFaFile = checkValidFasta(faFile)
                             if checkFaFile == 'notFasta':
                                 sys.exit('*** ERROR: %s does not look like a fasta file!' % faFile)
+                            elif checkFaFile == 'longHeader':
+                                sys.exit('*** ERROR: %s contains long headers!' % faFile)
                             elif checkFaFile == 'space':
                                 sys.exit('*** ERROR: %s contains spaces/tabs!' % faFile)
                             elif checkFaFile == 'multiLine':
@@ -185,7 +193,7 @@ def checkMissingNcbiID(namesDmp, taxaList):
     return(missingTaxa.keys(), dupTaxa)
 
 def main():
-    version = '0.0.2'
+    version = '0.0.3'
     parser = argparse.ArgumentParser(description='You are running fdog.checkData version ' + str(version) + '.')
     parser.add_argument('-g', '--genomeDir', help='Path to search taxa directory (e.g. fdog_dataPath/genome_dir)', action='store', default='')
     parser.add_argument('-b', '--blastDir', help='Path to blastDB directory (e.g. fdog_dataPath/blast_dir)', action='store', default='')
