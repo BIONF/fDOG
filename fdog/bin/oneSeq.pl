@@ -632,7 +632,7 @@ if (!$coreOnly) {
 		print "Matrix: $matrix\n";
 		print "Fdog path: $path\n";
 		if ($seqFile ne "") {
-			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpecies " . $refSpec, "--fdogPath " . $path);
+			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--fdogPath " . $path);
 
 			if (defined $assemblyFile){
 				push(@assembly_cmd, "--assemblyPath $assemblyFile")
@@ -669,7 +669,7 @@ if (!$coreOnly) {
 			}
 			system('echo $CONDA_DEFAULT_ENV');
 			system('fdog.assembly -h');
-			system('fdog.assembly --gene MFAP1 --augustusRefSpec chicken --refSpecies HUMAN@9606@3 --fdogPath /home/hannah/anaconda3/envs/fdog_assembly/lib/python3.8/site-packages/fdog --assemblyPath /home/hannah/Dev/fDOG/fdog/data/assembly_dir/CHICK@9031@AS/CHICK@9031@AS.fa --out /home/hannah/test_fdog/MFAP1');
+			system('fdog.assembly --gene MFAP1 --augustusRefSpec chicken --refSpec HUMAN@9606@3 --fdogPath /home/hannah/anaconda3/envs/fdog_assembly/lib/python3.8/site-packages/fdog --assemblyPath /home/hannah/Dev/fDOG/fdog/data/assembly_dir/CHICK@9031@AS/CHICK@9031@AS.fa --out /home/hannah/test_fdog/MFAP1');
 			printDebug(@assembly_cmd);
 			system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
 		}
