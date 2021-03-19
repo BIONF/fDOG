@@ -83,7 +83,7 @@ def runBlast(args):
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.4'
+    version = '0.0.5'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -189,8 +189,6 @@ def main():
         # warning about long header
         if longId == 'yes':
             print('\033[91mWARNING: Some headers longer than 80 characters have been automatically shortened. PLease check the %s.mapping file for details!\033[0m' % specFile)
-        else:
-            os.remove(specFile + '.mapping')
     else:
         print(genomePath + '/' + specName + '.fa already exists!')
 
