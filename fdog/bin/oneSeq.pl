@@ -671,7 +671,7 @@ if (!$coreOnly) {
 			system('fdog.assembly -h');
 			system('fdog.assembly --gene MFAP1 --augustusRefSpec chicken --refSpec HUMAN@9606@3 --fdogPath /home/hannah/anaconda3/envs/fdog_assembly/lib/python3.8/site-packages/fdog --assemblyPath ~/data/assembly_dir/CHICK@9031@AS/CHICK@9031@AS.fa --out /home/hannah/test_fdog/MFAP1');
 			printDebug(@assembly_cmd);
-			system(@assembly_cmd) == 0 or die "Error: fDOGassembly failed \n";
+			system(join(“ “, @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 		}
 	}
 	else {
