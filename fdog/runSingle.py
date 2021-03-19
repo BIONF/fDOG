@@ -1,4 +1,4 @@
-0.0.28# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 #######################################################################
 # Copyright (C) 2020 Vinh Tran
@@ -170,7 +170,7 @@ def runSingle(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.27'
+    version = '0.0.29'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')

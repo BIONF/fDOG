@@ -181,7 +181,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.28'
+    version = '0.0.29'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
