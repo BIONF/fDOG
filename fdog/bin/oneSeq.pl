@@ -657,7 +657,7 @@ if (!$coreOnly) {
 				push(@assembly_cmd, "--strict");
 			}
 			if ($eval_blast){
-				push(@assembly_cmd, "--evalue $eval_blast ");
+				push(@assembly_cmd, "--evalBlast $eval_blast ");
 			}
 			if ($searchTool){
 				push(@assembly_cmd, "--msaTool $aln ");
