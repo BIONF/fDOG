@@ -636,7 +636,7 @@ if (!$coreOnly) {
 		$eval_blast = sprintf("%f", $eval_blast);
 		print "Evalblast: $eval_blast\n";
 		print "Filter: $filter \n";
-		my $searchtaxa = join(" ", @searchTaxa)
+		my $searchtaxa = join(" ", @searchTaxa);
 		print "searchTaxa:  $searchtaxa\n";
 		print "searchTaxa:  @searchtaxa\n";
 		if ($seqFile ne "") {
