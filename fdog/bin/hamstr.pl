@@ -194,9 +194,10 @@ use run_genewise_hamstr;
 ## 22.07.2020 (v13.4.0 - vinh) moved tmp blast files to output folder and delete them when finished
 ## 01.12.2020 (v13.4.1 - vinh) add silent option to muscle for checkCoOrthologsRef
 ## 21.01.2021 (v13.4.2 - vinh) fiexed bug when refspec has "dot" in its name
+## 19.03.2021 (v13.4.3 - vinh) changed $path to current directory
 
 ######################## start main ###########################################
-my $version = "HaMStR v.13.4.2";
+my $version = "HaMStR v.13.4.3";
 ######################## checking whether the configure script has been run ###
 my $configure = 0;
 if ($configure == 0){
@@ -215,8 +216,9 @@ my $blast_prog = 'blastp';
 my $filter = 'F'; # low complexity filter switch. Default 'on'. Set of 'F' to turn off permanently.
 my $eval_blast = 10; # default evalue cutoff for the blast search
 ########## EDIT THE FOLLOWING LINES TO MODIFY DEFAULT PATHS ###################
-my $path = abs_path(dirname(__FILE__));
-$path =~ s/\/bin//;
+# my $path = abs_path(dirname(__FILE__));
+# $path =~ s/\/bin//;
+my $path = getcwd;
 my $hmmpath = "$path/core_orthologs"; #path where the hmms are located
 my $blastpath = "$path/blast_dir"; #path to the blast-dbs
 my $outpath = '.';
