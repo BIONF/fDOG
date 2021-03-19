@@ -636,9 +636,9 @@ if (!$coreOnly) {
 		$eval_blast = sprintf("%f", $eval_blast);
 		print "Evalblast: $eval_blast\n";
 		print "Filter: $filter \n";
-		my $searchtaxa = join(" ", @searchTaxa);
-		print "searchTaxa:  $searchtaxa\n";
-		print "searchTaxa:  @searchtaxa\n";
+		my $searchTaxa = join(" ", @searchTaxa);
+		print "searchTaxa:  $searchTaxa\n";
+		print "searchTaxa:  @searchTaxa\n";
 		if ($seqFile ne "") {
 			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--fdogPath " . $path);
 
