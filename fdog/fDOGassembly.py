@@ -177,12 +177,12 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix, fdogPath):
     ###########getting sequences and write all in one file to make msa #########
     name_file = candidate_name + ".co"
     output_file = 'tmp/' + name_file + '.fasta'
     aln_file = 'tmp/' + name_file + '.aln'
-    genome_dir_path = 'data/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
+    genome_dir_path = fdogPath + '/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
     #print(searchTool)
 
     out = open(output_file, "w")
@@ -263,7 +263,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     if checkCo == True:
                         for i in id_ref:
                             print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
-                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix)
+                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, fdogPath)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
                                 orthologs.append(gene)
@@ -279,7 +279,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     if checkCo == True:
                         for i in id_ref:
                             print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
-                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool)
+                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, fdogPath)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
                                 orthologs.append(gene)
@@ -358,7 +358,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool):
     #print("addSequences")
-    print(sequenceIds)
+    #print(sequenceIds)
     #print(species_list)
     output_file = open(output + "/" + name + ".extended.fa", "a+")
     if refBool == False:
@@ -373,8 +373,8 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_candidate = readFasta(candidate_fasta)
     seq_records_candidate = list(seq_records_candidate)
     for entry_candidate in seq_records_candidate:
-        print(entry_candidate.id)
-        print(sequenceIds)
+        #print(entry_candidate.id)
+        #print(sequenceIds)
         if entry_candidate.id in sequenceIds:
             output_file.write(">" + entry_candidate.id + "\n")
             output_file.write(str(entry_candidate.seq) + "\n")
