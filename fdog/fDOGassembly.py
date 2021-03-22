@@ -182,7 +182,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     name_file = candidate_name + ".co"
     output_file = 'tmp/' + name_file + '.fasta'
     aln_file = 'tmp/' + name_file + '.aln'
-    genome_dir_path = fdogPath + '/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
+    genome_dir_path = fdogPath + 'data/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
     #print(searchTool)
 
     out = open(output_file, "w")
