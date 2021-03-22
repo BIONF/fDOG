@@ -250,14 +250,14 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         old_name = None
         min = 10
         for line in lines:
-            id, gene_name, evalue = (line.replace("\n", "")).split("\t")
-            gene_name = gene_name.split("|")[2]
+            id, gene, evalue = (line.replace("\n", "")).split("\t")
+            gene_name = gene.split("|")[2]
             if gene_name != old_name:
                 print("candidate:%s"%(gene_name))
                 print("blast-hit:%s"%(id))
                 min = float(evalue)
                 if id in id_ref:
-                    orthologs.append(gene_name)
+                    orthologs.append(gene)
                     print("\thitting\n")
                 else:
                     if checkCo == True:
@@ -266,14 +266,14 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                             co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
-                                orthologs.append(gene_name)
+                                orthologs.append(gene)
                             elif co_orthologs_result == 0:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit))
                     else:
                         print("\tnothitting\n")
             elif (gene_name == old_name) and float(evalue) == min and gene_name not in orthologs:
                 if id in id_ref:
-                    orthologs.append(gene_name)
+                    orthologs.append(gene)
                     print("\thitting\n")
                 else:
                     if checkCo == True:
@@ -282,7 +282,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                             co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
-                                orthologs.append(gene_name)
+                                orthologs.append(gene)
                             elif co_orthologs_result == 0:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit))
                     else:
@@ -358,7 +358,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool):
     #print("addSequences")
-    #print(sequenceIds)
+    print(sequenceIds)
     #print(species_list)
     output_file = open(output + "/" + name + ".extended.fa", "a+")
     if refBool == False:
@@ -373,9 +373,9 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_candidate = readFasta(candidate_fasta)
     seq_records_candidate = list(seq_records_candidate)
     for entry_candidate in seq_records_candidate:
-        #print(entry_candidate.id)
-        #print(sequenceIds)
-        if entry_candidate.id.split("|")[2] in sequenceIds:
+        print(entry_candidate.id)
+        print(sequenceIds)
+        if entry_candidate.id in sequenceIds:
             output_file.write(">" + entry_candidate.id + "\n")
             output_file.write(str(entry_candidate.seq) + "\n")
     output_file.close()
