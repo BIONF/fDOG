@@ -445,7 +445,7 @@ def main():
     augustus_ref_species = args.augustusRefSpec
     fdog_ref_species = args.refSpec
     #paths user input
-    assembly_path = args.assemblyPath
+    assemblyDir = args.assemblyPath
     fdog_path = args.fdogPath
     core_path = args.coregroupPath
     out = args.out
@@ -472,8 +472,8 @@ def main():
     if fdog_path == '':
         fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
         print("fdog_path:" + fdog_path + "\n")
-    if assembly_path == '':
-        assembly_path = fdog_path + '/data/assembly_dir/'
+    if assemblyDir == '':
+        assemblyDir = fdog_path + '/data/assembly_dir/'
         #for testing:
         #assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa'
     if out == '':
@@ -485,9 +485,11 @@ def main():
 
     # user input has to be checked here before fDOGassembly continues
     #for testing:
-    assembly_names = os.listdir()
+    assembly_names = os.listdir(assemblyDir)
     print(assembly_names)
     asName = 'CHICK@9031@AS'
+
+    assembly_path = assemblyDir + "/" + assembly_names[0] + "/" + assembly_names[0] + ".fa"
 
 
     ########################## some variables ##################################
