@@ -226,11 +226,10 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, fdogPath):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
-    print(fasta_path)
     seedDic = getSeedInfo(fasta_path)
     #print(fasta_path)
     orthologs = []
-    print(seedDic)
+    #print(seedDic)
     blast_dir_path = fdogPath + "data/blast_dir/"
     if strict != True:
         seed = [fdog_ref_species]
@@ -361,10 +360,9 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     #print("addSequences")
     #print(sequenceIds)
     #print(species_list)
+    output_file = open(output + "/" + name + ".extended.fa", "a+")
     if refBool == False:
         seq_records_core = readFasta(core_fasta)
-        output_file = open(output + "/" + name + ".extended.fa", "a+")
-
         seq_records_core = list(seq_records_core)
         for species in species_list:
             for entry_core in seq_records_core:
