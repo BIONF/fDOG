@@ -470,6 +470,7 @@ def main():
         taxa =[]
     else:
         taxa = taxa.split(",")
+    fasoff = args.fasoff
 
 
     #checking paths
