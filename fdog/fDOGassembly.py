@@ -589,6 +589,11 @@ def main():
         refBool = True
 
     ############### make Annotation with FAS ###################################
+    if refBool == False:
+        print("No orthologs found. Exciting ...")
+        cleanup(tmp)
+        return 0
+        
     if fasoff == False:
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
