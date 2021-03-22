@@ -223,7 +223,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #rejected
         return 0, distance_ref_hit, distance_hit_query
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, fdogPath):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, fdogPath, filter):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
     seedDic = getSeedInfo(fasta_path)
@@ -324,7 +324,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 print("The species " + species + " isn't part of the core ortholog group, ... exciting")
                 return 0, seed
 
-            os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -seg " + filter + " -out tmp/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
             alg_file = open("tmp/blast_" + species, "r")
             lines = alg_file.readlines()
             alg_file.close()
@@ -436,6 +436,7 @@ def main():
     optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     optional.add_argument('--searchTaxa', help='List of search taxa names in fdog format', action='store', default='')
     optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on. Default: False', action='store_true', default=False)
+    optional.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -453,6 +454,10 @@ def main():
     strict = args.strict
     checkCoorthologs = args.checkCoorthologsRef
     filter = args.filter
+    if filter == True:
+        filter = 'yes'
+    else:
+        filter = 'no'
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
@@ -470,29 +475,23 @@ def main():
     #checking paths
     if fdog_path == '':
         fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
-        print("fdog_path:" + fdog_path + "\n")
     if assemblyDir == '':
         assemblyDir = fdog_path + '/data/assembly_dir/'
-        #for testing:
-        #assembly_path = assembly_path + 'CHICK@9031@AS/CHICK@9031@AS.fa'
     if out == '':
         out = os.getcwd()
     if core_path == '':
         core_path = out + '/core_orthologs/'
-        #only for testing, has to be changed in the end
-        #core_path = '/home/hannah/test_fdog/core_orthologs'
+
 
     # user input has to be checked here before fDOGassembly continues
-    #for testing:
+
     assembly_names = os.listdir(assemblyDir)
-    print(assembly_names)
-    #asName = 'CHICK@9031@AS'
 
 
 
     ########################## some variables ##################################
 
-    refBool = False
+    refBool = False # checks if sequences of reference species were already part of the extended.fa file
     ########### paths ###########
 
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
@@ -567,7 +566,7 @@ def main():
             continue
 
         else:
-            print(str(number_regions) + " candiate regions were found. Extracting sequences.")
+            print(str(number_regions) + " candiate regions were found. Extracting sequences...")
             extract_seq(regions, assembly_path)
 
     ############### make Augustus PPX search ###################################
@@ -577,7 +576,7 @@ def main():
 
     ################# backward search to filter for orthologs###################
     #verschiede Modi beachten!
-        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, fdog_path)
+        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, fdog_path, filter)
 
 
         if reciprocal_sequences == 0:
@@ -589,10 +588,11 @@ def main():
         refBool = True
 
     ############### make Annotation with FAS ###################################
-    fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
+    if fasoff == False:
+        fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
-    os.system('mkdir tmp/anno_dir')
-    os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
+        os.system('mkdir tmp/anno_dir')
+        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
 
     ################# remove tmp folder ########################################

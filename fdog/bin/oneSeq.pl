@@ -678,6 +678,9 @@ if (!$coreOnly) {
 			if ($coreOrthologsPath){
 				push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
 			}
+			if ($fasoff){
+				push(@assembly_cmd, "--fasoff $fasoff");
+			}
 			##### searchTaxa Option einfügen
 			#### filter Option einfügen
 
