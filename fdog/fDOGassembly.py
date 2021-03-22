@@ -583,12 +583,10 @@ def main():
         if reciprocal_sequences == 0:
             print("No ortholog fulfilled the reciprocity criteria")
             continue
-        else:
-            refBool = True
 
     ################ add sequences to extended.fa in the output folder##########
         addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa, refBool)
-
+        refBool = True
 
     ############### make Annotation with FAS ###################################
     fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
