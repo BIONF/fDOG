@@ -355,21 +355,22 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
 
     #print(orthologs)
-    return orthologs, seed
+    return list(orthologs), seed
 
-def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list):
+def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool):
     #print("addSequences")
     #print(sequenceIds)
     #print(species_list)
-    seq_records_core = readFasta(core_fasta)
-    output_file = open(output + "/" + name + ".extended.fa", "a+")
+    if refBool == False:
+        seq_records_core = readFasta(core_fasta)
+        output_file = open(output + "/" + name + ".extended.fa", "a+")
 
-    seq_records_core = list(seq_records_core)
-    for species in species_list:
-        for entry_core in seq_records_core:
-            if species in entry_core.id:
-                output_file.write(">" + entry_core.id + "\n")
-                output_file.write(str(entry_core.seq) + "\n")
+        seq_records_core = list(seq_records_core)
+        for species in species_list:
+            for entry_core in seq_records_core:
+                if species in entry_core.id:
+                    output_file.write(">" + entry_core.id + "\n")
+                    output_file.write(str(entry_core.seq) + "\n")
 
     seq_records_candidate = readFasta(candidate_fasta)
     seq_records_candidate = list(seq_records_candidate)
@@ -487,13 +488,13 @@ def main():
     #for testing:
     assembly_names = os.listdir(assemblyDir)
     print(assembly_names)
-    asName = 'CHICK@9031@AS'
+    #asName = 'CHICK@9031@AS'
 
-    assembly_path = assemblyDir + "/" + assembly_names[0] + "/" + assembly_names[0] + ".fa"
 
 
     ########################## some variables ##################################
 
+    refBool = False
     ########### paths ###########
 
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
@@ -532,56 +533,64 @@ def main():
         os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
         print("block profile is finished \n")
 
+
+    for asName in assembly_names:
+        print("Searching in species " + asName + "\n")
+        assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
     ######################## tBLASTn ###########################################
 
     #database anlegen
 
-    db_check = searching_for_db(assembly_path)
-    #print(assembly_path)
-    if db_check == 0:
-        print("creating a blast data base \n")
-        os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + assembly_path)
-        print("database is finished \n")
-    else:
-        print('blast data base exists already, continuing...')
+        db_check = searching_for_db(assembly_path)
+        #print(assembly_path)
+        if db_check == 0:
+            print("creating a blast data base \n")
+            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + assembly_path)
+            print("database is finished \n")
+        else:
+            print('blast data base exists already, continuing...')
 
 
     #make a tBLASTn search against the new database
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
-    print("tBLASTn search against new created data base")
-    os.system('tblastn -db ' + assembly_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
-    print("tBLASTn search is finished")
+        print("tBLASTn search against data base")
+        os.system('tblastn -db ' + assembly_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
+        print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
 
     # parse blast and filter for candiate regions
-    regions, number_regions = candidate_regions(average_intron_length, evalue)
+        regions, number_regions = candidate_regions(average_intron_length, evalue)
 
-    if regions == 0:
-        #no candidat region are available, no ortholog can be found
-        print("No candidate region found")
-        cleanup(tmp)
-        return 0
+        if regions == 0:
+            #no candidat region are available, no ortholog can be found
+            print("No candidate region found")
+            continue
 
-    else:
-        print(str(number_regions) + " candiate regions were found. Extracting sequences.")
-        extract_seq(regions, assembly_path)
+        else:
+            print(str(number_regions) + " candiate regions were found. Extracting sequences.")
+            extract_seq(regions, assembly_path)
 
     ############### make Augustus PPX search ###################################
-    print("starting augustus ppx \n")
-    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group)
-    print("augustus is finished \n")
+        print("starting augustus ppx \n")
+        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group)
+        print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
     #verschiede Modi beachten!
-    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, fdog_path)
-    if reciprocal_sequences == 0:
-        cleanup(tmp)
-        return 0
+        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, fdog_path)
+
+
+        if reciprocal_sequences == 0:
+            print("No ortholog fulfilled the reciprocity criteria")
+            continue
+        else:
+            refBool = True
 
     ################ add sequences to extended.fa in the output folder##########
-    addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa)
+        addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa, refBool)
+
 
     ############### make Annotation with FAS ###################################
     fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
