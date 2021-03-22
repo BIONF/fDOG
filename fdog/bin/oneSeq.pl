@@ -636,9 +636,9 @@ if (!$coreOnly) {
 		$eval_blast = sprintf("%f", $eval_blast);
 		print "Evalblast: $eval_blast\n";
 		print "Filter: $filter \n";
-		my $searchTaxa = join(" ", @searchTaxa);
-		print "searchTaxa:  $searchTaxa\n";
-		print "searchTaxa:  @searchTaxa\n";
+		if (defined @searchTaxa){
+			print " searhc Taxa: @searchTaxa \n";
+		}
 		if ($seqFile ne "") {
 			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--fdogPath " . $path);
 
@@ -678,6 +678,8 @@ if (!$coreOnly) {
 			if ($coreOrthologsPath){
 				push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
 			}
+			##### searchTaxa Option einfügen
+			#### filter Option einfügen
 
 			printDebug(@assembly_cmd);
 			system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";

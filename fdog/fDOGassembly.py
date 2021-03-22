@@ -485,6 +485,8 @@ def main():
 
     # user input has to be checked here before fDOGassembly continues
     #for testing:
+    assembly_names = os.listdir()
+    print(assembly_names)
     asName = 'CHICK@9031@AS'
 
 
