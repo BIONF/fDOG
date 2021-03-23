@@ -479,7 +479,7 @@ def main():
         taxa = taxa.split(",")
     fasoff = args.fasoff
 
-
+    print(dataPath)
     #checking paths
     if dataPath == '':
         fdogPath = os.path.realpath(__file__).replace('/fDOGassembly.py','')
