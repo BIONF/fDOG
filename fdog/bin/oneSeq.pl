@@ -1446,7 +1446,7 @@ sub checkOptions {
 	#### checking for the min and max distance for the core set compilation
 	#### omit this check, if the option reuseCore has been selected (added 2019-02-04)
 	$optbreaker = 0;
-	unless ($coreex and $assembly) {
+	if (!$coreex and !$assembly) {
 		my $node;
 		print "Testing coreex assembly\n";
 		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
