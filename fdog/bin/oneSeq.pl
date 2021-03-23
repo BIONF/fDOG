@@ -686,7 +686,7 @@ if (!$coreOnly) {
 			}
 			##### searchTaxa Option einfügen
 			#### filter Option einfügen
-
+			print "Test \n"; <>;
 			printDebug(@assembly_cmd);
 			system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 		}
