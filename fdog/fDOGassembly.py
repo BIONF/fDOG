@@ -490,7 +490,7 @@ def main():
         if not os.path.exists(configFile):
             sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog) or give a dataPath')
         if pathFile == '':
-            with open(pathconfigFile) as f:
+            with open(configFile) as f:
                 dataPath = f.readline().strip()
         else:
             cfg = load_config(pathFile)
@@ -554,6 +554,8 @@ def main():
 
 
     for asName in assembly_names:
+        print(searchTaxon + "\n")
+        print(asName + "\n")
         if searchTaxon != '' and asName != searchTaxon:
             continue
 
