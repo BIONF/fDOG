@@ -310,6 +310,7 @@ my $lengthExtension;
 my $assemblyFile;
 my $searchTool = 'blast';
 my $matrix = 'blosum62';
+my $dataPath = '';
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -378,7 +379,8 @@ GetOptions (
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" => \$lengthExtension,
 	"searchTool=s" => \$searchTool,
-	"scoringmatrix=s" => \$matrix
+	"scoringmatrix=s" => \$matrix,
+	"dataPath=s" => \$dataPath
 );
 
 print " Evalue: $eval_blast \n";
@@ -391,6 +393,7 @@ $blastPath = abs_path($blastPath)."/";
 $weightPath = abs_path($weightPath)."/";
 $genome_dir = abs_path($genome_dir)."/";
 $taxaPath = $genome_dir;
+$dataPath = abs_path($dataPath)."/";
 
 ############# do initial check
 if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
@@ -636,11 +639,12 @@ if (!$coreOnly) {
 		$eval_blast = sprintf("%f", $eval_blast);
 		print "Evalblast: $eval_blast\n";
 		print "Filter: $filter \n";
+		print "DataPath: $dataPath \n";
 		#if (defined @searchTaxa){
 			#print " searhc Taxa: @searchTaxa \n";
 		#}
 		if ($seqFile ne "") {
-			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--fdogPath " . $path);
+			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
 
 			if (defined $assemblyFile){
 				push(@assembly_cmd, "--assemblyPath $assemblyFile")

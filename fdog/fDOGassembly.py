@@ -6,7 +6,14 @@ from Bio import SeqIO
 from Bio.Phylo.TreeConstruction import DistanceCalculator
 from Bio import AlignIO
 import argparse
+import yaml
 ########################### functions ##########################################
+def load_config(config_file):
+    with open(config_file, 'r') as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
 
 def merge(blast_results, insert_length):
     number_regions = 0
@@ -426,7 +433,7 @@ def main():
     optional.add_argument('--assemblyPath', help='Input file containing the assembly sequence', action='store', default='')
     optional.add_argument('--tmp', help='tmp files will not be deleted', action='store_true', default = False)
     optional.add_argument('--out', help='Output directory', action='store', default='')
-    optional.add_argument('--fdogPath', help='fDOG directory', action='store', default='')
+    optional.add_argument('--dataPath', help='data directory', action='store', default='')
     optional.add_argument('--coregroupPath', help='core_ortholog directory', action='store', default='')
     optional.add_argument('--searchTool', help='Choose between blast and diamond as alignemnt search tool(default:blast)', action='store', choices=['blast', 'diamond'], default='blast')
     optional.add_argument('--evalBlast', help='E-value cut-off for the Blast search. (default: 0.00001)', action='store', default=0.00001, type=float)
@@ -446,7 +453,7 @@ def main():
     fdog_ref_species = args.refSpec
     #paths user input
     assemblyDir = args.assemblyPath
-    fdog_path = args.fdogPath
+    dataPath = args.dataPath
     core_path = args.coregroupPath
     out = args.out
     #I/O
@@ -474,10 +481,23 @@ def main():
 
 
     #checking paths
-    if fdog_path == '':
-        fdog_path = os.path.realpath(__file__).replace('/fDOGassembly.py','')
+    if dataPath == '':
+        fdogPath = os.path.realpath(__file__).replace('/fDOGassembly.py','')
+        configFile = fdogPath + '/bin/pathconfig.txt'
+        if not os.path.exists(configFile):
+            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog) or give a dataPath')
+        if pathFile == '':
+            with open(pathconfigFile) as f:
+                dataPath = f.readline().strip()
+        else:
+            cfg = load_config(pathFile)
+            try:
+                dataPath = cfg['dataPath']
+            except:
+                dataPath = 'config'
+
     if assemblyDir == '':
-        assemblyDir = fdog_path + '/data/assembly_dir/'
+        assemblyDir = dataPath + '/data/assembly_dir/'
     if out == '':
         out = os.getcwd()
     if core_path == '':
@@ -577,7 +597,7 @@ def main():
 
     ################# backward search to filter for orthologs###################
     #verschiede Modi beachten!
-        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, fdog_path, filter)
+        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter)
 
 
         if reciprocal_sequences == 0:
@@ -593,7 +613,7 @@ def main():
         print("No orthologs found. Exciting ...")
         cleanup(tmp)
         return 0
-        
+
     if fasoff == False:
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 

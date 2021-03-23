@@ -162,7 +162,7 @@ def runSingle(args):
     if silent == True:
         cmd = cmd + ' -silent'
     # add assembly options
-    (assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix) = assemblyArgs
+    (assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix, dataPath) = assemblyArgs
     if assembly == True:
         cmd = cmd + ' -assembly'
         if not augustusRefSpec == '':
@@ -179,6 +179,8 @@ def runSingle(args):
             cmd = cmd + ' -searchTool=%s' % searchTool
         if not matrix == '':
             cmd = cmd + ' -scoringmatrix=%s' % matrix
+        if not dataPath == '':
+            cmd = cmd + ' -dataPath=%s' % dataPath
     # print(cmd)
     if mute == True:
         cmd = cmd + ' > /dev/null 2>&1'
@@ -434,7 +436,7 @@ def main():
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, debug, silent]
-    assemblyArgs = [assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
+    assemblyArgs = [assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix, dataPath]
 
     ### run fdog
     runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, False])
