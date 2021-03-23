@@ -702,7 +702,7 @@ if (!$coreOnly) {
 			print "Evalblast: $eval_blast\n";
 			print "Filter: $filter \n";
 			print "DataPath: $dataPath \n";
-			if (defined @searchTaxa){
+			if (@searchTaxa){
 				print " search Taxa: @searchTaxa \n";
 			}
 			if ($seqFile ne "") {
@@ -752,7 +752,7 @@ if (!$coreOnly) {
 				}
 				##### searchTaxa Option einfügen
 				#### filter Option einfügen
-				print "Test \n";
+				print "Test \n"; <>;
 				printDebug(@assembly_cmd);
 				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 			}
