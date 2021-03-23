@@ -620,147 +620,149 @@ push @logOUT, "Core set compilation finished in " . roundtime(gettime() - $coreS
 # my $finalOutput = $outputPath . '/' . $seqName . '.extended.fa';
 my $orthoStTime = gettime();
 if (!$coreOnly) {
-	#abfrage assembly oder gene set
-	if ($assembly){
-		#python aufruf
-		print "fdog_goes_assembly \n";
-		print "AssemblyFile: $assemblyFile\n";
-		print "SeqName: $seqName\n";
-		print "Augustus Species: $augustusRefSpec\n";
-		print "RefSpec: $refSpec\n";
-		print "Assembly: $assembly\n";
-		print "OutputPath: $outputPath\n";
-		print "avIntron: $avIntron\n";
-		print "searchTool: $searchTool\n";
-		print "Matrix: $matrix\n";
-		print "Fdog path: $path\n";
-		print "Evalblast: $eval_blast\n";
-		$eval_blast = sprintf("%f", $eval_blast);
-		print "Evalblast: $eval_blast\n";
-		print "Filter: $filter \n";
-		print "DataPath: $dataPath \n";
-		#if (defined @searchTaxa){
-			#print " searhc Taxa: @searchTaxa \n";
-		#}
-		if ($seqFile ne "") {
-			my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
+	$coremode = 0;
+	push @logOUT, "Performing the final ortholog search...";
+	print "\nPerforming the final ortholog search...\n";
+	my $startTmp = gettime();
+	#using $eval_relaxfac to relax the evalues for final search
+	my $final_eval_blast = $eval_blast*$eval_relaxfac;
+	my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
 
-			if (defined $assemblyFile){
-				push(@assembly_cmd, "--assemblyPath $assemblyFile")
-			}
-			if (defined $avIntron){
-				push(@assembly_cmd, "--avIntron $avIntron ");
-			}
-			if (defined $lengthExtension){
-				push(@assembly_cmd, "--lengthExtension $lengthExtension ");
-			}
-			if (!$autoclean){
-				push(@assembly_cmd, "--tmp ");
-			}
-			if ($outputPath){
-				push(@assembly_cmd, "--out $outputPath ");
-			}
-			if (defined $strict){
-				push(@assembly_cmd, "--strict");
-			}
-			if ($eval_blast){
-				push(@assembly_cmd, "--evalBlast $eval_blast ");
-			}
-			if ($searchTool){
-				push(@assembly_cmd, "--msaTool $aln ");
-			}
-			if (defined $checkcoorthologsref){
-				push(@assembly_cmd, "--checkCoorthologsRef");
-			}
-			if ($searchTool){
-				push(@assembly_cmd, "--searchTool $searchTool");
-			}
-			if ($matrix){
-				push(@assembly_cmd, "--scoringmatrix $matrix");
-			}
-			if ($coreOrthologsPath){
-				push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
-			}
-			if ($fasoff){
-				push(@assembly_cmd, "--fasoff $fasoff");
-			}
-			##### searchTaxa Option einfügen
-			#### filter Option einfügen
-			print "Test \n";
-			printDebug(@assembly_cmd);
-			system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
-		}
-	}
-	else {
-		$coremode = 0;
-		push @logOUT, "Performing the final ortholog search...";
-		print "\nPerforming the final ortholog search...\n";
-		my $startTmp = gettime();
-		#using $eval_relaxfac to relax the evalues for final search
-		my $final_eval_blast = $eval_blast*$eval_relaxfac;
-		my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
-
-		$taxaPath = $genome_dir;
-		my @searchTaxa;
-		unless ($searchTaxa) {
-			unless($groupNode) {
-				@searchTaxa = keys %taxa;
-			} else {
-				# %taxa = getTaxa();
-				# print "GET TAXA TIME: ", roundtime(gettime() - $startTmp),"\n";
-				my $tree = getTree();
-				# print "GET TREE TIME: ", roundtime(gettime() - $startTmp),"\n";
-				if($groupNode) {
-					foreach($tree->get_nodes()) {
-						if($_->id == $groupNode->id) {
-							$groupNode = $_;
-						}
-					}
-					$tree->set_root_node($groupNode);
-				}
-				foreach (get_leaves($tree)) {
-					push(@searchTaxa, @{$_->name('supplied')}[0]);
-				}
-			}
+	$taxaPath = $genome_dir;
+	my @searchTaxa;
+	unless ($searchTaxa) {
+		unless($groupNode) {
+			@searchTaxa = keys %taxa;
 		} else {
-			open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
-			@searchTaxa = <SEARCH>;
-			close (SEARCH);
-		}
-		# print "PREPARE TIME: ", roundtime(gettime() - $startTmp),"\n";
-
-		my $pm = new Parallel::ForkManager($cpu);
-		if ($hyperthread) {
-			$pm = new Parallel::ForkManager($cpu*2);
-		}
-
-		foreach (sort @searchTaxa) {
-			chomp(my $searchTaxon = $_);
-			my $pid = $pm->start and next;
-			if ($coreex) {
-				$db = Bio::DB::Taxonomy->new(-source    => 'flatfile',
-					-nodesfile => $idx_dir . 'nodes.dmp',
-					-namesfile => $idx_dir . 'names.dmp',
-					-directory => $idx_dir);
-				$db_bkp = $db;
-			}
-			my $searchTaxonName = getTaxonName($searchTaxon);
-			if (defined($searchTaxonName)) {
-				unless ($silent) {
-					print $searchTaxon, "\t", $searchTaxonName, "\n";
-				} else {
-					unless ($searchTaxonName eq "Unk") {
-						print $searchTaxonName, "\n";
-					} else {
-						print $searchTaxon, "\n";
+			# %taxa = getTaxa();
+			# print "GET TAXA TIME: ", roundtime(gettime() - $startTmp),"\n";
+			my $tree = getTree();
+			# print "GET TREE TIME: ", roundtime(gettime() - $startTmp),"\n";
+			if($groupNode) {
+				foreach($tree->get_nodes()) {
+					if($_->id == $groupNode->id) {
+						$groupNode = $_;
 					}
 				}
+				$tree->set_root_node($groupNode);
 			}
-			runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
-			$pm->finish;
+			foreach (get_leaves($tree)) {
+				push(@searchTaxa, @{$_->name('supplied')}[0]);
+			}
 		}
-		$pm->wait_all_children;
+	} else {
+		open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
+		@searchTaxa = <SEARCH>;
+		close (SEARCH);
 	}
+	# print "PREPARE TIME: ", roundtime(gettime() - $startTmp),"\n";
+
+	my $pm = new Parallel::ForkManager($cpu);
+	if ($hyperthread) {
+		$pm = new Parallel::ForkManager($cpu*2);
+	}
+
+	foreach (sort @searchTaxa) {
+		chomp(my $searchTaxon = $_);
+		my $pid = $pm->start and next;
+		if ($coreex) {
+			$db = Bio::DB::Taxonomy->new(-source    => 'flatfile',
+				-nodesfile => $idx_dir . 'nodes.dmp',
+				-namesfile => $idx_dir . 'names.dmp',
+				-directory => $idx_dir);
+			$db_bkp = $db;
+		}
+		my $searchTaxonName = getTaxonName($searchTaxon);
+		if (defined($searchTaxonName)) {
+			unless ($silent) {
+				print $searchTaxon, "\t", $searchTaxonName, "\n";
+			} else {
+				unless ($searchTaxonName eq "Unk") {
+					print $searchTaxonName, "\n";
+				} else {
+					print $searchTaxon, "\n";
+				}
+			}
+		}
+		if ($assembly){
+			#python aufruf
+			print "fdog_goes_assembly \n";
+			print "AssemblyFile: $assemblyFile\n";
+			print "SeqName: $seqName\n";
+			print "Augustus Species: $augustusRefSpec\n";
+			print "RefSpec: $refSpec\n";
+			print "Assembly: $assembly\n";
+			print "OutputPath: $outputPath\n";
+			print "avIntron: $avIntron\n";
+			print "searchTool: $searchTool\n";
+			print "Matrix: $matrix\n";
+			print "Fdog path: $path\n";
+			print "Evalblast: $eval_blast\n";
+			$eval_blast = sprintf("%f", $eval_blast);
+			print "Evalblast: $eval_blast\n";
+			print "Filter: $filter \n";
+			print "DataPath: $dataPath \n";
+			#if (defined @searchTaxa){
+				#print " searhc Taxa: @searchTaxa \n";
+			#}
+			if ($seqFile ne "") {
+				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
+
+				if (defined $assemblyFile){
+					push(@assembly_cmd, "--assemblyPath $assemblyFile")
+				}
+				if (defined $avIntron){
+					push(@assembly_cmd, "--avIntron $avIntron ");
+				}
+				if (defined $lengthExtension){
+					push(@assembly_cmd, "--lengthExtension $lengthExtension ");
+				}
+				if (!$autoclean){
+					push(@assembly_cmd, "--tmp ");
+				}
+				if ($outputPath){
+					push(@assembly_cmd, "--out $outputPath ");
+				}
+				if (defined $strict){
+					push(@assembly_cmd, "--strict");
+				}
+				if ($eval_blast){
+					push(@assembly_cmd, "--evalBlast $eval_blast ");
+				}
+				if ($searchTool){
+					push(@assembly_cmd, "--msaTool $aln ");
+				}
+				if (defined $checkcoorthologsref){
+					push(@assembly_cmd, "--checkCoorthologsRef");
+				}
+				if ($searchTool){
+					push(@assembly_cmd, "--searchTool $searchTool");
+				}
+				if ($matrix){
+					push(@assembly_cmd, "--scoringmatrix $matrix");
+				}
+				if ($coreOrthologsPath){
+					push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
+				}
+				if ($fasoff){
+					push(@assembly_cmd, "--fasoff $fasoff");
+				}
+				if ($searchTaxon){
+					push(@assembly_cmd, "--searchTaxa $searchTaxon")
+				}
+				##### searchTaxa Option einfügen
+				#### filter Option einfügen
+				print "Test \n";
+				printDebug(@assembly_cmd);
+				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
+			}
+		}
+		else{
+		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
+		}
+		$pm->finish;
+	}
+	$pm->wait_all_children;
 }
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
