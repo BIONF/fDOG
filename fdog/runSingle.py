@@ -165,6 +165,7 @@ def runSingle(args):
     (assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix, dataPath) = assemblyArgs
     if assembly == True:
         cmd = cmd + ' -assembly'
+        cmd = cmd + ' -reuseCore'
         if not augustusRefSpec == '':
             cmd = cmd + ' -augustusRefSpec=%s' % augustusRefSpec
         else:
