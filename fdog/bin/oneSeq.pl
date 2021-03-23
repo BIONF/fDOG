@@ -199,6 +199,7 @@ my $blastPath = "$path/blast_dir/";
 my $idx_dir = "$path/taxonomy/";
 my $dataDir = $path . '/data';
 my $weightPath = "$path/weight_dir/";
+my $assembly_dir = "$path/assembly_dir/";
 
 my @defaultRanks = (
 	'superkingdom', 'kingdom',
@@ -307,7 +308,7 @@ my $assembly;
 my $augustusRefSpec;
 my $avIntron;
 my $lengthExtension;
-my $assemblyFile;
+my $assemblyPath;
 my $searchTool = 'blast';
 my $matrix = 'blosum62';
 my $dataPath = '';
@@ -374,7 +375,7 @@ GetOptions (
 	"hyperthread" => \$hyperthread,
 	"searchTaxa=s" => \$searchTaxa,
 	"assembly" => \$assembly,
-	"assemblyFile=s" => \$assemblyFile,
+	"assemblypath=s" => \$assemblyPath,
 	"augustusRefSpec=s" => \$augustusRefSpec,
 	"avIntron=s" => \$avIntron,
 	"lengthExtension=s" => \$lengthExtension,
@@ -393,6 +394,7 @@ $weightPath = abs_path($weightPath)."/";
 $genome_dir = abs_path($genome_dir)."/";
 $taxaPath = $genome_dir;
 $dataPath = abs_path($dataPath)."/";
+$assembly_dir = abs_path($assemblyPath)."/";
 
 ############# do initial check
 if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
@@ -628,7 +630,12 @@ if (!$coreOnly) {
 	my $final_eval_blast = $eval_blast*$eval_relaxfac;
 	my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
 
-	$taxaPath = $genome_dir;
+	if (!$assembly){
+		$taxaPath = $genome_dir;
+	}
+	else{
+		$taxaPath = $assembly_dir;
+	}
 	my @searchTaxa;
 	unless ($searchTaxa) {
 		unless($groupNode) {
@@ -697,19 +704,15 @@ if (!$coreOnly) {
 			print "searchTool: $searchTool\n";
 			print "Matrix: $matrix\n";
 			print "Fdog path: $path\n";
-			print "Evalblast: $eval_blast\n";
 			$eval_blast = sprintf("%f", $eval_blast);
 			print "Evalblast: $eval_blast\n";
 			print "Filter: $filter \n";
 			print "DataPath: $dataPath \n";
-			if (@searchTaxa){
-				print " search Taxa: @searchTaxa \n";
-			}
 			if ($seqFile ne "") {
 				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
 
-				if (defined $assemblyFile){
-					push(@assembly_cmd, "--assemblyPath $assemblyFile")
+				if (defined $assemblyPath){
+					push(@assembly_cmd, "--assemblyPath $assemblyPath")
 				}
 				if (defined $avIntron){
 					push(@assembly_cmd, "--avIntron $avIntron ");
@@ -748,11 +751,11 @@ if (!$coreOnly) {
 					push(@assembly_cmd, "--fasoff $fasoff");
 				}
 				if ($searchTaxon){
-					push(@assembly_cmd, "--searchTaxa $searchTaxon")
+					push(@assembly_cmd, "--searchTaxa $searchTaxon");
 				}
-				##### searchTaxa Option einfügen
-				#### filter Option einfügen
-				print "Test \n"; <>;
+				if ($filter){
+					push(@assembly_cmd, "--filter $filter");
+				}
 				printDebug(@assembly_cmd);
 				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 			}

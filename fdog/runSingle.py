@@ -70,8 +70,8 @@ def runSingle(args):
     (fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth) = basicArgs
     cmd = 'perl %s/bin/oneSeq.pl -seqFile=%s -seqName=%s -refspec=%s' % (fdogPath, seqFile, seqName, refspec)
     # add paths
-    (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
-    cmd = cmd + ' -outpath=%s -hmmpath=%s -blastpath=%s -searchpath=%s -weightpath=%s' % (outpath, hmmpath, blastpath, searchpath, weightpath)
+    (outpath, hmmpath, blastpath, searchpath, weightpath, assemblypath) = pathArgs
+    cmd = cmd + ' -outpath=%s -hmmpath=%s -blastpath=%s -searchpath=%s -weightpath=%s -assemblypath=%s' % (outpath, hmmpath, blastpath, searchpath, weightpath, assemblypath)
     # add other I/O options
     (append, force, noCleanup, group, blast, db) = ioArgs
     if append == True:
@@ -209,6 +209,8 @@ def main():
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
     optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
     optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
+    optional_paths.add_argument('--assemblypath', help='Path for the assembly directory', action='store', default='')
+
 
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
@@ -317,6 +319,7 @@ def main():
     searchpath = args.searchpath
     weightpath = args.weightpath
     pathFile = args.pathFile
+    assemblypath = args.assemblypath
 
     # other I/O arguments
     append = args.append
@@ -427,12 +430,20 @@ def main():
             except:
                 sys.exit('weightpath not found in %s' % pathFile)
 
+    if assemblypath == '':
+        assemblypath = dataPath + '/weight_dir'
+        if dataPath == 'config':
+            try:
+                assemblypath = cfg['assemblypath']
+            except:
+                sys.exit('assemblypath not found in %s' % pathFile)
+
     ### check input arguments
     seqFile, hmmpath, blastpath, searchpath, weightpath = checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])
     # group arguments
     basicArgs = [fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth]
     ioArgs = [append, force, noCleanup, group, blast, db]
-    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
+    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath, assemblypath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]

@@ -430,7 +430,7 @@ def main():
     optional = parser.add_argument_group('Optional arguments')
     optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 5000)',action='store', default=5000, type=int)
     optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:5000)', action='store', default=5000, type=int)
-    optional.add_argument('--assemblyPath', help='Input file containing the assembly sequence', action='store', default='')
+    optional.add_argument('--assemblyPath', help='Path for the assembly directory', action='store', default='')
     optional.add_argument('--tmp', help='tmp files will not be deleted', action='store_true', default = False)
     optional.add_argument('--out', help='Output directory', action='store', default='')
     optional.add_argument('--dataPath', help='data directory', action='store', default='')
@@ -441,10 +441,11 @@ def main():
     optional.add_argument('--msaTool', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. DEFAULT: muscle', choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
     optional.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_true', default=False)
     optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
-    optional.add_argument('--searchTaxa', help='List of search taxa names in fdog format', action='store', default='')
+    optional.add_argument('--coreTaxa', help='List of core taxa used during --strict', action='store', default='')
     optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on. Default: False', action='store_true', default=False)
     optional.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
+    optional.add_argument('--searchTaxon', help='Search Taxon name', action='store', default='')
 
     args = parser.parse_args()
 
@@ -474,12 +475,13 @@ def main():
     evalue = args.evalBlast
     msaTool = args.msaTool
     matrix = args.scoringmatrix
-    taxa = args.searchTaxa
+    taxa = args.coreTaxa
     if taxa == '':
         taxa =[]
     else:
         taxa = taxa.split(",")
     fasoff = args.fasoff
+    searchTaxon = args.searchTaxon
 
     #checking paths
     if dataPath == '':
@@ -508,8 +510,6 @@ def main():
     # user input has to be checked here before fDOGassembly continues
 
     assembly_names = os.listdir(assemblyDir)
-
-
 
     ########################## some variables ##################################
 
@@ -554,6 +554,9 @@ def main():
 
 
     for asName in assembly_names:
+        if searchTaxon != '' and asName != searchTaxon:
+            continue
+
         print("Searching in species " + asName + "\n")
         assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
     ######################## tBLASTn ###########################################
@@ -613,7 +616,7 @@ def main():
     if refBool == False:
         print("No orthologs found. Exciting ...")
         cleanup(tmp)
-        return 0
+        return 1
 
     if fasoff == False:
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
