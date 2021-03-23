@@ -694,7 +694,7 @@ if (!$coreOnly) {
 		if ($assembly){
 			#python aufruf
 			print "fdog_goes_assembly \n";
-			print "AssemblyFile: $assemblyFile\n";
+			print "AssemblyFile: $assemblyPath\n";
 			print "SeqName: $seqName\n";
 			print "Augustus Species: $augustusRefSpec\n";
 			print "RefSpec: $refSpec\n";
