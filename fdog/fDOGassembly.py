@@ -184,12 +184,12 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix, fdogPath):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix, dataPath):
     ###########getting sequences and write all in one file to make msa #########
     name_file = candidate_name + ".co"
     output_file = 'tmp/' + name_file + '.fasta'
     aln_file = 'tmp/' + name_file + '.aln'
-    genome_dir_path = fdogPath + 'data/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
+    genome_dir_path = dataPath + '/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
     #print(searchTool)
 
     out = open(output_file, "w")
@@ -230,14 +230,14 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #rejected
         return 0, distance_ref_hit, distance_hit_query
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, fdogPath, filter):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, dataPath, filter):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
     seedDic = getSeedInfo(fasta_path)
     #print(fasta_path)
     orthologs = []
     #print(seedDic)
-    blast_dir_path = fdogPath + "data/blast_dir/"
+    blast_dir_path = dataPath + "/blast_dir/"
     if strict != True:
         seed = [fdog_ref_species]
         try:
@@ -270,7 +270,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     if checkCo == True:
                         for i in id_ref:
                             print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
-                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, fdogPath)
+                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
                                 orthologs.append(gene)
@@ -479,7 +479,6 @@ def main():
         taxa = taxa.split(",")
     fasoff = args.fasoff
 
-    print(dataPath)
     #checking paths
     if dataPath == '':
         fdogPath = os.path.realpath(__file__).replace('/fDOGassembly.py','')
