@@ -1304,7 +1304,7 @@ sub checkOptions {
 
 	### checking the number of core orthologs. Omit this check if the option -reuseCore has been selected
 	$optbreaker = 0;
-	while(!$minCoreOrthologs and (!$coreex || !$assembly)) {
+	while(!$minCoreOrthologs and (!$coreex and !$assembly)) {
 		if ($optbreaker >= 3){
 			print "No proper number given ... exiting.\n";
 			exit;
