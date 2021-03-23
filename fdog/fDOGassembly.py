@@ -497,7 +497,7 @@ def main():
                 dataPath = 'config'
 
     if assemblyDir == '':
-        assemblyDir = dataPath + '/data/assembly_dir/'
+        assemblyDir = dataPath + '/assembly_dir/'
     if out == '':
         out = os.getcwd()
     if core_path == '':
