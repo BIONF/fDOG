@@ -702,9 +702,9 @@ if (!$coreOnly) {
 			print "Evalblast: $eval_blast\n";
 			print "Filter: $filter \n";
 			print "DataPath: $dataPath \n";
-			#if (defined @searchTaxa){
-				#print " searhc Taxa: @searchTaxa \n";
-			#}
+			if (defined @searchTaxa){
+				print " search Taxa: @searchTaxa \n";
+			}
 			if ($seqFile ne "") {
 				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
 

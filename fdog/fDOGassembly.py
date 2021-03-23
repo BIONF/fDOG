@@ -444,6 +444,7 @@ def main():
     optional.add_argument('--searchTaxa', help='List of search taxa names in fdog format', action='store', default='')
     optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on. Default: False', action='store_true', default=False)
     optional.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
+    optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     args = parser.parse_args()
 
@@ -456,6 +457,7 @@ def main():
     dataPath = args.dataPath
     core_path = args.coregroupPath
     out = args.out
+    pathFile = args.pathFile
     #I/O
     tmp = args.tmp
     strict = args.strict
