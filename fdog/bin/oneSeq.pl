@@ -1448,6 +1448,7 @@ sub checkOptions {
 	$optbreaker = 0;
 	unless ($coreex or $assembly) {
 		my $node;
+		print "Testing coreex assembly\n"
 		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
 		$node->name('supplied', $refSpec);
 		if (lc($maxDist) eq "root"){
