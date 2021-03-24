@@ -556,7 +556,7 @@ def main():
     for asName in assembly_names:
         if searchBool == True:
             break
-        if searchTaxon != '' and searchBool = False:
+        if searchTaxon != '' and searchBool == False:
             asName = searchTaxon
             searchBool = True
 
