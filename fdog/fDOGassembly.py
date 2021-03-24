@@ -133,10 +133,10 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + name + ".gff")
-            os.system("getAnnoFasta.pl --seqfile=tmp/" + key + ".fasta" + " tmp/" + name + ".gff")
+            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + tmp_path + key + ".fasta > " + tmp_path + name + ".gff")
+            os.system("getAnnoFasta.pl --seqfile=tmp/" + key + ".fasta " + tmp_path + name + ".gff")
 
-            sequence_file = open("tmp/" + name + ".aa", "r")
+            sequence_file = open(tmp_path + name + ".aa", "r")
             lines = sequence_file.readlines()
             for line in lines:
                 if line[0] == ">":
@@ -363,7 +363,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     #print(orthologs)
     return list(orthologs), seed
 
-def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool):
+def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool, tmp_path):
     #print("addSequences")
     #print(sequenceIds)
     #print(species_list)
@@ -604,7 +604,7 @@ def main():
 
     ############### make Augustus PPX search ###################################
         print("starting augustus ppx \n")
-        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group)
+        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path)
         print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
