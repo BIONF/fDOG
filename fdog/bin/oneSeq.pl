@@ -124,9 +124,10 @@ my $startTime = gettime();
 ## Modified 16. Feb 2021 v2.2.5 (Vinh)	- core compilation works with fasoff
 ## Modified 18. Feb 2021 v2.2.6 (Vinh)	- fixed searchTaxa and coreTaxa options
 ## Modified 19. March 2021 v2.2.7 (Vinh)	- check for long sequence ID
+## Modified 24. March 2021 v2.2.8 (Vinh)	- skip fa.mapping while checking genome_dir
 
 ############ General settings
-my $version = 'oneSeq v.2.2.7';
+my $version = 'oneSeq v.2.2.8';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -2632,7 +2633,7 @@ sub initialCheck {
 
 sub getGenomeFile {
 	my ($folder, $filename) = @_;
-	chomp(my $faFile = `ls $folder/$filename.fa* | $grepprog -v \"\\.checked\\|\\.mod\\|\\.tmp\"`);
+	chomp(my $faFile = `ls $folder/$filename.fa* | $grepprog -v \"\\.checked\\|\\.mod\\|\\.mapping\\|\\.tmp\"`);
 	my $out = $faFile;
 	chomp(my $link = `$readlinkprog -f $faFile`);
 	if ($link ne "") {
