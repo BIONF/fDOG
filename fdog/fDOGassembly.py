@@ -230,7 +230,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #rejected
         return 0, distance_ref_hit, distance_hit_query
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, dataPath, filter):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, dataPath, filter, tmp_path):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
     seedDic = getSeedInfo(fasta_path)
@@ -246,7 +246,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
             return 0, seed
         if searchTool == "blast":
-            os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out tmp/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
         else:
             print("diamonds are the girls best friends")
             ##### diamond call
