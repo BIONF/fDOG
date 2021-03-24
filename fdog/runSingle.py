@@ -438,7 +438,7 @@ def main():
             except:
                 sys.exit('assemblypath not found in %s' % pathFile)
         if assembly == True:
-            searchpath == assemblypath
+            searchpath = assemblypath
 
     ### check input arguments
     seqFile, hmmpath, blastpath, searchpath, weightpath = checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])
