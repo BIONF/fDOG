@@ -565,7 +565,7 @@ def main():
 
         print("Searching in species " + asName + "\n")
         assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
-        db_path = assembly_dir + "/" + asName + "/genome_dir/" + asName + ".fa"
+        db_path = assemblyDir + "/" + asName + "/genome_dir/" + asName + ".fa"
     ######################## tBLASTn ###########################################
 
     #database anlegen
