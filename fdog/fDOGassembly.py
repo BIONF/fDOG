@@ -402,9 +402,9 @@ def createFasInput(orthologsOutFile, mappingFile):
 
     return fas_seed_id
 
-def cleanup(tmp):
+def cleanup(tmp, tmp_path):
     if tmp == False:
-        os.system('rm -r tmp/')
+        os.system('rm -r ' + tmp_path)
 
 def checkOptions():
     pass
@@ -640,7 +640,7 @@ def main():
 
     ################# remove tmp folder ########################################
 
-    cleanup(tmp)
+    cleanup(tmp, tmp_path)
 
 
 if __name__ == '__main__':
