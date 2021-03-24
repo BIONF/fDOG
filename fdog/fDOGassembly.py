@@ -617,7 +617,7 @@ def main():
             continue
 
     ################ add sequences to extended.fa in the output folder##########
-        addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa, refBool)
+        addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa, refBool, tmp_path)
         refBool = True
 
     ############### make Annotation with FAS ###################################
