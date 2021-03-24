@@ -566,7 +566,7 @@ def main():
         candidatesOutFile = tmp_path + group + ".candidates.fa"
         orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
         fasOutFile = out + "/" + group + "_" + asName
-        mappingFile = out + "/tmp" + group + "_" + asName + ".mapping.txt"
+        mappingFile = tmp_path + group + "_" + asName + ".mapping.txt"
 
 
         print("Searching in species " + asName + "\n")
