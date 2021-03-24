@@ -246,12 +246,12 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
             return 0, seed
         if searchTool == "blast":
-            os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "/blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
         else:
             print("diamonds are the girls best friends")
             ##### diamond call
 
-        alg_file = open("tmp/blast_" + fdog_ref_species, "r")
+        alg_file = open(tmp_path + "blast_" + fdog_ref_species, "r")
         lines = alg_file.readlines()
         alg_file.close()
         old_name = None
@@ -609,7 +609,7 @@ def main():
 
     ################# backward search to filter for orthologs###################
     #verschiede Modi beachten!
-        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter)
+        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path)
 
 
         if reciprocal_sequences == 0:
