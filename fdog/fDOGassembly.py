@@ -367,7 +367,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     #print("addSequences")
     #print(sequenceIds)
     #print(species_list)
-    output_file = open(output + "/" + name + ".extended.fa", "a+")
+    output_file = open(output, "a+")
     if refBool == False:
         seq_records_core = readFasta(core_fasta)
         seq_records_core = list(seq_records_core)
@@ -551,9 +551,14 @@ def main():
         print("block profile is finished \n")
 
 
+    searchBool = False
+
     for asName in assembly_names:
-        if searchTaxon != '' and asName != searchTaxon:
-            continue
+        if searchBool == True:
+            break
+        if searchTaxon != '' and searchBool = False:
+            asName = searchTaxon
+            searchBool = True
 
         ################### path definitions ###################################
         os.system('mkdir ' + out + '/tmp/' + asName)
@@ -617,20 +622,20 @@ def main():
             continue
 
     ################ add sequences to extended.fa in the output folder##########
-        addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, out, group, taxa, refBool, tmp_path)
+        addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
         refBool = True
 
     ############### make Annotation with FAS ###################################
-    if refBool == False:
-        print("No orthologs found. Exciting ...")
-        cleanup(tmp)
-        return 1
+        if refBool == False:
+            print("No orthologs found. Exciting ...")
+            cleanup(tmp)
+            return 1
 
-    if fasoff == False:
-        fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
+        if fasoff == False:
+            fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
-        os.system('mkdir tmp/anno_dir')
-        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
+            os.system('mkdir tmp/anno_dir')
+            os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
 
     ################# remove tmp folder ########################################
