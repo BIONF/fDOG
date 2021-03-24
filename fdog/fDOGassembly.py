@@ -523,9 +523,9 @@ def main():
     fasta_path = core_path + "/" + group +"/"+ group + ".fa"
     consensus_path = out + "/tmp/" + group + ".con"
     profile_path = out + "/tmp/" + group + ".prfl"
-    orthologsOutFile = out + "/" + group + ".extended.fa"
-    fasOutFile = out + "/" + group
-    mappingFile = out + "/tmp" + group + ".mapping.txt"
+    orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
+    fasOutFile = out + "/" + group + "_" + asName
+    mappingFile = out + "/tmp" + group + "_" + asName + ".mapping.txt"
 
     ###################### create tmp folder ###################################
 
@@ -600,7 +600,7 @@ def main():
 
         else:
             print(str(number_regions) + " candiate regions were found. Extracting sequences...")
-            extract_seq(regions, db_path)
+            extract_seq(regions, db_path, tmp_path)
 
     ############### make Augustus PPX search ###################################
         print("starting augustus ppx \n")
