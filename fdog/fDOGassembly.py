@@ -380,8 +380,8 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_candidate = readFasta(candidate_fasta)
     seq_records_candidate = list(seq_records_candidate)
     for entry_candidate in seq_records_candidate:
-        #print(entry_candidate.id)
-        #print(sequenceIds)
+        print(entry_candidate.id)
+        print(sequenceIds)
         if entry_candidate.id in sequenceIds:
             output_file.write(">" + entry_candidate.id + "\n")
             output_file.write(str(entry_candidate.seq) + "\n")
@@ -392,7 +392,7 @@ def createFasInput(orthologsOutFile, mappingFile):
     with open(orthologsOutFile, "r") as f:
         fas_seed_id = (f.readline())[1:-1]
 
-    mappingFile = open(mappingFile, "w")
+    mappingFile = open(mappingFile, "a+")
 
     seq_records = readFasta(orthologsOutFile)
     for seq in seq_records:
@@ -446,6 +446,7 @@ def main():
     optional.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
     optional.add_argument('--searchTaxon', help='Search Taxon name', action='store', default='')
+    optional.add_argument('--force', help='An existing extendedn.fa file will not be appended', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -482,6 +483,7 @@ def main():
         taxa = taxa.split(",")
     fasoff = args.fasoff
     searchTaxon = args.searchTaxon
+    force = args.force
 
     #checking paths
     if dataPath == '':
@@ -519,12 +521,11 @@ def main():
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
     hmm_path = core_path + "/" + group +"/hmm_dir/"+ group + ".hmm"
     fasta_path = core_path + "/" + group +"/"+ group + ".fa"
-    consensus_path = "tmp/" + group + ".con"
-    profile_path = "tmp/" + group + ".prfl"
-    candidatesOutFile = "tmp/" + group + ".candidates.fa"
+    consensus_path = out + "/tmp/" + group + ".con"
+    profile_path = out + "/tmp/" + group + ".prfl"
     orthologsOutFile = out + "/" + group + ".extended.fa"
     fasOutFile = out + "/" + group
-    mappingFile = out + "/tmp/" + group + ".mapping.txt"
+    mappingFile = out + "/tmp" + group + ".mapping.txt"
 
     ###################### create tmp folder ###################################
 
@@ -557,8 +558,14 @@ def main():
         if searchTaxon != '' and asName != searchTaxon:
             continue
 
+        ################### path definitions ###################################
+        tmp_path = out + "/tmp/" + asName + "/"
+        candidatesOutFile = tmp_path + group + ".candidates.fa"
+
+
         print("Searching in species " + asName + "\n")
         assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
+        db_path = assembly_dir + "/" + asName + "/genome_dir/" + asName + ".fa"
     ######################## tBLASTn ###########################################
 
     #database anlegen
@@ -567,7 +574,7 @@ def main():
         #print(assembly_path)
         if db_check == 0:
             print("creating a blast data base \n")
-            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + assembly_path)
+            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path)
             print("database is finished \n")
         else:
             print('blast data base exists already, continuing...')
@@ -577,7 +584,7 @@ def main():
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
         print("tBLASTn search against data base")
-        os.system('tblastn -db ' + assembly_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
+        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
