@@ -133,10 +133,10 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + tmp_path + key + ".fasta > " + tmp_path + name + ".gff")
-            os.system("getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff")
+            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + "/" + key + ".fasta > " + tmp_path + "/" + name + ".gff")
+            os.system("getAnnoFasta.pl --seqfile=" + tmp_path +  "/" + key + ".fasta " + tmp_path +  "/" + name + ".gff")
 
-            sequence_file = open(tmp_path + name + ".aa", "r")
+            sequence_file = open(tmp_path +  "/" + name + ".aa", "r")
             lines = sequence_file.readlines()
             for line in lines:
                 if line[0] == ">":
