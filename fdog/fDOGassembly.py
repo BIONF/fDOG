@@ -270,7 +270,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     if checkCo == True:
                         for i in id_ref:
                             print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
-                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath)
+                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath, tmp_path)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
                                 orthologs.append(gene)
@@ -286,7 +286,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     if checkCo == True:
                         for i in id_ref:
                             print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
-                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, fdogPath)
+                            co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath, tmp_path)
                             if co_orthologs_result == 1:
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
                                 orthologs.append(gene)
