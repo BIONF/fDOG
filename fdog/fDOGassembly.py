@@ -565,7 +565,7 @@ def main():
 
         print("Searching in species " + asName + "\n")
         assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
-        db_path = assemblyDir + "/" + asName + "/genome_dir/" + asName + ".fa"
+        db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
     ######################## tBLASTn ###########################################
 
     #database anlegen
@@ -599,7 +599,7 @@ def main():
 
         else:
             print(str(number_regions) + " candiate regions were found. Extracting sequences...")
-            extract_seq(regions, assembly_path)
+            extract_seq(regions, db_path)
 
     ############### make Augustus PPX search ###################################
         print("starting augustus ppx \n")
