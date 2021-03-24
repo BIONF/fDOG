@@ -751,7 +751,7 @@ if (!$coreOnly) {
 					push(@assembly_cmd, "--fasoff");
 				}
 				if ($searchTaxon){
-					push(@assembly_cmd, "--searchTaxa $searchTaxon");
+					push(@assembly_cmd, "--searchTaxon $searchTaxon");
 				}
 				if ($filter){
 					push(@assembly_cmd, "--filter $filter");
