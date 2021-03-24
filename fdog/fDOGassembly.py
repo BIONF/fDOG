@@ -90,10 +90,10 @@ def parse_blast(line, blast_results):
 
     return blast_results, evalue
 
-def candidate_regions(intron_length, evalue):
+def candidate_regions(intron_length, evalue, tmp_path):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
-    blast_file = open("tmp/blast_results.out", "r")
+    blast_file = open(tmp_path + "/blast_results.out", "r")
     evalue = 0
     blast_results = {}
     #parsing blast output
@@ -529,7 +529,7 @@ def main():
 
     ###################### create tmp folder ###################################
 
-    os.system('mkdir tmp')
+    os.system('mkdir ' + out + '/tmp')
 
     ######################## consensus sequence ################################
 
@@ -559,7 +559,7 @@ def main():
             continue
 
         ################### path definitions ###################################
-        os.system('mkdir tmp/' + asName)
+        os.system('mkdir ' + out + '/tmp/' + asName)
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
 
@@ -585,13 +585,13 @@ def main():
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
         print("tBLASTn search against data base")
-        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out tmp/blast_results.out')
+        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out ' + tmp_path + '/blast_results.out')
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
 
     # parse blast and filter for candiate regions
-        regions, number_regions = candidate_regions(average_intron_length, evalue)
+        regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
 
         if regions == 0:
             #no candidat region are available, no ortholog can be found
