@@ -523,9 +523,6 @@ def main():
     fasta_path = core_path + "/" + group +"/"+ group + ".fa"
     consensus_path = out + "/tmp/" + group + ".con"
     profile_path = out + "/tmp/" + group + ".prfl"
-    orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
-    fasOutFile = out + "/" + group + "_" + asName
-    mappingFile = out + "/tmp" + group + "_" + asName + ".mapping.txt"
 
     ###################### create tmp folder ###################################
 
@@ -562,6 +559,9 @@ def main():
         os.system('mkdir ' + out + '/tmp/' + asName)
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
+        orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
+        fasOutFile = out + "/" + group + "_" + asName
+        mappingFile = out + "/tmp" + group + "_" + asName + ".mapping.txt"
 
 
         print("Searching in species " + asName + "\n")
