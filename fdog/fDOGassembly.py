@@ -634,8 +634,8 @@ def main():
         if fasoff == False:
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
-            os.system('mkdir tmp/anno_dir')
-            os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir tmp/anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
+            os.system('mkdir ' + tmp_path + 'anno_dir')
+            os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
 
     ################# remove tmp folder ########################################
