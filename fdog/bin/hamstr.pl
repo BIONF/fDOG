@@ -197,7 +197,7 @@ use run_genewise_hamstr;
 ## 19.03.2021 (v13.4.3 - vinh) changed $path to current directory
 
 ######################## start main ###########################################
-my $version = "HaMStR v.13.4.3";
+my $version = "HaMStR v.13.4.4";
 ######################## checking whether the configure script has been run ###
 my $configure = 0;
 if ($configure == 0){
@@ -1474,7 +1474,7 @@ sub check4reciprocity {
 					}
 					## print distances (debug mode)
 					if ($debug){
-						my $distDebugFile = $path . "/output/" . $taxon_global . ".debug.dist";
+						my $distDebugFile = $outpath . "/" . $taxon_global . ".debug.dist"; #$path . "/output/" . $taxon_global . ".debug.dist";
 						unless (-e $distDebugFile){
 							open (my $DISTDEBUG, ">>$distDebugFile") or die "Error, could not create file: ". "$distDebugFile";
 							print $DISTDEBUG "hmmset\trefid\tbestid\tqueryid\tqhdist\trhdist\n";
