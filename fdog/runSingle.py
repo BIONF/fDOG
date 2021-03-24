@@ -431,12 +431,14 @@ def main():
                 sys.exit('weightpath not found in %s' % pathFile)
 
     if assemblypath == '':
-        assemblypath = dataPath + '/weight_dir'
+        assemblypath = dataPath + '/assembly_dir'
         if dataPath == 'config':
             try:
                 assemblypath = cfg['assemblypath']
             except:
                 sys.exit('assemblypath not found in %s' % pathFile)
+        if assembly == True:
+            searchpath == assemblypath
 
     ### check input arguments
     seqFile, hmmpath, blastpath, searchpath, weightpath = checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])

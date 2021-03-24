@@ -554,8 +554,6 @@ def main():
 
 
     for asName in assembly_names:
-        print(searchTaxon + "\n")
-        print(asName + "\n")
         if searchTaxon != '' and asName != searchTaxon:
             continue
 

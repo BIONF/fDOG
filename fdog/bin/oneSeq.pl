@@ -747,8 +747,8 @@ if (!$coreOnly) {
 				if ($coreOrthologsPath){
 					push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
 				}
-				if ($fasoff){
-					push(@assembly_cmd, "--fasoff $fasoff");
+				if (defined $fasoff){
+					push(@assembly_cmd, "--fasoff");
 				}
 				if ($searchTaxon){
 					push(@assembly_cmd, "--searchTaxa $searchTaxon");
