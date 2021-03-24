@@ -559,6 +559,7 @@ def main():
             continue
 
         ################### path definitions ###################################
+        os.system('mkdir tmp/' + asName)
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
 
@@ -570,7 +571,7 @@ def main():
 
     #database anlegen
 
-        db_check = searching_for_db(assembly_path)
+        db_check = searching_for_db(db_path)
         #print(assembly_path)
         if db_check == 0:
             print("creating a blast data base \n")
