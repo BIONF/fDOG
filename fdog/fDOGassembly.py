@@ -184,11 +184,11 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix, dataPath):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix, dataPath, tmp_path):
     ###########getting sequences and write all in one file to make msa #########
     name_file = candidate_name + ".co"
-    output_file = 'tmp/' + name_file + '.fasta'
-    aln_file = 'tmp/' + name_file + '.aln'
+    output_file = tmp_path + name_file + '.fasta'
+    aln_file = tmp_path + name_file + '.aln'
     genome_dir_path = dataPath + '/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
     #print(searchTool)
 
