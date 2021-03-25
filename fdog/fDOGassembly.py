@@ -380,8 +380,8 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_candidate = readFasta(candidate_fasta)
     seq_records_candidate = list(seq_records_candidate)
     for entry_candidate in seq_records_candidate:
-        print(entry_candidate.id)
-        print(sequenceIds)
+        #print(entry_candidate.id)
+        #print(sequenceIds)
         if entry_candidate.id in sequenceIds:
             output_file.write(">" + entry_candidate.id + "\n")
             output_file.write(str(entry_candidate.seq) + "\n")
@@ -564,9 +564,14 @@ def main():
         os.system('mkdir ' + out + '/tmp/' + asName)
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
-        orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
-        fasOutFile = out + "/" + group + "_" + asName
-        mappingFile = tmp_path + group + "_" + asName + ".mapping.txt"
+        if searchTaxon != '':
+            orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
+            fasOutFile = out + "/" + group + "_" + asName
+            mappingFile = tmp_path + group + "_" + asName + ".mapping.txt"
+        else:
+            orthologsOutFile = out + "/" + group + ".extended.fa"
+            fasOutFile = out + "/" + group
+            mappingFile = tmp_path + group + ".mapping.txt"
 
 
         print("Searching in species " + asName + "\n")
@@ -619,23 +624,34 @@ def main():
 
         if reciprocal_sequences == 0:
             print("No ortholog fulfilled the reciprocity criteria")
-            continue
+            if searchTaxon == '':
+                continue
+            else:
+                cleanup(tmp)
+                return 1
 
     ################ add sequences to extended.fa in the output folder##########
         addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
         refBool = True
 
     ############### make Annotation with FAS ###################################
-        if refBool == False:
-            print("No orthologs found. Exciting ...")
-            cleanup(tmp)
-            return 1
-
-        if fasoff == False:
+        if searchTaxon != '' and fasoff == False:
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
             os.system('mkdir ' + tmp_path + 'anno_dir')
             os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName )
+
+
+    if refBool == False and searchTaxon == '':
+        print("No orthologs found. Exciting ...")
+        cleanup(tmp)
+        return 1
+
+    if fasoff == False and searchTaxon == '':
+        fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
+
+        os.system('mkdir ' + tmp_path + 'anno_dir')
+        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName )
 
 
     ################# remove tmp folder ########################################
