@@ -571,7 +571,7 @@ def main():
         else:
             orthologsOutFile = out + "/" + group + ".extended.fa"
             fasOutFile = out + "/" + group
-            mappingFile = tmp_path + group + ".mapping.txt"
+            mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
 
         print("Searching in species " + asName + "\n")
@@ -651,7 +651,7 @@ def main():
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
         os.system('mkdir ' + tmp_path + 'anno_dir')
-        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName )
+        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
 
     ################# remove tmp folder ########################################
