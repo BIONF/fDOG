@@ -182,7 +182,7 @@ def runSingle(args):
             cmd = cmd + ' -scoringmatrix=%s' % matrix
         if not dataPath == '':
             cmd = cmd + ' -dataPath=%s' % dataPath
-    print(cmd)
+    #print(cmd)
     if mute == True:
         cmd = cmd + ' > /dev/null 2>&1'
     try:
