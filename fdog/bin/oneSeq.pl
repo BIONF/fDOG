@@ -748,8 +748,8 @@ if (!$coreOnly) {
 			$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
 			print $file_assembly_out;
 			my $cmd_merge;
-			print $cmd_merge;
 			$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
+			print $cmd_merge;
 			system($cmd_merge);
 		}
 		else{
