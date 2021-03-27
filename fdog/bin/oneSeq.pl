@@ -744,8 +744,12 @@ if (!$coreOnly) {
 				printDebug(@assembly_cmd);
 				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 			}
-			my $file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
-			my $cmd_merge = 'fdog.mergeAssembly --in ' . $outputPath . ' --out ' . $file_assembly_out . ' --cleanup'
+			my $file_assembly_out;
+			$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
+			print $file_assembly_out . '\n';
+			my $cmd_merge;
+			print $cmd_merge '\n';
+			$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
 			system($cmd_merge);
 		}
 		else{
