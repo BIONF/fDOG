@@ -28,10 +28,12 @@ def main():
     parser.add_argument('-i','--input', help='Input directory, where all single output (.extended.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
                         action='store', default='', required=True)
     parser.add_argument('-o','--output', help='Output name', action='store', default='', required=True)
+    parser.add_argument('-c', '--cleanup', help='Deletes the merged output files from fDOG', action='store_true', default=False)
     args = parser.parse_args()
 
     directory = args.input
     out = args.output
+    cleanup = args.cleanup
     if not os.path.exists(os.path.abspath(directory)):
         sys.exit('%s not found' % directory)
     else:
@@ -58,6 +60,8 @@ def main():
                         phyloprofile.write(line)
                 if len(lines) > 1:
                     set_phylo = set(lines)
+            if cleanup == True:
+                os.remove(infile)
         elif infile.endswith('_forward.domains') and not infile == out + '_forward.domains':
             if not domains_0:
                 domains_0 = open(out + '_forward.domains', 'w')
@@ -68,6 +72,8 @@ def main():
                         domains_0.write(line)
                 if len(lines) > 1:
                     set_domains_f = set(lines)
+            if cleanup == True:
+                    os.remove(infile)
         elif infile.endswith('_reverse.domains') and not infile == out + '_reverse.domains':
             if not domains_1:
                 domains_1 = open(out + '_reverse.domains', 'w')
@@ -78,6 +84,8 @@ def main():
                         domains_1.write(line)
                 if len(lines) > 1:
                     set_domains_r = set(lines)
+            if cleanup == True:
+                os.remove(infile)
         elif infile.endswith('.extended.fa') and not infile == out + '.extended.fa':
             if not ex_fasta:
                 ex_fasta = open(out + '.extended.fa', 'w')
@@ -97,6 +105,9 @@ def main():
                         if header_bool == True:
                             ex_fasta.write(line)
                 set_fasta = header
+            if cleanup == True:
+                os.remove(infile)
+
     if phyloprofile:
         phyloprofile.close()
     if domains_0:

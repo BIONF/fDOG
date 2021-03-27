@@ -54,7 +54,8 @@ setup(
                             "fdog.showTaxa = fdog.showTaxa:main",
                             "fdog.mergeOutput = fdog.mergeOutput:main",
                             "fdog.remove = fdog.removefDog:main",
-                            "fdog.assembly = fdog.fDOGassembly:main"],
+                            "fdog.assembly = fdog.fDOGassembly:main",
+                            "fdog.mergeAssemblyOuput = fdog.mergeAssembly:main"],
     },
     license="GPL-3.0",
     classifiers=[

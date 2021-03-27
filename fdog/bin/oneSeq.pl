@@ -692,22 +692,7 @@ if (!$coreOnly) {
 			}
 		}
 		if ($assembly){
-			#python aufruf
-			print "fdog_goes_assembly \n";
-			print "AssemblyFile: $assemblyPath\n";
-			print "SeqName: $seqName\n";
-			print "Augustus Species: $augustusRefSpec\n";
-			print "RefSpec: $refSpec\n";
-			print "Assembly: $assembly\n";
-			print "OutputPath: $outputPath\n";
-			print "avIntron: $avIntron\n";
-			print "searchTool: $searchTool\n";
-			print "Matrix: $matrix\n";
-			print "Fdog path: $path\n";
 			$eval_blast = sprintf("%f", $eval_blast);
-			print "Evalblast: $eval_blast\n";
-			print "Filter: $filter \n";
-			print "DataPath: $dataPath \n";
 			if ($seqFile ne "") {
 				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
 
@@ -759,6 +744,8 @@ if (!$coreOnly) {
 				printDebug(@assembly_cmd);
 				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 			}
+			my $file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa'
+			system("fdog.mergeAssembly --in %s --out %s --cleanup"%($outputPath, $file_assembly_out))
 		}
 		else{
 		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
