@@ -744,8 +744,8 @@ if (!$coreOnly) {
 				printDebug(@assembly_cmd);
 				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 			}
-			my $file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa'
-			system("fdog.mergeAssembly --in %s --out %s --cleanup"%($outputPath, $file_assembly_out))
+			my $file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
+			system("fdog.mergeAssembly --in %s --out %s --cleanup"%($outputPath, $file_assembly_out));
 		}
 		else{
 		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
