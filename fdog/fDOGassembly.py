@@ -331,8 +331,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 print("The species " + species + " isn't part of the core ortholog group, ... exciting")
                 return 0, seed
 
-            os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -seg " + filter + " -out tmp/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
-            alg_file = open("tmp/blast_" + species, "r")
+            os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -seg " + filter + " -out " + tmp_path + "/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            alg_file = open(tmp_path + "/blast_" + species, "r")
             lines = alg_file.readlines()
             alg_file.close()
             old_name = None

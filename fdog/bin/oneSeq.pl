@@ -791,7 +791,6 @@ if(!$coreOnly && !$assembly){
 if ($assembly){
 	my $file_assembly_out;
 	$file_assembly_out = $outputPath . '/' . $seqName;
-	print $file_assembly_out;
 	my $cmd_merge;
 	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
 	printDebug($cmd_merge);
