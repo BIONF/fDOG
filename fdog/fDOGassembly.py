@@ -414,16 +414,13 @@ class Logger(object):
     def __init__(self, path):
         self.path = path
         self.terminal = sys.stdout
-        self.log = open(self.path + "fdog.log", "a")
+        self.log = open(self.path + "fdog.log", "a+")
 
     def write(self, message):
         self.terminal.write(message)
         self.log.write(message)
 
     def flush(self):
-        #this flush method is needed for python 3 compatibility.
-        #this handles the flush command by doing nothing.
-        #you might want to specify some extra behavior here.
         pass
 
 
@@ -500,6 +497,14 @@ def main():
     searchTaxon = args.searchTaxon
     silent = args.silent
 
+    ###################### How to handling std output ##########################
+    if silent == True:
+        f = open(out + "/fdog.log", "a+")
+        sys.stdout = f
+    else:
+        print(out + "/fdog.log \n")
+        sys.stdout = Logger(out)
+
     #checking paths
     if dataPath == '':
         fdogPath = os.path.realpath(__file__).replace('/fDOGassembly.py','')
@@ -528,12 +533,7 @@ def main():
 
     assembly_names = os.listdir(assemblyDir)
 
-    ###################### How to handling std output ##########################
-    if silent == True:
-        f = open(out + "/fdog.log", "a")
-        sys.stdout = f
-    else:
-        sys.stdout = Logger(out)
+
 
     ########################## some variables ##################################
 
