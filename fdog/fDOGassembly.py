@@ -672,14 +672,14 @@ def main():
     if fasoff == False and searchTaxon == '':
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-
-        os.system('mkdir ' + tmp_path + 'anno_dir')
         os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
 
     ################# remove tmp folder ########################################
-
-    cleanup(tmp, tmp_path)
+    if searchTaxon == '':
+        cleanup(tmp, tmp_path)
+    else:
+        cleanup(tmp, out + "/tmp/")
 
 
 if __name__ == '__main__':
