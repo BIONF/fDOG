@@ -732,7 +732,7 @@ if (!$coreOnly) {
 				if ($coreOrthologsPath){
 					push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
 				}
-				if (defined $fasoff){
+				if ($fasoff){
 					push(@assembly_cmd, "--fasoff");
 				}
 				if ($searchTaxon){
@@ -793,7 +793,7 @@ if ($assembly){
 	print $file_assembly_out;
 	my $cmd_merge;
 	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
-	print $cmd_merge;
+	printDebug($cmd_merge);
 	system($cmd_merge);
 }
 
