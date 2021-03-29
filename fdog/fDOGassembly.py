@@ -498,12 +498,12 @@ def main():
     silent = args.silent
 
     ###################### How to handling std output ##########################
-    if silent == True:
-        f = open(out + "/fdog.log", "a+")
-        sys.stdout = f
-    else:
-        print(out + "/fdog.log \n")
-        sys.stdout = Logger(out)
+    # if silent == True:
+    #     f = open(out + "/fdog.log", "a+")
+    #     sys.stdout = f
+    # else:
+    #     print(out + "/fdog.log \n")
+    #     sys.stdout = Logger(out)
 
     #checking paths
     if dataPath == '':
@@ -568,7 +568,7 @@ def main():
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
-        os.system('prepareAlign < ' + msa_path + ' > ' + new_path + ' >> ' + out + '/fdog.log')
+        os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
         os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
         print("block profile is finished \n")
 
