@@ -671,6 +671,7 @@ def main():
 
     if fasoff == False and searchTaxon == '':
         tmp_path = out + '/tmp/'
+        print(mappingFile)
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
