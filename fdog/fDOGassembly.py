@@ -656,7 +656,7 @@ def main():
 
     ################# remove tmp folder ########################################
 
-    cleanup(tmp, out + "/tmp/")
+    cleanup(tmp, tmp_path)
 
 
 if __name__ == '__main__':
