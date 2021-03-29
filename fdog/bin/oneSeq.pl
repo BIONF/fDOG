@@ -751,17 +751,18 @@ if (!$coreOnly) {
 		$pm->finish;
 	}
 	$pm->wait_all_children;
-
-	if (assembly){
-		my $file_assembly_out;
-		#$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
-		print $file_assembly_out;
-		my $cmd_merge;
-		$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
-		print $cmd_merge;
-		system($cmd_merge);
-	}
 }
+
+if (assembly){
+	my $file_assembly_out;
+	#$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
+	print $file_assembly_out;
+	my $cmd_merge;
+	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
+	print $cmd_merge;
+	system($cmd_merge);
+}
+
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
 
