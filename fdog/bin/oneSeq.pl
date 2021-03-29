@@ -2707,7 +2707,7 @@ sub initialCheck {
 		}
 	}
 	# check weight_dir
-	if ($fasoff != 1) {
+	if ($fasoff != 1 && !$assembly) {
 		my %seen;
 		my @allTaxa = grep( !$seen{$_}++, @genomeDir, @blastDir);
 		chomp(my $allAnno = `ls $weightDir | $sedprog \'s/\\.json//\'`);
