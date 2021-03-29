@@ -125,9 +125,10 @@ my $startTime = gettime();
 ## Modified 18. Feb 2021 v2.2.6 (Vinh)	- fixed searchTaxa and coreTaxa options
 ## Modified 19. March 2021 v2.2.7 (Vinh)	- check for long sequence ID
 ## Modified 24. March 2021 v2.2.8 (Vinh)	- skip fa.mapping while checking genome_dir
+## Modified 29. March 2021 v2.2.9 (Vinh)	- check for zero $maxAlnScore
 
 ############ General settings
-my $version = 'oneSeq v.2.2.8';
+my $version = 'oneSeq v.2.2.9';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -566,6 +567,9 @@ if (!$coreex) {
 			}
 		}
 		printDebug("The maximum alignmentscore is: $maxAlnScore");
+		if ($maxAlnScore == 0) {
+			die("Maximum alignment score is Zero! Something went wrong with fasta36 functions!\n")
+		}
 		clearTmpFiles();
 
 		my $addedTaxon = getBestOrtholog();
@@ -800,10 +804,13 @@ sub getCumulativeAlnScores{
 	## get alignment scores
 	chdir($coreOrthologsPath . $seqName);
 	if ($glocal){
+		printDebug($globlocCommand);
 		system($globlocCommand);
 	}elsif ($global){
+		printDebug($globglobCommand);
 		system($globglobCommand);
 	}elsif ($local){
+		printDebug($loclocCommand);
 		system($loclocCommand);
 	}
 	########################
