@@ -410,6 +410,21 @@ def checkOptions():
     pass
     #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
 
+class Logger(object):
+    def __init__(self, path):
+        self.path = path
+        self.terminal = sys.stdout
+        self.log = open(self.path + "fdog.log", "a")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        #this flush method is needed for python 3 compatibility.
+        #this handles the flush command by doing nothing.
+        #you might want to specify some extra behavior here.
+        pass
 
 
 def main():
@@ -446,7 +461,7 @@ def main():
     optional.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
     optional.add_argument('--searchTaxon', help='Search Taxon name', action='store', default='')
-    optional.add_argument('--force', help='An existing extendedn.fa file will not be appended', action='store_true', default=False)
+    optional.add_argument('--silent', help='Output will only be written into the log file', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -483,7 +498,7 @@ def main():
         taxa = taxa.split(",")
     fasoff = args.fasoff
     searchTaxon = args.searchTaxon
-    force = args.force
+    silent = args.silent
 
     #checking paths
     if dataPath == '':
@@ -512,6 +527,13 @@ def main():
     # user input has to be checked here before fDOGassembly continues
 
     assembly_names = os.listdir(assemblyDir)
+
+    ###################### How to handling std output ##########################
+    if silent == True:
+        f = open(out + "/fdog.log", "a")
+        sys.stdout = f
+    else:
+        sys.stdout = Logger(out)
 
     ########################## some variables ##################################
 
