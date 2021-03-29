@@ -109,7 +109,8 @@ def main():
                             ex_fasta.write(line)
                 set_fasta = header
             if cleanup == True:
-                print("test fasta")
+                print(infile)
+                print("test fasta \n")
                 os.remove(infile)
 
     if phyloprofile:
