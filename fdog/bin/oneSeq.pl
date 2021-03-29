@@ -705,9 +705,9 @@ if (!$coreOnly) {
 				if (defined $lengthExtension){
 					push(@assembly_cmd, "--lengthExtension $lengthExtension ");
 				}
-				#if (!$autoclean){
-					#push(@assembly_cmd, "--tmp ");
-				#}
+				if (!$autoclean){
+					push(@assembly_cmd, "--tmp ");
+				}
 				if ($outputPath){
 					push(@assembly_cmd, "--out $outputPath ");
 				}
@@ -782,20 +782,20 @@ if(!$coreOnly && !$assembly){
 	push @logOUT, "FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
 	print "==> FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
 
-	if ($assembly){
-		my $file_assembly_out;
-		$file_assembly_out = $outputPath . '/' . $seqName;
-		print $file_assembly_out;
-		my $cmd_merge;
-		$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
-		printDebug($cmd_merge);
-		system($cmd_merge);
-	}
-
 	if($autoclean){
 		print "Cleaning up...\n";
 		runAutoCleanUp($processID);
 	}
+}
+
+if ($assembly){
+	my $file_assembly_out;
+	$file_assembly_out = $outputPath . '/' . $seqName;
+	print $file_assembly_out;
+	my $cmd_merge;
+	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
+	printDebug($cmd_merge);
+	system($cmd_merge);
 }
 ## Delete tmp folder
 unless ($debug) {
