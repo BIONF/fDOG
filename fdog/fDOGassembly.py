@@ -504,6 +504,10 @@ def main():
     # else:
     #     print(out + "/fdog.log \n")
     #     sys.stdout = Logger(out)
+    if silent == True:
+        cmd_silent = ' > /dev/null 2>&1'
+        f = open(out + "/fdog.log", "a+")
+        sys.stdout = f
 
     #checking paths
     if dataPath == '':
@@ -554,22 +558,22 @@ def main():
 
     #make a majority-rule consensus sequence with the tool hmmemit from hmmer
     print("Building a consensus sequence \n")
-    os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path)
+    os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path + cmd_silent)
     print("consensus sequence is finished\n")
 
     ######################## block profile #####################################
 
     print("Building a block profile \n")
 
-    os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
+    os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path + cmd_silent)
     #print(os.path.getsize(profile_path))
     if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
-        os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
-        os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
+        os.system('prepareAlign < ' + msa_path + ' > ' + new_path + cmd_silent)
+        os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path + cmd_silent)
         print("block profile is finished \n")
 
 
@@ -659,7 +663,7 @@ def main():
     ############### make Annotation with FAS ###################################
         if searchTaxon != '' and fasoff == False:
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-
+            # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
             os.system('mkdir ' + tmp_path + 'anno_dir')
             os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName )
 
@@ -671,13 +675,13 @@ def main():
 
     if fasoff == False and searchTaxon == '':
         tmp_path = out + '/tmp/'
-        print(mappingFile)
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
+        # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
+        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
 
     ################# remove tmp folder ########################################
-    if searchTaxon == '':
+    if searchTaxon != '':
         cleanup(tmp, tmp_path)
     else:
         cleanup(tmp, out + "/tmp/")
