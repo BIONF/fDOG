@@ -109,9 +109,9 @@ def main():
                             ex_fasta.write(line)
                 set_fasta = header
             if cleanup == True:
-                print(infile)
+                print(directory + '/' + infileinfile)
                 print("test fasta \n")
-                os.remove(infile)
+                os.remove(directory + '/' +infile)
 
     if phyloprofile:
         phyloprofile.close()
