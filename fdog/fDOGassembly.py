@@ -473,7 +473,7 @@ def main():
     assemblyDir = args.assemblyPath
     dataPath = args.dataPath
     core_path = args.coregroupPath
-    out = args.out
+    out = args.out + "/"
     pathFile = args.pathFile
     #I/O
     tmp = args.tmp
