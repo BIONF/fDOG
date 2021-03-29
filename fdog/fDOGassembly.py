@@ -670,6 +670,7 @@ def main():
         return 1
 
     if fasoff == False and searchTaxon == '':
+        tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
         os.system('mkdir ' + tmp_path + 'anno_dir')
