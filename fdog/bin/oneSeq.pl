@@ -744,13 +744,6 @@ if (!$coreOnly) {
 				printDebug(@assembly_cmd);
 				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
 			}
-			my $file_assembly_out;
-			$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
-			print $file_assembly_out;
-			my $cmd_merge;
-			$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
-			print $cmd_merge;
-			system($cmd_merge);
 		}
 		else{
 		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
@@ -758,6 +751,16 @@ if (!$coreOnly) {
 		$pm->finish;
 	}
 	$pm->wait_all_children;
+
+	if (assembly){
+		my $file_assembly_out;
+		#$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
+		print $file_assembly_out;
+		my $cmd_merge;
+		$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
+		print $cmd_merge;
+		system($cmd_merge);
+	}
 }
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
