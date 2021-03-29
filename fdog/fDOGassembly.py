@@ -651,12 +651,12 @@ def main():
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
 
         os.system('mkdir ' + tmp_path + 'anno_dir')
-        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
+        os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
 
 
     ################# remove tmp folder ########################################
 
-    cleanup(tmp, tmp_path)
+    cleanup(tmp, out + "/tmp/")
 
 
 if __name__ == '__main__':
