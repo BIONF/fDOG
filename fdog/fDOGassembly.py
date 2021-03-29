@@ -508,6 +508,7 @@ def main():
         cmd_silent = ' > /dev/null 2>&1'
         f = open(out + "/fdog.log", "a+")
         sys.stdout = f
+    else: cmd_silent = ''
 
     #checking paths
     if dataPath == '':
@@ -587,7 +588,7 @@ def main():
             searchBool = True
 
         ################### path definitions ###################################
-        os.system('mkdir ' + out + '/tmp/' + asName)
+        os.system('mkdir ' + out + '/tmp/' + asName + cmd_silent)
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
         if searchTaxon != '':
@@ -611,7 +612,7 @@ def main():
         #print(assembly_path)
         if db_check == 0:
             print("creating a blast data base \n")
-            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path)
+            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path + cmd_silent)
             print("database is finished \n")
         else:
             print('blast data base exists already, continuing...')
@@ -621,7 +622,7 @@ def main():
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
         print("tBLASTn search against data base")
-        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out ' + tmp_path + '/blast_results.out')
+        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out ' + tmp_path + '/blast_results.out' + cmd_silent)
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
