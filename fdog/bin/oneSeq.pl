@@ -126,6 +126,7 @@ my $startTime = gettime();
 ## Modified 19. March 2021 v2.2.7 (Vinh)	- check for long sequence ID
 ## Modified 24. March 2021 v2.2.8 (Vinh)	- skip fa.mapping while checking genome_dir
 ## Modified 29. March 2021 v2.2.9 (Vinh)	- check for zero $maxAlnScore
+##                                        - solved problem with long input path for fasta36 tools
 
 ############ General settings
 my $version = 'oneSeq v.2.2.9';
@@ -740,8 +741,12 @@ sub clearTmpFiles {
 	}
 
 	#clear all alignment files
-	my @files = glob("*.scorefile");
-	foreach my $file (@files) {
+	my @scorefiles = glob("*.scorefile");
+	foreach my $file (@scorefiles) {
+		unlink($file);
+	}
+	my @fastaInfiles = glob("*_fasta36.fa");
+	foreach my $file (@fastaInfiles) {
 		unlink($file);
 	}
 }
@@ -780,21 +785,19 @@ sub getCandicontent{
 sub getCumulativeAlnScores{
 	chdir($coreOrthologsPath . $seqName);
 	my $candidatesFile = $outputFa . ".extended";
-	my $scorefile = $$ . ".scorefile";
+	my $fileId = $$;
+	my $scorefile = $fileId . ".scorefile";
+	my $fasta36file1 = $fileId . ".1_fasta36.fa";
+	my $fasta36file2 = $fileId . ".2_fasta36.fa";
 	my %scores;
+
 	########################
 	## step: 1
-	## setup
-	## set alignment command (glocal, local, or global)
-	#local      local:local    ssearch36   Smith-Waterman
-	#glocal     global:local   glsearch36  Needleman-Wunsch
-	#global     global:global  ggsearch36  Needleman-Wunsch
-	my $loclocCommand = "$localaligner \"" . $outputFa . "\" \"" . $candidatesFile . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globlocCommand = "$glocalaligner \"" . $outputFa . "\" \"" . $candidatesFile . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globglobCommand = "$globalaligner \"" . $outputFa . "\" \"" . $candidatesFile . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
+	## set alignment parameters for fasta36
+	my $fasta36cmd = $fasta36file1 . "\" \"" . $fasta36file2 . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
+
 	########################
 	## step: 2
-	## setup
 	## candidates to hash
 	## %candicontent keeps info about all candidates (header and sequence)
 	my %candicontent = getCandicontent();
@@ -803,14 +806,25 @@ sub getCumulativeAlnScores{
 	## step: 3
 	## get alignment scores
 	chdir($coreOrthologsPath . $seqName);
+	symlink($outputFa, $fasta36file1);
+	symlink($candidatesFile, $fasta36file2);
 	if ($glocal){
+		#glocal     global:local   glsearch36  Needleman-Wunsch
+		my $globlocCommand = "$glocalaligner \"" . $fasta36cmd;
 		printDebug($globlocCommand);
+		# print $globlocCommand,"\n";<>;
 		system($globlocCommand);
 	}elsif ($global){
+		#global     global:global  ggsearch36  Needleman-Wunsch
+		my $globglobCommand = "$globalaligner \"" . $fasta36cmd;
 		printDebug($globglobCommand);
+		# print $globglobCommand,"\n";<>;
 		system($globglobCommand);
 	}elsif ($local){
+		#local      local:local    ssearch36   Smith-Waterman
+		my $loclocCommand = "$localaligner \"" . $fasta36cmd;
 		printDebug($loclocCommand);
+		# print $loclocCommand,"\n";<>;
 		system($loclocCommand);
 	}
 	########################
@@ -828,49 +842,7 @@ sub getCumulativeAlnScores{
 ## Get the alinment scores for the current candidate file
 sub getAlnScores{
 	chdir($coreOrthologsPath . $seqName);
-	my $candidatesFile = $outputFa . ".extended";
-	my $scorefile = $$ . ".scorefile";
-	my %scores;
-
-	########################
-	## step: 1
-	## setup
-	## set alignment command (glocal, local, or global)
-	#local      local:local    ssearch36   Smith-Waterman
-	#glocal     global:local   glsearch36  Needleman-Wunsch
-	#global     global:global  ggsearch36  Needleman-Wunsch
-	my $loclocCommand = "$localaligner " . $outputFa . " " . $candidatesFile . " -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globlocCommand = "$glocalaligner " . $outputFa . " " . $candidatesFile . " -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globglobCommand = "$globalaligner " . $outputFa . " " . $candidatesFile . " -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-
-	########################
-	## step: 2
-	## setup
-	## candidates to hash
-	## %candicontent keeps info about all candidates (header and sequence)
-	my %candicontent = getCandicontent();
-
-	########################
-	## step: 3
-	## get alignment scores
-	chdir($coreOrthologsPath . $seqName);
-	if ($glocal){
-		system($globlocCommand);
-	}elsif ($global){
-		system($globglobCommand);
-	}elsif ($local){
-		system($loclocCommand);
-	}
-
-	########################
-	## step: 4
-	## collect alignment score
-	## keep track about min and max for each query/coreortholog vs candidate set
-	my $max = -10000000;
-	my $min = 10000000;
-
-	%scores = cumulativeAlnScore($scorefile, \%candicontent);
-
+	my %scores = getCumulativeAlnScores();
 	## Normalize Alignment scores (unity-based)
 	printDebug("Normalize alignment scores:\n");
 	foreach my $key (keys %scores){
