@@ -55,7 +55,7 @@ setup(
                             "fdog.mergeOutput = fdog.mergeOutput:main",
                             "fdog.remove = fdog.removefDog:main",
                             "fdog.assembly = fdog.fDOGassembly:main",
-                            "fdog.mergeAssemblyOuput = fdog.mergeAssembly:main"],
+                            "fdog.mergeAssembly = fdog.mergeAssemblyOutput:main"],
     },
     license="GPL-3.0",
     classifiers=[
