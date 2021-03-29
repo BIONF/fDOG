@@ -752,23 +752,11 @@ if (!$coreOnly) {
 	}
 	$pm->wait_all_children;
 }
-
-if (assembly){
-	my $file_assembly_out;
-	#$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
-	print $file_assembly_out;
-	my $cmd_merge;
-	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
-	print $cmd_merge;
-	system($cmd_merge);
-}
-
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
 
-#if abändern zum abbruch wenn assembly
-## Evaluation of all orthologs that are predicted by the final run
-if(!$coreOnly){
+
+if(!$coreOnly && !$assembly){
 	my $fasStTime = gettime();
 	my $processID = $$;
 
@@ -780,7 +768,7 @@ if(!$coreOnly){
 	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 
 	# calculate FAS scores for final extended.fa
-	if ($fas_support) {
+	if ($fas_support && !$assembly) {
 		print "Starting the feature architecture similarity score computation...\n";
 		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu";
 		unless ($countercheck) {
@@ -797,6 +785,16 @@ if(!$coreOnly){
 		print "Cleaning up...\n";
 		runAutoCleanUp($processID);
 	}
+}
+
+if (assembly){
+	my $file_assembly_out;
+	#$file_assembly_out = $outputPath . '/' . $seqName . '.extended.fa';
+	print $file_assembly_out;
+	my $cmd_merge;
+	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
+	print $cmd_merge;
+	system($cmd_merge);
 }
 
 ## Delete tmp folder
