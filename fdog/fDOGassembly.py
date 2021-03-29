@@ -568,7 +568,7 @@ def main():
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
-        os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
+        os.system('prepareAlign < ' + msa_path + ' > ' + new_path + ' >> ' + out + '/fdog.log')
         os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
         print("block profile is finished \n")
 
