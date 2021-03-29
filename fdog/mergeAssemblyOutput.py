@@ -61,6 +61,7 @@ def main():
                 if len(lines) > 1:
                     set_phylo = set(lines)
             if cleanup == True:
+                print("test phylo")
                 os.remove(infile)
         elif infile.endswith('_forward.domains') and not infile == out + '_forward.domains':
             if not domains_0:
@@ -73,7 +74,8 @@ def main():
                 if len(lines) > 1:
                     set_domains_f = set(lines)
             if cleanup == True:
-                    os.remove(infile)
+                print("test domains_f")
+                os.remove(infile)
         elif infile.endswith('_reverse.domains') and not infile == out + '_reverse.domains':
             if not domains_1:
                 domains_1 = open(out + '_reverse.domains', 'w')
@@ -85,6 +87,7 @@ def main():
                 if len(lines) > 1:
                     set_domains_r = set(lines)
             if cleanup == True:
+                print("test domains_r")
                 os.remove(infile)
         elif infile.endswith('.extended.fa') and not infile == out + '.extended.fa':
             if not ex_fasta:
@@ -92,7 +95,7 @@ def main():
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 header = set()
-                print(set_fasta)
+                #print(set_fasta)
                 for line in lines:
                     if line[0] == ">":
                         header.add(line)
@@ -106,6 +109,7 @@ def main():
                             ex_fasta.write(line)
                 set_fasta = header
             if cleanup == True:
+                print("test fasta")
                 os.remove(infile)
 
     if phyloprofile:
