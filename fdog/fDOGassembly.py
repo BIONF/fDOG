@@ -498,21 +498,23 @@ def main():
     silent = args.silent
 
     ###################### How to handling std output ##########################
+    # if silent == True:
+    #     print(out + "fdog.log \n")
+    #     f = open(out + "fdog.log", "a+")
+    #     sys.stdout = f
+    # else:
+    #     print(out + "fdog.log \n")
+    #     sys.stdout = Logger(out)
+
+
     if silent == True:
-        print(out + "/fdog.log \n")
+        cmd_silent = ' 2>/dev/null'
         f = open(out + "/fdog.log", "a+")
         sys.stdout = f
     else:
-        print(out + "/fdog.log \n")
+        cmd_silent = ''
+        print(out + "fdog.log \n")
         sys.stdout = Logger(out)
-
-
-    # if silent == True:
-    #     cmd_silent = ' > /dev/null 2>&1'
-    #     f = open(out + "/fdog.log", "a+")
-    #     sys.stdout = f
-    # else:
-    #     cmd_silent = ''
 
     cmd_silent = ''
 
