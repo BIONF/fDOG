@@ -516,7 +516,6 @@ def main():
         print(out + "fdog.log \n")
         sys.stdout = Logger(out)
 
-    cmd_silent = ''
 
     #checking paths
     if dataPath == '':
