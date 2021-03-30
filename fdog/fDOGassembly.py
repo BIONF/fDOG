@@ -568,22 +568,22 @@ def main():
 
     #make a majority-rule consensus sequence with the tool hmmemit from hmmer
     print("Building a consensus sequence \n")
-    os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path + cmd_silent)
+    os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path)
     print("consensus sequence is finished\n")
 
     ######################## block profile #####################################
 
     print("Building a block profile \n")
 
-    os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path + cmd_silent)
+    os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
     #print(os.path.getsize(profile_path))
     if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
-        os.system('prepareAlign < ' + msa_path + ' > ' + new_path + cmd_silent)
-        os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path + cmd_silent)
+        os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
+        os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
         print("block profile is finished \n")
 
 
@@ -597,7 +597,7 @@ def main():
             searchBool = True
 
         ################### path definitions ###################################
-        os.system('mkdir ' + out + '/tmp/' + asName + cmd_silent)
+        os.system('mkdir ' + out + '/tmp/' + asName)
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
         if searchTaxon != '':
@@ -621,7 +621,7 @@ def main():
         #print(assembly_path)
         if db_check == 0:
             print("creating a blast data base \n")
-            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path + cmd_silent)
+            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path)
             print("database is finished \n")
         else:
             print('blast data base exists already, continuing...')
@@ -631,7 +631,7 @@ def main():
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
         print("tBLASTn search against data base")
-        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out ' + tmp_path + '/blast_results.out' + cmd_silent)
+        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out ' + tmp_path + '/blast_results.out')
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
