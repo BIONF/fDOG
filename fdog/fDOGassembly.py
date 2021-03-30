@@ -134,8 +134,11 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-            os.system("augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff")
-            os.system("getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff")
+
+            cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
+            result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+            cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
+            result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
 
             sequence_file = open(tmp_path + name + ".aa", "r")
             lines = sequence_file.readlines()
@@ -578,9 +581,6 @@ def main():
     cmd = 'msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path
     #os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
     result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
-    txt = result.stderr.decode('utf-8')
-    print(txt + '\n')
-    f.write(txt)
 
     #print(os.path.getsize(profile_path))
     if int(os.path.getsize(profile_path)) > 0:
@@ -589,11 +589,9 @@ def main():
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
         cmd = 'prepareAlign < ' + msa_path + ' > ' + new_path
-        #os.system('prepareAlign < ' + msa_path + ' > ' + new_path)
         result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
-        txt = result.stderr.decode('utf-8')
-        f.write(txt)
-        os.system('msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path)
+        cmd = 'msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path
+        result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
         print("block profile is finished \n")
 
 
