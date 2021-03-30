@@ -411,10 +411,10 @@ def checkOptions():
     #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
 
 class Logger(object):
-    def __init__(self, path):
+    def __init__(self, file):
         self.path = path
         self.terminal = sys.stdout
-        self.log = open(self.path + "fdog.log", "a+")
+        self.log = f
 
     def write(self, message):
         self.terminal.write(message)
@@ -506,18 +506,18 @@ def main():
     #     print(out + "fdog.log \n")
     #     sys.stdout = Logger(out)
 
+    try:
+        f = open(out + "fdog.log", "a+")
+    except FileNotFoundError:
+        f = open(out + "fdog.log", "w")
+
 
     if silent == True:
         cmd_silent = ' 2>/dev/null'
-        try:
-            f = open(out + "fdog.log", "a+")
-        except FileNotFoundError:
-            f = open(out + "fdog.log", "w")
         sys.stdout = f
     else:
         cmd_silent = ''
-        print(out + "fdog.log \n")
-        sys.stdout = Logger(out)
+        sys.stdout = Logger(f)
 
 
     #checking paths
