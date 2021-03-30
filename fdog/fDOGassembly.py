@@ -509,7 +509,10 @@ def main():
 
     if silent == True:
         cmd_silent = ' 2>/dev/null'
-        f = open(out + "/fdog.log", "a+")
+        try:
+            f = open(out + "fdog.log", "a+")
+        except FileNotFoundError:
+            f = open(out + "fdog.log", "w")
         sys.stdout = f
     else:
         cmd_silent = ''
@@ -693,6 +696,8 @@ def main():
         cleanup(tmp, tmp_path)
     else:
         cleanup(tmp, out + "/tmp/")
+
+    f.close()
 
 
 if __name__ == '__main__':
