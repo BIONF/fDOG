@@ -412,9 +412,9 @@ def checkOptions():
 
 class Logger(object):
     def __init__(self, file):
-        self.path = path
+        self.file = file
         self.terminal = sys.stdout
-        self.log = f
+        self.log = self.file
 
     def write(self, message):
         self.terminal.write(message)
@@ -514,6 +514,8 @@ def main():
 
     if silent == True:
         cmd_silent = ' 2>/dev/null'
+        cmd_silebt = ''
+        sys.stderr = f
         sys.stdout = f
     else:
         cmd_silent = ''
