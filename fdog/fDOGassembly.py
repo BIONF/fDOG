@@ -513,12 +513,9 @@ def main():
 
 
     if silent == True:
-        cmd_silent = ' 2>/dev/null'
-        cmd_silebt = ''
         sys.stderr = f
         sys.stdout = f
     else:
-        cmd_silent = ''
         sys.stdout = Logger(f)
 
 
