@@ -7,6 +7,7 @@ from Bio.Phylo.TreeConstruction import DistanceCalculator
 from Bio import AlignIO
 import argparse
 import yaml
+import subprocess
 ########################### functions ##########################################
 def load_config(config_file):
     with open(config_file, 'r') as stream:
@@ -574,8 +575,13 @@ def main():
     ######################## block profile #####################################
 
     print("Building a block profile \n")
+    cmd = 'msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path
+    #os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
+    result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+    txt = result.stderr.decode('utf-8')
+    print(txt + '\n')
+    f.write(txt)
 
-    os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
     #print(os.path.getsize(profile_path))
     if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
