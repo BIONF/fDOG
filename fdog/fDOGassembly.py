@@ -504,11 +504,16 @@ def main():
     # else:
     #     print(out + "/fdog.log \n")
     #     sys.stdout = Logger(out)
-    if silent == True:
-        cmd_silent = ' > /dev/null 2>&1'
-        f = open(out + "/fdog.log", "a+")
-        sys.stdout = f
-    else: cmd_silent = ''
+
+
+    # if silent == True:
+    #     cmd_silent = ' > /dev/null 2>&1'
+    #     f = open(out + "/fdog.log", "a+")
+    #     sys.stdout = f
+    # else:
+    #     cmd_silent = ''
+
+    cmd_silent = ''
 
     #checking paths
     if dataPath == '':
