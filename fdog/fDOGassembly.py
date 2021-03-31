@@ -137,7 +137,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
 
             cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
-            result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+            result = subprocess.run(cmd, stdout = subprocess.PIPE, shell=True)
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
 
@@ -189,7 +189,7 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, searchTool, matrix, dataPath, tmp_path):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath, tmp_path):
     ###########getting sequences and write all in one file to make msa #########
     name_file = candidate_name + ".co"
     output_file = tmp_path + name_file + '.fasta'
@@ -213,10 +213,10 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     out.close()
 
-    if searchTool == "muscle":
+    if msaTool == "muscle":
         os.system("muscle -quiet -in " + output_file + " -out " + aln_file)
         #print("muscle -quiet -in " + output_file + " -out " + aln_file)
-    elif searchTool == "mafft-linsi":
+    elif msaTool == "mafft-linsi":
         #print("mafft-linsi")
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
 
@@ -414,6 +414,46 @@ def cleanup(tmp, tmp_path):
 def checkOptions():
     pass
     #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
+
+def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
+    print(candidates)
+    candidates = readFasta(candidatesFile)
+    ref = readFasta(fasta)
+
+    out = tmp_path + '/checkCoorthologs.fa'
+    f = open(out,"w")
+
+    aln_file = tmp_path + '/checkCoorthologs.aln'
+
+    for record in candidates:
+        for name in candidate_name:
+            if name in record.id:
+                out.write(">" + name + "\n")
+                out.write(str(record.seq) + "\n")
+    for record in ref:
+        if fdog_ref_species in record.id:
+            print(record.id)
+            out.write(">" + record.id + "\n")
+            out.write(str(record.seq) +  "\n")
+            break
+
+    out.close()
+
+    if msaTool == "muscle":
+        os.system("muscle -quiet -in " + out + " -out " + aln_file)
+        #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+    elif msaTool == "mafft-linsi":
+        #print("mafft-linsi")
+        os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file)
+
+    distances = get_distance_biopython(aln_file, matrix)
+    print(distances)
+
+
+
+
+
+    return candidate_names
 
 class Logger(object):
     def __init__(self, file):
@@ -663,7 +703,6 @@ def main():
         print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
-    #verschiede Modi beachten!
         reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path)
 
 
@@ -672,8 +711,14 @@ def main():
             if searchTaxon == '':
                 continue
             else:
-                cleanup(tmp)
+                cleanup(tmp, tmp_path)
                 return 1
+
+    ################## checking accepted genes for co-orthologs ##########################
+        print(reciprocal_sequences)
+        reciprocal_sequences = coorthologs(reciprocal, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
+
+
 
     ################ add sequences to extended.fa in the output folder##########
         addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
@@ -689,7 +734,7 @@ def main():
 
     if refBool == False and searchTaxon == '':
         print("No orthologs found. Exciting ...")
-        cleanup(tmp)
+        cleanup(tmp, tmp_path)
         return 1
 
     if fasoff == False and searchTaxon == '':
