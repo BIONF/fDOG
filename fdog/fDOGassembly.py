@@ -465,7 +465,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
 
 
-
+    print(checked)
     return checked
 
 class Logger(object):
