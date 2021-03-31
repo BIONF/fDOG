@@ -429,16 +429,16 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     for record in candidates:
         for name in candidate_names:
             if name in record.id:
-                out.write(">" + name + "\n")
-                out.write(str(record.seq) + "\n")
+                f.write(">" + name + "\n")
+                f.write(str(record.seq) + "\n")
     for record in ref:
         if fdog_ref_species in record.id:
             print(record.id)
-            out.write(">" + record.id + "\n")
-            out.write(str(record.seq) +  "\n")
+            f.write(">" + record.id + "\n")
+            f.write(str(record.seq) +  "\n")
             break
 
-    out.close()
+    f.close()
 
     if msaTool == "muscle":
         os.system("muscle -quiet -in " + out + " -out " + aln_file)
