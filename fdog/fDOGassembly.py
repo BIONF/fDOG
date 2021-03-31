@@ -717,7 +717,7 @@ def main():
 
     ################## checking accepted genes for co-orthologs ##########################
         print(reciprocal_sequences)
-        reciprocal_sequences = coorthologs(reciprocal, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
+        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
 
 
