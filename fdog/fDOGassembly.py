@@ -427,7 +427,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     aln_file = tmp_path + '/checkCoorthologs.aln'
 
     for record in candidates:
-        for name in candidate_name:
+        for name in candidate_names:
             if name in record.id:
                 out.write(">" + name + "\n")
                 out.write(str(record.seq) + "\n")
