@@ -416,8 +416,6 @@ def checkOptions():
     #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
 
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
-    print(candidate_names)
-    print("TEST \n")
     candidates = readFasta(candidatesFile)
     ref = readFasta(fasta)
 
@@ -426,18 +424,18 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     aln_file = tmp_path + '/checkCoorthologs.aln'
 
+    for record in ref:
+        if fdog_ref_species in record.id:
+            ref_id = record.id
+            f.write(">" + record.id + "\n")
+            f.write(str(record.seq) +  "\n")
+            break
+
     for record in candidates:
         for name in candidate_names:
             if name in record.id:
                 f.write(">" + name + "\n")
                 f.write(str(record.seq) + "\n")
-    for record in ref:
-        if fdog_ref_species in record.id:
-            print(record.id)
-            f.write(">" + record.id + "\n")
-            f.write(str(record.seq) +  "\n")
-            break
-
     f.close()
 
     if msaTool == "muscle":
@@ -450,11 +448,25 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     distances = get_distance_biopython(aln_file, matrix)
     print(distances)
 
+    min_dist = 10
+    min_name = None
+
+    for name in candidate_names:
+        distance = distances[ref_id][name]
+        if distance <= min_dist:
+            min_dist = distance
+            min_name = name
+
+    checked = []
+
+    for name in candidate_names:
+        if distances[min_name][name] < distances[min_name][ref_id]
+            checked.append(name)
 
 
 
 
-    return candidate_names
+    return checked
 
 class Logger(object):
     def __init__(self, file):
