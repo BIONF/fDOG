@@ -446,28 +446,23 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file)
 
     distances = get_distance_biopython(aln_file, matrix)
-    print(distances)
 
     min_dist = 10
     min_name = None
 
     for name in candidate_names:
         distance = distances[ref_id , name]
-        if distance <= min_dist:
+        if distance < min_dist:
             min_dist = distance
             min_name = name
 
     checked = []
-    print(min_name)
-    print(min_dist)
+
 
     for name in candidate_names:
         if distances[min_name , name] < distances[min_name , ref_id]:
             checked.append(name)
 
-
-
-    print(checked)
     return checked
 
 class Logger(object):
