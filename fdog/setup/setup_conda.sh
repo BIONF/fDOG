@@ -259,6 +259,7 @@ data_fdog_file="data_HaMStR-2019c.tar.gz"
 checkSumData="1748371655 621731824 $data_fdog_file"
 cd $outDir
 if [ ! -d "$outDir/genome_dir" ]; then mkdir "$outDir/genome_dir"; fi
+if [ ! -d "$outDir/assembly_dir" ]; then mkdir "$outDir/assembly_dir"; fi
 
 if ! [ "$(ls -A $outDir/genome_dir)" ]; then
   echo "-------------------------------------"
