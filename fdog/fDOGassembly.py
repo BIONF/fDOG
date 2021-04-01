@@ -597,6 +597,9 @@ def main():
     if core_path == '':
         core_path = out + '/core_orthologs/'
 
+    print(assemblyDir)
+    
+
 
     # user input has to be checked here before fDOGassembly continues
 
@@ -725,7 +728,6 @@ def main():
                 return 1
 
     ################## checking accepted genes for co-orthologs ##########################
-        print(reciprocal_sequences)
         reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
 
