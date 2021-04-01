@@ -95,7 +95,7 @@ def runAddTaxon(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.1'
+    version = '0.0.5'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxa version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -125,6 +125,7 @@ def main():
             sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
         with open(pathconfigFile) as f:
             outPath = f.readline().strip()
+    outPath = os.path.abspath(outPath)
     noAnno = args.noAnno
     coreTaxa = args.coreTaxa
     oldFAS = args.oldFAS
