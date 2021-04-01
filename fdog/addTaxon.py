@@ -77,13 +77,13 @@ def runBlast(args):
         subprocess.call([blastCmd], shell = True)
     except:
         sys.exit('Problem with running %s' % blastCmd)
-    fileInGenome = "%s/genome_dir/%s/%s.fa" % (outPath, specName, specName)
+    fileInGenome = "../../genome_dir/%s/%s.fa" % (specName, specName)
     fileInBlast = "%s/blast_dir/%s/%s.fa" % (outPath, specName, specName)
     if not Path(fileInBlast).exists():
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.2'
+    version = '0.0.5'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -115,6 +115,7 @@ def main():
             sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
         with open(pathconfigFile) as f:
             outPath = f.readline().strip()
+    outPath = os.path.abspath(outPath)
     noAnno = args.noAnno
     coreTaxa = args.coreTaxa
     ver = str(args.verProt)
@@ -152,10 +153,13 @@ def main():
             seq = str(inSeq[id].seq)
             # check ID
             id = re.sub('\|', '_', id)
-            if len(id) > 80:
-                # modIdIndex = modIdIndex + 1
-                # id = specName + "_" + str(modIdIndex)
+            oriId = id
+            if len(id) > 30:
+                modIdIndex = modIdIndex + 1
+                id = specName + "_" + str(modIdIndex)
                 longId = 'yes'
+                with open(specFile + '.mapping', 'a') as mappingFile:
+                    mappingFile.write('%s\t%s\n' % (id, oriId))
             if not id in tmpDict:
                 tmpDict[id] = 1
             else:
@@ -184,7 +188,7 @@ def main():
         cf.close()
         # warning about long header
         if longId == 'yes':
-            print('\033[91mWARNING: Headers are longer than 80 characters. It could cause some troubles!\033[0m')
+            print('\033[91mWARNING: Some headers longer than 80 characters have been automatically shortened. PLease check the %s.mapping file for details!\033[0m' % specFile)
     else:
         print(genomePath + '/' + specName + '.fa already exists!')
 

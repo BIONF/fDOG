@@ -105,17 +105,19 @@ def compileCore(options, seeds, inFol, cpu, outpath):
     for seed in seeds:
         seqFile = [inFol + '/' + seed]
         seqName = getSeedName(seed)
-        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'core')
-        coreCompilationJobs.append([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute])
-    pool = mp.Pool(cpu)
-    coreOut = []
-    for _ in tqdm(pool.imap_unordered(fdogFn.runSingle, coreCompilationJobs), total=len(coreCompilationJobs)):
-        coreOut.append(_)
-    pool.close()
-    pool.join()
+        if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)):
+            (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'core')
+            coreCompilationJobs.append([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute])
+    if len(coreCompilationJobs) > 0:
+        pool = mp.Pool(cpu)
+        coreOut = []
+        for _ in tqdm(pool.imap_unordered(fdogFn.runSingle, coreCompilationJobs), total=len(coreCompilationJobs)):
+            coreOut.append(_)
+        pool.close()
+        pool.join()
+        # read logs file to get runtime for individual seeds
+        getIndividualRuntime('core', outpath, seeds)
     end = time.time()
-    # read logs file to get runtime for individual seeds
-    getIndividualRuntime('core', outpath, seeds)
     multiCoreTime = '{:5.3f}'.format(end-start)
     print('==> Core compiling finished in %s sec' % multiCoreTime) #'{:5.3f}s'.format(end-start))
     return(multiCoreTime)
@@ -140,7 +142,7 @@ def searchOrtho(options, seeds, inFol, cpu, outpath):
     print('==> Ortholog search finished in %s sec' % multiOrthoTime)
     return(multiOrthoTime)
 
-def joinOutputs(outpath, jobName, seeds, keep):
+def joinOutputs(outpath, jobName, seeds, keep, silent):
     print('Joining single outputs...')
     finalFa = '%s/%s.extended.fa' % (outpath, jobName)
     Path(outpath+'/singleOutput').mkdir(parents=True, exist_ok=True)
@@ -148,14 +150,20 @@ def joinOutputs(outpath, jobName, seeds, keep):
         for seed in seeds:
             seqName = getSeedName(seed)
             resultFile = '%s/%s/%s.extended.fa'  % (outpath, seqName, seqName)
+            if silent == False:
+                print(resultFile)
             if os.path.exists(resultFile):
                 with open(resultFile,'rb') as fd:
                     shutil.copyfileobj(fd, wfd)
                 shutil.move(outpath + '/' + seqName, outpath + '/singleOutput')
             else:
                 Path(outpath+'/missingOutput').mkdir(parents=True, exist_ok=True)
-                shutil.move(outpath + '/' + seqName, outpath + '/missingOutput')
+                if not os.path.exists(outpath + '/missingOutput/' + seqName):
+                    shutil.move(outpath + '/' + seqName, outpath + '/missingOutput')
+            if os.path.exists(outpath + '/' + seqName + '.fa'):
                 os.remove(outpath + '/' + seqName + '.fa')
+            if os.path.exists(os.getcwd() + '/' + seqName + '.fa'):
+                os.remove(os.getcwd() + '/' + seqName + '.fa')
     if keep == True:
         try:
             print('Compressing single outputs...')
@@ -181,7 +189,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.25'
+    version = '0.0.33'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -203,6 +211,7 @@ def main():
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
+    addtionalIO.add_argument('--forceComplete', help='Overwrite existing core orthologs and all output files', action='store_true', default=False)
     addtionalIO.add_argument('--cleanup', help='Temporary output will be deleted. Default: True', action='store_true', default=True)
     addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--group', help='Allows to limit the search to a certain systematic group', action='store', default='')
@@ -304,6 +313,7 @@ def main():
     # other I/O arguments
     append = args.append
     force = args.force
+    forceComplete = args.forceComplete
     cleanup = args.cleanup
     keep = args.keep
     group = args.group
@@ -355,6 +365,31 @@ def main():
     else:
         silent = True
 
+    ### check fas
+    if not fasoff:
+        try:
+            fasVersion = subprocess.run(['calcFAS --version'], shell = True, capture_output = True, check = True)
+        except:
+            sys.exit('Problem with calcFAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
+
+    ### delete output folder and files if needed
+    if forceComplete:
+        if os.path.exists(outpath):
+            print("Removing existing output directory %s" % outpath)
+            shutil.rmtree(outpath)
+            Path(outpath).mkdir(parents=True, exist_ok=True)
+    if force:
+        if os.path.exists(outpath):
+            print("Removing existing files %s in %s*" % (jobName, outpath))
+            outfiles = os.listdir(outpath)
+            for item in outfiles:
+                if item.startswith(jobName):
+                    os.remove(os.path.join(outpath, item))
+                if item.startswith("runtime"):
+                    os.remove(os.path.join(outpath, item))
+            if os.path.exists(outpath + '/missing.txt'):
+                os.remove(outpath + '/missing.txt')
+
     ### get fdog and data path
     dataPath = ''
     fdogPath = os.path.realpath(__file__).replace('/runMulti.py','')
@@ -379,6 +414,8 @@ def main():
         #         hmmpath = cfg['hmmpath']
         #     except:
         #         sys.exit('hmmpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
+    else:
+        hmmpath = os.path.abspath(hmmpath)
     if blastpath == '':
         blastpath = dataPath + '/blast_dir'
         if dataPath == 'config':
@@ -412,6 +449,7 @@ def main():
                 cpu, hyperthread, debug, silent]
 
     ### START
+    Path(outpath).mkdir(parents=True, exist_ok=True)
     multiLog = open(outpath + '/' + jobName + '_log.txt', "w")
     fdogStart = time.time()
     seeds = getSortedFiles(inFol)
@@ -422,30 +460,40 @@ def main():
     if reuseCore == False:
         multiCoreTime = compileCore(options, seeds, inFol, cpu, outpath)
         multiLog.write('==> Core compilation finished in %s sec\n' % multiCoreTime)
+    else:
+        if not os.path.exists(hmmpath):
+            sys.exit('--reuseCore was set, but no core orthologs found in %s! You could use --hmmpath to manually specify the core ortholog directory.' % outpath)
 
     ### do ortholog search
     if coreOnly == False:
-        ### create list of search taxa
-        searchTaxa = ''
-        searchGroup = 'all'
-        if not group == '':
-            print('Creating list for search taxa...')
-            searchTaxa = '%s/searchTaxa.txt' % (outpath)
-            searchGroup = group
-            cmd = 'perl %s/bin/getSearchTaxa.pl -i %s -b %s -h %s -r %s -n %s -t %s/taxonomy -o %s' % (fdogPath, searchpath, evalBlast, evalHmmer, evalRelaxfac, searchGroup, fdogPath, searchTaxa)
-            try:
-                subprocess.call([cmd], shell = True)
-            except:
-                sys.exit('Problem running\n%s' % (cmd))
-        ### run ortholog search
-        multiOrthoTime = searchOrtho(options, seeds, inFol, cpu, outpath)
-        multiLog.write('==> Ortholog search finished in %s sec\n' % multiOrthoTime)
-        ### join output
-        finalFa = joinOutputs(outpath, jobName, seeds, keep)
+        if not os.path.exists('%s/%s.extended.fa' % (outpath, jobName)):
+            ### create list of search taxa
+            searchTaxa = ''
+            searchGroup = 'all'
+            if not group == '':
+                print('Creating list for search taxa...')
+                searchTaxa = '%s/searchTaxa.txt' % (outpath)
+                searchGroup = group
+                cmd = 'perl %s/bin/getSearchTaxa.pl -i %s -b %s -h %s -r %s -n %s -t %s/taxonomy -o %s' % (fdogPath, searchpath, evalBlast, evalHmmer, evalRelaxfac, searchGroup, fdogPath, searchTaxa)
+                try:
+                    subprocess.call([cmd], shell = True)
+                except:
+                    sys.exit('Problem running\n%s' % (cmd))
+            ### run ortholog search
+            multiOrthoTime = searchOrtho(options, seeds, inFol, cpu, outpath)
+            multiLog.write('==> Ortholog search finished in %s sec\n' % multiOrthoTime)
+            ### join output
+            finalFa = joinOutputs(outpath, jobName, seeds, keep, silent)
+        else:
+            print("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force option." % (jobName, outpath))
         ### calculate FAS scores
         if fasoff == False:
-            fasTime = calcFAS(outpath, finalFa, weightpath, cpu)
-            multiLog.write('==> FAS calculation finished in %s sec\n' % fasTime)
+            if not os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
+                if os.path.exists(finalFa) and os.path.getsize(finalFa) > 0:
+                    fasTime = calcFAS(outpath, finalFa, weightpath, cpu)
+                    multiLog.write('==> FAS calculation finished in %s sec\n' % fasTime)
+                else:
+                    print("Final fasta file %s not exists or empty!" % finalFa)
 
     fdogEnd = time.time()
     print('==> fdogs.run finished in ' + '{:5.3f}s'.format(fdogEnd-fdogStart))
