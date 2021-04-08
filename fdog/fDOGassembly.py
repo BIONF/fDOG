@@ -60,7 +60,7 @@ def parse_blast(line, blast_results):
     #print(line)
     line = line.replace("\n", "")
     line_info = line.split("\t")
-    #print(line_info)
+    print(line_info)
     evalue = float(line_info[3])
 
     #cut off
@@ -598,7 +598,7 @@ def main():
         core_path = out + '/core_orthologs/'
 
     print(assemblyDir)
-    
+
 
 
     # user input has to be checked here before fDOGassembly continues
@@ -620,7 +620,7 @@ def main():
 
     ###################### create tmp folder ###################################
 
-    os.system('mkdir ' + out + '/tmp')
+    os.system('mkdir ' + out + '/tmp' + '>/dev/null 2>&1')
 
     ######################## consensus sequence ################################
 
@@ -659,7 +659,7 @@ def main():
             searchBool = True
 
         ################### path definitions ###################################
-        os.system('mkdir ' + out + '/tmp/' + asName)
+        os.system('mkdir ' + out + '/tmp/' + asName + '>/dev/null 2>&1')
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
         if searchTaxon != '':
@@ -740,7 +740,7 @@ def main():
         if searchTaxon != '' and fasoff == False:
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
-            os.system('mkdir ' + tmp_path + 'anno_dir')
+            os.system('mkdir ' + tmp_path + 'anno_dir' + '>/dev/null 2>&1')
             os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName )
 
 
