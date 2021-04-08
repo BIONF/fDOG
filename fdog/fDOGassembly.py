@@ -591,10 +591,12 @@ def main():
         out = os.getcwd()
         os.system('mkdir ' + out + '/' + group)
         out = out + '/' + group
+
     if core_path == '':
         core_path = out + '/core_orthologs/'
 
     print(out)
+    print("test " + group + "\n" )
     #print(assemblyDir)
     try:
         f = open(out + "fdog.log", "a+")
