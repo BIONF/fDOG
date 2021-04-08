@@ -31,6 +31,11 @@ def merge(blast_results, insert_length):
             i = 1
             while i < size_list-1:
 
+                a = locations[j][0]
+                b = locations[i][0]
+                c = locations[j][1]
+                d = locations[j][5]
+                e = locations[i][5]
                 if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5])):
                     #merge overlapping regions
                     locations[j][1] = max(locations[j][1], locations[i][1])
@@ -60,7 +65,7 @@ def parse_blast(line, blast_results):
     #print(line)
     line = line.replace("\n", "")
     line_info = line.split("\t")
-    print(line_info)
+    #print(line_info)
     evalue = float(line_info[3])
 
     #cut off
@@ -597,7 +602,7 @@ def main():
     if core_path == '':
         core_path = out + '/core_orthologs/'
 
-    print(assemblyDir)
+    #print(assemblyDir)
 
 
 
