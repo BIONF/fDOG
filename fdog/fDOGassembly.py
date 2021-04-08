@@ -530,7 +530,7 @@ def main():
     assemblyDir = args.assemblyPath
     dataPath = args.dataPath
     core_path = args.coregroupPath
-    out = args.out + "/"
+    out = args.out
     pathFile = args.pathFile
     #I/O
     tmp = args.tmp
@@ -591,7 +591,7 @@ def main():
         print('test out \n')
         out = os.getcwd()
         os.system('mkdir ' + out + '/' + group)
-        out = out + '/' + group
+        out = out + '/' + group + '/'
 
     if core_path == '':
         core_path = out + '/core_orthologs/'
