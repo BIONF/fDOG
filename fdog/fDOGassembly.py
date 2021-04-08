@@ -599,6 +599,7 @@ def main():
         assemblyDir = dataPath + '/assembly_dir/'
     if out == '':
         out = os.getcwd()
+        os.system('mkdir ' + out + '/group')
     else:
         if not os.path.exists(out + '/group'):
             os.system('mkdir ' + out + '/group')
