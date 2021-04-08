@@ -566,17 +566,7 @@ def main():
     #     print(out + "fdog.log \n")
     #     sys.stdout = Logger(out)
 
-    try:
-        f = open(out + "fdog.log", "a+")
-    except FileNotFoundError:
-        f = open(out + "fdog.log", "w")
 
-
-    if silent == True:
-        sys.stderr = f
-        sys.stdout = f
-    else:
-        sys.stdout = Logger(f)
 
 
     #checking paths
@@ -605,6 +595,17 @@ def main():
         core_path = out + '/core_orthologs/'
 
     #print(assemblyDir)
+    try:
+        f = open(out + "fdog.log", "a+")
+    except FileNotFoundError:
+        f = open(out + "fdog.log", "w")
+
+
+    if silent == True:
+        sys.stderr = f
+        sys.stdout = f
+    else:
+        sys.stdout = Logger(f)
 
 
 
