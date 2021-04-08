@@ -599,9 +599,9 @@ def main():
     print("test " + group + "\n" )
     #print(assemblyDir)
     try:
-        f = open(out + "fdog.log", "a+")
+        f = open(out + "/fdog.log", "a+")
     except FileNotFoundError:
-        f = open(out + "fdog.log", "w")
+        f = open(out + "/fdog.log", "w")
 
 
     if silent == True:
