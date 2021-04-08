@@ -599,6 +599,9 @@ def main():
         assemblyDir = dataPath + '/assembly_dir/'
     if out == '':
         out = os.getcwd()
+    else:
+        if not os.path.exists(out + '/group'):
+            os.system('mkdir ' + out + '/group')
     if core_path == '':
         core_path = out + '/core_orthologs/'
 
