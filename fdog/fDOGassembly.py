@@ -588,6 +588,7 @@ def main():
     if assemblyDir == '':
         assemblyDir = dataPath + '/assembly_dir/'
     if out == '':
+        print('test out \n')
         out = os.getcwd()
         os.system('mkdir ' + out + '/' + group)
         out = out + '/' + group
