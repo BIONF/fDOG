@@ -594,6 +594,7 @@ def main():
     if core_path == '':
         core_path = out + '/core_orthologs/'
 
+    print(out)
     #print(assemblyDir)
     try:
         f = open(out + "fdog.log", "a+")
