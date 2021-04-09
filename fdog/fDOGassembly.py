@@ -589,6 +589,8 @@ def main():
                 dataPath = cfg['dataPath']
             except:
                 dataPath = 'config'
+    if core_path == '':
+        core_path = out + '/core_orthologs/'
 
     if assemblyDir == '':
         assemblyDir = dataPath + '/assembly_dir/'
@@ -598,8 +600,7 @@ def main():
         os.system('mkdir ' + out + '/' + group)
         out = out + '/' + group + '/'
 
-    if core_path == '':
-        core_path = out + '/core_orthologs/'
+
 
     print(out)
     print("test " + group + "\n" )
@@ -659,9 +660,11 @@ def main():
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
+        print(cmd)
         cmd = 'prepareAlign < ' + msa_path + ' > ' + new_path
         result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
         cmd = 'msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path
+        print(cmd)
         result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
         print("block profile is finished \n")
 
