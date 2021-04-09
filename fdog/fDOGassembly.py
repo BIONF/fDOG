@@ -146,16 +146,21 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
 
-            sequence_file = open(tmp_path + name + ".aa", "r")
-            lines = sequence_file.readlines()
-            for line in lines:
-                if line[0] == ">":
-                    id = line.replace(">", "")
-                    header = ">" + group + "|" + ass_name + "|" + name + "_" + id
-                    output.write(header)
-                else:
-                    output.write(line)
-            sequence_file.close()
+            try:
+                sequence_file = open(tmp_path + name + ".aa", "r")
+                lines = sequence_file.readlines()
+                for line in lines:
+                    if line[0] == ">":
+                        id = line.replace(">", "")
+                        header = ">" + group + "|" + ass_name + "|" + name + "_" + id
+                        output.write(header)
+                    else:
+                        output.write(line)
+                sequence_file.close()
+            except FileNotFoundError:
+                print("No gene found by ID:" + name +" , continuing with next region")
+
+
 
     output.close()
 
