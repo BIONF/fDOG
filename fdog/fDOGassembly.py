@@ -662,7 +662,7 @@ def main():
         print("block profile is finished \n")
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
-        new_path = core_path + "/" + group +"/"+ group + "_new.aln"
+        new_path = core_path + group +"/"+ group + "_new.aln"
         #print(cmd)
         cmd = 'prepareAlign < ' + msa_path + ' > ' + new_path
         result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
