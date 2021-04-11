@@ -133,28 +133,29 @@ def checkDataFolder(checkDir, replace, delete, concat):
                     if os.path.islink(faFile):
                         faFile = os.path.realpath(faFile)
                     checkFileExist(faFile)
-                    if not '.checked' in faFile:
-                        if not os.path.exists(faFile+".checked"):
-                            checkFaFile = checkValidFasta(faFile)
-                            if checkFaFile == 'notFasta':
-                                sys.exit('*** ERROR: %s does not look like a fasta file!' % faFile)
-                            elif checkFaFile == 'longHeader':
-                                sys.exit('*** ERROR: %s contains long headers!' % faFile)
-                            elif checkFaFile == 'space':
-                                sys.exit('*** ERROR: %s contains spaces/tabs!' % faFile)
-                            elif checkFaFile == 'multiLine':
-                                if not concat:
-                                    print('*** ERROR: %s contains multiple-line sequences!' % faFile)
-                                    sys.exit('Please use "--concat" with "--replace" or "--delete" to join them into single lines')
-                                else:
-                                    rewriteSeqs(faFile, replace, delete)
-                            elif checkFaFile == 'ok':
-                                if not (delete or replace):
-                                    checkValidSeqs(faFile)
-                                else:
-                                    rewriteSeqs(faFile, replace, delete)
-                            writeCheckedFile(faFile)
-                            print(fd)
+                    if not '.mapping' in faFile:
+                        if not '.checked' in faFile:
+                            if not os.path.exists(faFile+".checked"):
+                                checkFaFile = checkValidFasta(faFile)
+                                if checkFaFile == 'notFasta':
+                                    sys.exit('*** ERROR: %s does not look like a fasta file!' % faFile)
+                                elif checkFaFile == 'longHeader':
+                                    sys.exit('*** ERROR: %s contains long headers!' % faFile)
+                                elif checkFaFile == 'space':
+                                    sys.exit('*** ERROR: %s contains spaces/tabs!' % faFile)
+                                elif checkFaFile == 'multiLine':
+                                    if not concat:
+                                        print('*** ERROR: %s contains multiple-line sequences!' % faFile)
+                                        sys.exit('Please use "--concat" with "--replace" or "--delete" to join them into single lines')
+                                    else:
+                                        rewriteSeqs(faFile, replace, delete)
+                                elif checkFaFile == 'ok':
+                                    if not (delete or replace):
+                                        checkValidSeqs(faFile)
+                                    else:
+                                        rewriteSeqs(faFile, replace, delete)
+                                writeCheckedFile(faFile)
+                                print(fd)
                 taxaList.append(fd)
             except subprocess.CalledProcessError as e:
                 print('*** ERROR: Problem while searching for fasta file')
@@ -193,7 +194,7 @@ def checkMissingNcbiID(namesDmp, taxaList):
     return(missingTaxa.keys(), dupTaxa)
 
 def main():
-    version = '0.0.3'
+    version = '0.0.4'
     parser = argparse.ArgumentParser(description='You are running fdog.checkData version ' + str(version) + '.')
     parser.add_argument('-g', '--genomeDir', help='Path to search taxa directory (e.g. fdog_dataPath/genome_dir)', action='store', default='')
     parser.add_argument('-b', '--blastDir', help='Path to blastDB directory (e.g. fdog_dataPath/blast_dir)', action='store', default='')
