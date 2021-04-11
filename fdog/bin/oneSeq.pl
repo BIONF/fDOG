@@ -2600,6 +2600,16 @@ sub initialCheck {
 	if ($fasoff != 1) {
 		my %seen;
 		my @allTaxa = grep( !$seen{$_}++, @genomeDir, @blastDir);
+		my @notFolder;
+		for (my $i = 0;$i < scalar(@allTaxa); $i++){
+			if (-f "$blastDir/$allTaxa[$i]" || -f "$genomeDir/$allTaxa[$i]") {
+				push(@notFolder, $allTaxa[$i]);
+				splice(@allTaxa, $i, 1);
+			}
+		}
+		if (scalar(@notFolder) > 0) {
+			print "*** WARNING: Found files in $genomeDir or $blastDir:\t@notFolder\n";
+		}
 		chomp(my $allAnno = `ls $weightDir | $sedprog \'s/\\.json//\'`);
 		my @allAnno = split(/\n/, $allAnno);
 		my @missingAnno = array_minus(@allTaxa, @allAnno);

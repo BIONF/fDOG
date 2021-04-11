@@ -170,7 +170,7 @@ def runSingle(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.35'
+    version = '0.0.36'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
