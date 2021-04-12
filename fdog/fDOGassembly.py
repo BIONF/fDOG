@@ -27,7 +27,7 @@ def merge(blast_results, insert_length):
 
         j = 0
 
-        while j < size_list-2:
+        while j < size_list-1:
             i = 1
             while i < size_list-1:
 
