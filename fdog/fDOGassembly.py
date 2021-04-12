@@ -376,6 +376,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
 
     #print(orthologs)
+    orthologs = set(orthologs)
     return list(orthologs), seed
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool, tmp_path):
