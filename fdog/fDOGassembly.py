@@ -18,6 +18,7 @@ def load_config(config_file):
 
 def merge(blast_results, insert_length):
     number_regions = 0
+    insert_length = int(insert_length)
     for key in blast_results:
         locations = blast_results[key]
         locations = sorted(locations, key = lambda x: int(x[3]))
