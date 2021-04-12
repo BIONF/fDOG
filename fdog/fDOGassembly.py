@@ -38,7 +38,7 @@ def merge(blast_results, insert_length):
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
-                elif ((locations[j][0] > locations[i][0]) and (locations[j][1] < locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
+                elif ((locations[j][1] > locations[i][1]) and (locations[j][0] < locations[i][1]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
                     #merge overlapping regions
                     locations[j][0] = min(locations[j][0], locations[i][0])
                     locations[j][2] = min(locations[j][2], locations[i][2])
@@ -52,7 +52,7 @@ def merge(blast_results, insert_length):
                     locations.pop(i)
                     size_list -= 1
                     i -=1
-                elif ((locations[j][0] > locations[i][0]) and (locations[j][0] - locations[i][1] <= 2* insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
+                elif ((locations[j][1] > locations[i][1]) and (locations[j][0] - locations[i][1] <= 2* insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
                     #print(j)
                     locations[j][0] = min(locations[j][0], locations[i][0])
                     locations[j][2] = min(locations[j][2], locations[i][2])
@@ -74,7 +74,7 @@ def parse_blast(line, blast_results, cutoff):
     #fomrat dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>)]}
     line = line.replace("\n", "")
     line_info = line.split("\t")
-    print(line_info)
+    #print(line_info)
     evalue = float(line_info[3])
     #cut off
     if evalue > cutoff:
