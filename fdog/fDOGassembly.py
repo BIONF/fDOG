@@ -81,14 +81,14 @@ def parse_blast(line, blast_results, cutoff):
         return blast_results, evalue
     #add region to dictionary
     else:
-        node_name, sstart, send, qstart, qend = line_info[0], line_info[1], line_info[2], line_info[4], line_info[5]
+        node_name, sstart, send, qstart, qend = line_info[0], int(line_info[1]), int(line_info[2]), int(line_info[4]), int(line_info[5])
         split = node_name.split("|")
         # finding out on which strand tBLASTn found a hit
         if sstart < send:
             strand = "+"
         else:
-            sstart = line_info[2]
-            send = line_info[1]
+            sstart = int(line_info[2])
+            send = int(line_info[1])
             strand = "-"
         #creating a dictionary that inlcudes every tBLASTn that is better as the evalue cut-off
         if len(split) > 1:
