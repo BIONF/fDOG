@@ -31,8 +31,8 @@ def merge(blast_results, insert_length):
             i = j + 1
             while i < size_list-1:
                 print("Vergleich \n")
-                print(locations[j] + "\n")
-                print(locations[i] + "\n")
+                print(str(locations[j]) + "\n")
+                print(str(locations[i]) + "\n")
                 if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
                     #merge overlapping regions
                     locations[j][1] = max(locations[j][1], locations[i][1])
