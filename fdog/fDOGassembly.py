@@ -27,9 +27,9 @@ def merge(blast_results, insert_length):
         size_list = len(locations)
 
         j = 0
-        while j < size_list-2:
+        while j < size_list-1:
             i = j + 1
-            while i < size_list-1:
+            while i < size_list:
                 print("Vergleich \n")
                 print(str(locations[j]) + "\n")
                 print(str(locations[i]) + "\n")
