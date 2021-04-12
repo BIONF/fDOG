@@ -31,11 +31,6 @@ def merge(blast_results, insert_length):
             i = 1
             while i < size_list-1:
 
-                a = locations[j][0]
-                b = locations[i][0]
-                c = locations[j][1]
-                d = locations[j][5]
-                e = locations[i][5]
                 if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
                     #merge overlapping regions
                     locations[j][1] = max(locations[j][1], locations[i][1])
@@ -79,6 +74,7 @@ def parse_blast(line, blast_results, cutoff):
     #fomrat dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>)]}
     line = line.replace("\n", "")
     line_info = line.split("\t")
+    print(line_info)
     evalue = float(line_info[3])
     #cut off
     if evalue > cutoff:
@@ -87,14 +83,14 @@ def parse_blast(line, blast_results, cutoff):
     else:
         node_name, sstart, send, qstart, qend = line_info[0], line_info[1], line_info[2], line_info[4], line_info[5]
         split = node_name.split("|")
-        # finding out on which strand tBLASTn founded a hit
+        # finding out on which strand tBLASTn found a hit
         if sstart < send:
             strand = "+"
         else:
             sstart = line_info[2]
             send = line_info[1]
             strand = "-"
-        #creating a dictionary that inlcudes every tBLASTn that is better as the evalue cut-off of 0.00001
+        #creating a dictionary that inlcudes every tBLASTn that is better as the evalue cut-off
         if len(split) > 1:
             node_name = split[1]
         if node_name in blast_results:
