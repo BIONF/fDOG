@@ -36,27 +36,42 @@ def merge(blast_results, insert_length):
                 c = locations[j][1]
                 d = locations[j][5]
                 e = locations[i][5]
-                if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5])):
+                if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
                     #merge overlapping regions
                     locations[j][1] = max(locations[j][1], locations[i][1])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
-                elif ((locations[j][0] < locations[i][0]) and (locations[i][0] - locations[j][1] <= 2* insert_length) and (locations[j][5] == locations[i][5])):
+                elif ((locations[j][0] > locations[i][0]) and (locations[j][1] < locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
+                    #merge overlapping regions
+                    locations[j][1] = max(locations[j][1], locations[i][1])
+                    locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(i)
+                    size_list -= 1
+                    i -= 1
+                elif ((locations[j][0] < locations[i][0]) and (locations[i][0] - locations[j][1] <= 2* insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
                     #print(j)
                     locations[j][1] = max(locations[j][1], locations[i][1])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
                     size_list -= 1
                     i -=1
+                elif ((locations[j][0] > locations[i][0]) and (locations[j][0] - locations[i][1] <= 2* insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
+                    #print(j)
+                    locations[j][1] = max(locations[j][1], locations[i][1])
+                    locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations.pop(i)
+                    size_list -= 1
+                    i -=1
+
                 i += 1
             j += 1
 
         number_regions += len(locations)
         blast_results[key] = locations
 
-    #print(blast_results)
+    print(blast_results)
     return blast_results, number_regions
 
 def parse_blast(line, blast_results, cutoff):
