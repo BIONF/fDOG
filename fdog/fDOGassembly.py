@@ -428,6 +428,7 @@ def checkOptions():
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     candidates = readFasta(candidatesFile)
     ref = readFasta(fasta)
+    print(candidate_name)
 
     out = tmp_path + '/checkCoorthologs.fa'
     f = open(out,"w")
@@ -441,8 +442,11 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
             f.write(str(record.seq) +  "\n")
             break
 
+
     for record in candidates:
+        print(record.id + "ID\n")
         for name in candidate_names:
+            print(name + "name\n")
             if name in record.id:
                 f.write(">" + name + "\n")
                 f.write(str(record.seq) + "\n")
@@ -604,9 +608,6 @@ def main():
         out = out + '/' + group + '/'
 
 
-
-    print(out)
-    print("test " + group + "\n" )
     #print(assemblyDir)
     try:
         f = open(out + "/fdog.log", "a+")
