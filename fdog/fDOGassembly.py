@@ -428,7 +428,7 @@ def checkOptions():
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     candidates = readFasta(candidatesFile)
     ref = readFasta(fasta)
-    print(candidate_name)
+    print(candidate_names)
 
     out = tmp_path + '/checkCoorthologs.fa'
     f = open(out,"w")
