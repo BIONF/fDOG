@@ -22,7 +22,7 @@ def merge(blast_results, insert_length):
         locations = blast_results[key]
         locations = sorted(locations, key = lambda x: int(x[3]))
         #print("test")
-        #print(locations)
+        print(locations)
         size_list = len(locations)
 
         j = 0
@@ -59,23 +59,19 @@ def merge(blast_results, insert_length):
     #print(blast_results)
     return blast_results, number_regions
 
-def parse_blast(line, blast_results):
-    # format blast line:  <contig> <sstart> <send> <evalue> <qstart> <qend> <strand>
-    #fomrat dictionary: {node_name: [(<start>,<end>)]}
-    #print(line)
+def parse_blast(line, blast_results, cutoff):
+    # format blast line:  <contig> <sstart> <send> <evalue> <qstart> <qend>
+    #fomrat dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>)]}
     line = line.replace("\n", "")
     line_info = line.split("\t")
-    #print(line_info)
     evalue = float(line_info[3])
-
     #cut off
-    if evalue > 0.00001:
+    if evalue > cutoff:
         return blast_results, evalue
     #add region to dictionary
     else:
         node_name, sstart, send, qstart, qend = line_info[0], line_info[1], line_info[2], line_info[4], line_info[5]
         split = node_name.split("|")
-
         # finding out on which strand tBLASTn founded a hit
         if sstart < send:
             strand = "+"
@@ -83,7 +79,6 @@ def parse_blast(line, blast_results):
             sstart = line_info[2]
             send = line_info[1]
             strand = "-"
-
         #creating a dictionary that inlcudes every tBLASTn that is better as the evalue cut-off of 0.00001
         if len(split) > 1:
             node_name = split[1]
@@ -96,7 +91,7 @@ def parse_blast(line, blast_results):
 
     return blast_results, evalue
 
-def candidate_regions(intron_length, evalue, tmp_path):
+def candidate_regions(intron_length, cutoff_evalue, tmp_path):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
     blast_file = open(tmp_path + "/blast_results.out", "r")
@@ -109,9 +104,9 @@ def candidate_regions(intron_length, evalue, tmp_path):
         if not line:
             break
         #parsing blast output
-        blast_results, evalue = parse_blast(line, blast_results)
+        blast_results, evalue = parse_blast(line, blast_results, cutoff_evalue)
         #evalue cut-off
-        if not evalue <= evalue:
+        if not evalue <= cutoff_evalue:
             break
     if blast_results == {}:
         return 0,0
@@ -429,7 +424,6 @@ def checkOptions():
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     candidates = readFasta(candidatesFile)
     ref = readFasta(fasta)
-    print(candidate_names)
 
     out = tmp_path + '/checkCoorthologs.fa'
     f = open(out,"w")
@@ -445,9 +439,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
 
     for record in candidates:
-        print(record.id + "ID\n")
         for name in candidate_names:
-            print(name + "name\n")
             if name in record.id:
                 f.write(">" + name + "\n")
                 f.write(str(record.seq) + "\n")
@@ -603,7 +595,7 @@ def main():
     if assemblyDir == '':
         assemblyDir = dataPath + '/assembly_dir/'
     if out == '':
-        print('test out \n')
+        #print('test out \n')
         out = os.getcwd()
         os.system('mkdir ' + out + '/' + group)
         out = out + '/' + group + '/'
