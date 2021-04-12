@@ -45,7 +45,7 @@ def merge(blast_results, insert_length):
                     i -= 1
                 elif ((locations[j][0] > locations[i][0]) and (locations[j][1] < locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
                     #merge overlapping regions
-                    locations[j][1] = max(locations[j][1], locations[i][1])
+                    locations[j][0] = min(locations[j][0], locations[i][0])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
                     size_list -= 1
