@@ -27,9 +27,12 @@ def merge(blast_results, insert_length):
         size_list = len(locations)
 
         j = 0
-        while j < size_list-1:
-            i = j+1
+        while j < size_list-2:
+            i = j + 1
             while i < size_list-1:
+                print("Vergleich \n")
+                print(locations[j] + "\n")
+                print(locations[i] + "\n")
                 if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
                     #merge overlapping regions
                     locations[j][1] = max(locations[j][1], locations[i][1])
@@ -37,6 +40,7 @@ def merge(blast_results, insert_length):
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
+                    print("M+")
                 elif ((locations[j][1] > locations[i][1]) and (locations[j][0] < locations[i][1]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
                     #merge overlapping regions
                     locations[j][0] = min(locations[j][0], locations[i][0])
@@ -44,6 +48,7 @@ def merge(blast_results, insert_length):
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
+                    print("M-")
                 elif ((locations[j][0] < locations[i][0]) and (locations[i][0] - locations[j][1] <= 2*insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
                     #print(j)
                     locations[j][1] = max(locations[j][1], locations[i][1])
@@ -51,6 +56,7 @@ def merge(blast_results, insert_length):
                     locations.pop(i)
                     size_list -= 1
                     i -=1
+                    print("Insert+")
                 elif ((locations[j][1] > locations[i][1]) and (locations[j][0] - locations[i][1] <= 2* insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
                     #print(j)
                     locations[j][0] = min(locations[j][0], locations[i][0])
@@ -58,6 +64,7 @@ def merge(blast_results, insert_length):
                     locations.pop(i)
                     size_list -= 1
                     i -=1
+                    print("Insert-")
 
                 i += 1
             j += 1
