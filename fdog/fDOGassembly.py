@@ -77,7 +77,7 @@ def merge(blast_results, insert_length):
 
 def parse_blast(line, blast_results, cutoff):
     # format blast line:  <contig> <sstart> <send> <evalue> <qstart> <qend>
-    #fomrat dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>)]}
+    # format dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>)]}
     line = line.replace("\n", "")
     line_info = line.split("\t")
     #print(line_info)
@@ -123,7 +123,10 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
         #parsing blast output
         blast_results, evalue = parse_blast(line, blast_results, cutoff_evalue)
         #evalue cut-off
+        print(evalue + " evalue candidate region \n")
+        print(cutoff + " cutoff evalue \n")
         if not evalue <= cutoff_evalue:
+            print("break \n")
             break
     if blast_results == {}:
         return 0,0
