@@ -122,12 +122,7 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
             break
         #parsing blast output
         blast_results, evalue = parse_blast(line, blast_results, cutoff_evalue)
-        #evalue cut-off
-        print(str(evalue) + " evalue candidate region \n")
-        print(str(cutoff_evalue) + " cutoff evalue \n")
-        if not evalue <= cutoff_evalue:
-            print("break \n")
-            break
+
     if blast_results == {}:
         return 0,0
     else:
@@ -731,7 +726,7 @@ def main():
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
         print("tBLASTn search against data base")
-        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -out ' + tmp_path + '/blast_results.out')
+        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + evalue + ' -out ' + tmp_path + '/blast_results.out')
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
