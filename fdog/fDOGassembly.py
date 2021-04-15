@@ -123,8 +123,8 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
         #parsing blast output
         blast_results, evalue = parse_blast(line, blast_results, cutoff_evalue)
         #evalue cut-off
-        print(evalue + " evalue candidate region \n")
-        print(cutoff + " cutoff evalue \n")
+        print(str(evalue) + " evalue candidate region \n")
+        print(str(cutoff) + " cutoff evalue \n")
         if not evalue <= cutoff_evalue:
             print("break \n")
             break
