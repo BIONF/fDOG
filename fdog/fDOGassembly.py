@@ -726,7 +726,7 @@ def main():
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 
         print("tBLASTn search against data base")
-        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + evalue + ' -out ' + tmp_path + '/blast_results.out')
+        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out')
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
