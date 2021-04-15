@@ -126,9 +126,8 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
     if blast_results == {}:
         return 0,0
     else:
-        print(blast_results)
         candidate_regions, number_regions = merge(blast_results, intron_length)
-        #candidate_regions, number_regions = merge_regions(blast_results, cut_off)
+        print(candidate_regions)
         #print(candidate_regions, number_regions)
         return candidate_regions, number_regions
 
