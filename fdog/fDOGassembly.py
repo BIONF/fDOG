@@ -437,6 +437,9 @@ def checkOptions():
     #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
 
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
+    if len(candidate_name) == 1:
+        return candidate_name
+
     candidates = readFasta(candidatesFile)
     ref = readFasta(fasta)
 
