@@ -127,7 +127,7 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
         return 0,0
     else:
         candidate_regions, number_regions = merge(blast_results, intron_length)
-        print(candidate_regions)
+        #print(candidate_regions)
         #print(candidate_regions, number_regions)
         return candidate_regions, number_regions
 
@@ -750,7 +750,7 @@ def main():
     ################# backward search to filter for orthologs###################
         reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path)
 
-
+        print(reciprocal_sequences)
         if reciprocal_sequences == 0:
             print("No ortholog fulfilled the reciprocity criteria")
             if searchTaxon == '':
@@ -761,7 +761,7 @@ def main():
 
     ################## checking accepted genes for co-orthologs ##########################
         reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
-
+        print(reciprocal_sequences)
 
 
     ################ add sequences to extended.fa in the output folder##########
