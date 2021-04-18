@@ -477,11 +477,11 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     for name in candidate_names:
         distance = distances[ref_id , name]
-        if distance < min_dist:
+        if distance <= min_dist:
             min_dist = distance
             min_name = name
 
-    checked = []
+
 
 
     for name in candidate_names:
