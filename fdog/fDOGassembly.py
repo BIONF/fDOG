@@ -17,6 +17,7 @@ def load_config(config_file):
             print(exc)
 
 def merge(blast_results, insert_length):
+    #merging overlapping and contigous candidate regions
     number_regions = 0
     insert_length = int(insert_length)
     for key in blast_results:
@@ -25,54 +26,44 @@ def merge(blast_results, insert_length):
         #print("test")
         #print(locations)
         size_list = len(locations)
-
         j = 0
         while j < size_list-1:
             i = j + 1
             while i < size_list:
-                #print("Vergleich \n")
-                #print(str(locations[j]) + "\n")
-                #print(str(locations[i]) + "\n")
                 if ((locations[j][0] < locations[i][0]) and (locations[j][1] > locations[i][0]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
-                    #merge overlapping regions
+                    #merge overlapping regions plus strand
                     locations[j][1] = max(locations[j][1], locations[i][1])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
-                    #print("M+")
                 elif ((locations[j][1] > locations[i][1]) and (locations[j][0] < locations[i][1]) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
-                    #merge overlapping regions
+                    #merge overlapping regions minus strand
                     locations[j][0] = min(locations[j][0], locations[i][0])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
-                    #print("M-")
                 elif ((locations[j][0] < locations[i][0]) and (locations[i][0] - locations[j][1] <= 2*insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '+')):
-                    #print(j)
+                    #merging consecutive regions, the distance between booth is not longer than a cutoff, plus strand
                     locations[j][1] = max(locations[j][1], locations[i][1])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
                     size_list -= 1
                     i -=1
-                    #print("Insert+")
                 elif ((locations[j][1] > locations[i][1]) and (locations[j][0] - locations[i][1] <= 2* insert_length) and (locations[j][5] == locations[i][5]) and (locations[i][5] == '-')):
-                    #print(j)
+                    #merging consecutive regions, the distance between booth is not longer than a cutoff, minus strand
                     locations[j][0] = min(locations[j][0], locations[i][0])
                     locations[j][2] = min(locations[j][2], locations[i][2])
                     locations.pop(i)
                     size_list -= 1
                     i -=1
-                    #print("Insert-")
-
                 i += 1
             j += 1
 
         number_regions += len(locations)
         blast_results[key] = locations
 
-    #print(blast_results)
     return blast_results, number_regions
 
 def parse_blast(line, blast_results, cutoff):
@@ -80,7 +71,6 @@ def parse_blast(line, blast_results, cutoff):
     # format dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>)]}
     line = line.replace("\n", "")
     line_info = line.split("\t")
-    #print(line_info)
     evalue = float(line_info[3])
     #cut off
     if evalue > cutoff:
@@ -127,12 +117,11 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
         return 0,0
     else:
         candidate_regions, number_regions = merge(blast_results, intron_length)
-        #print(candidate_regions)
-        #print(candidate_regions, number_regions)
+
         return candidate_regions, number_regions
 
 def extract_seq(region_dic, path, tmp_path):
-    #print(region_dic)
+
     for key in region_dic:
         #print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         cmd = "blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out " + tmp_path + key + ".fasta -outfmt %f"
@@ -145,17 +134,18 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
         locations = regions[key]
         counter = 0
         for i in locations:
+            # some variables
             counter += 1
             start = str(i[0] - length_extension)
             end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
-            #print("augustus --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " tmp/" + key + ".fasta > tmp/" + key + ".gff")
-
+            # augutus call
             cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
-            result = subprocess.run(cmd, stdout = subprocess.PIPE, shell=True)
+            result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
+            # transfer augustus output to as sequence
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
-
+            # parsing header and sequences
             try:
                 sequence_file = open(tmp_path + name + ".aa", "r")
                 lines = sequence_file.readlines()
@@ -168,20 +158,15 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                         output.write(line)
                 sequence_file.close()
             except FileNotFoundError:
-                print("No gene found by ID:" + name +" , continuing with next region")
-
-
-
+                print("No gene found in region with ID:" + name + " , continuing with next region")
     output.close()
 
 def searching_for_db(assembly_path):
-    #print("test: " + str(assembly_path) + "\n")
+
     db_endings = ['.ndb', '.nhr', '.nin', '.nog', '.nos', '.not', '.nsq', '.ntf', '.nto']
     check = True
     for end in db_endings:
-        #print(assembly_path + end + "\n")
         check = check and os.path.exists(assembly_path + end)
-        #print(check)
     return check
 
 def get_distance_biopython(file, matrix):
@@ -240,8 +225,6 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #print("mafft-linsi")
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
 
-    #d_ref = get_distance(aln_file, best_hit, ref)
-    #d = get_distance(aln_file, best_hit, candidate_name)
     distances = get_distance_biopython(aln_file, matrix)
 
     distance_hit_query = distances[best_hit, candidate_name]
@@ -390,9 +373,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     return list(orthologs), seed
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool, tmp_path):
-    #print("addSequences")
-    #print(sequenceIds)
-    #print(species_list)
+
     output_file = open(output, "a+")
     if refBool == False:
         seq_records_core = readFasta(core_fasta)
@@ -406,8 +387,6 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_candidate = readFasta(candidate_fasta)
     seq_records_candidate = list(seq_records_candidate)
     for entry_candidate in seq_records_candidate:
-        #print(entry_candidate.id)
-        #print(sequenceIds)
         if entry_candidate.id in sequenceIds:
             output_file.write(">" + entry_candidate.id + "\n")
             output_file.write(str(entry_candidate.seq) + "\n")
@@ -455,7 +434,6 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
             f.write(str(record.seq) +  "\n")
             break
 
-
     for record in candidates:
         for name in candidate_names:
             if name in record.id:
@@ -465,9 +443,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     if msaTool == "muscle":
         os.system("muscle -quiet -in " + out + " -out " + aln_file)
-        #print("muscle -quiet -in " + output_file + " -out " + aln_file)
     elif msaTool == "mafft-linsi":
-        #print("mafft-linsi")
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file)
 
     distances = get_distance_biopython(aln_file, matrix)
@@ -480,9 +456,6 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
         if distance <= min_dist:
             min_dist = distance
             min_name = name
-
-
-
 
     for name in candidate_names:
         if distances[min_name , name] < distances[min_name , ref_id]:
@@ -577,18 +550,6 @@ def main():
     searchTaxon = args.searchTaxon
     silent = args.silent
 
-    ###################### How to handling std output ##########################
-    # if silent == True:
-    #     print(out + "fdog.log \n")
-    #     f = open(out + "fdog.log", "a+")
-    #     sys.stdout = f
-    # else:
-    #     print(out + "fdog.log \n")
-    #     sys.stdout = Logger(out)
-
-
-
-
     #checking paths
     if dataPath == '':
         fdogPath = os.path.realpath(__file__).replace('/fDOGassembly.py','')
@@ -618,31 +579,25 @@ def main():
         os.system('mkdir ' + out + '/' + group)
         out = out + '/' + group + '/'
 
-
-    #print(assemblyDir)
     try:
         f = open(out + "/fdog.log", "a+")
     except FileNotFoundError:
         f = open(out + "/fdog.log", "w")
 
+    ################## How to handle std output and std error ##################
 
     if silent == True:
         sys.stderr = f
         sys.stdout = f
     else:
         sys.stdout = Logger(f)
-
-
-
     # user input has to be checked here before fDOGassembly continues
-
     assembly_names = os.listdir(assemblyDir)
-
-
 
     ########################## some variables ##################################
 
     refBool = False # checks if sequences of reference species were already part of the extended.fa file
+
     ########### paths ###########
 
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
@@ -658,18 +613,16 @@ def main():
     ######################## consensus sequence ################################
 
     #make a majority-rule consensus sequence with the tool hmmemit from hmmer
-    print("Building a consensus sequence \n")
+    print("Building a consensus sequence for gene " + group + " \n")
     os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path)
     print("consensus sequence is finished\n")
 
     ######################## block profile #####################################
 
-    print("Building a block profile \n")
+    print("Building a block profile for gene " + group + " \n")
     cmd = 'msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path
-    #os.system('msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path)
     result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
 
-    #print(os.path.getsize(profile_path))
     if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
     else:
@@ -683,9 +636,9 @@ def main():
         result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
         print("block profile is finished \n")
 
-
     searchBool = False
 
+    #################### fDOG assembly computation for all species #############
     for asName in assembly_names:
         if searchBool == True:
             break
@@ -694,6 +647,7 @@ def main():
             searchBool = True
 
         ################### path definitions ###################################
+
         os.system('mkdir ' + out + '/tmp/' + asName + '>/dev/null 2>&1')
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
@@ -706,16 +660,13 @@ def main():
             fasOutFile = out + "/" + group
             mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
-
         print("Searching in species " + asName + "\n")
         assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
         db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
+
     ######################## tBLASTn ###########################################
-
-    #database anlegen
-
+        #checks if data base exists already
         db_check = searching_for_db(db_path)
-        #print(assembly_path)
         if db_check == 0:
             print("creating a blast data base \n")
             os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path)
@@ -723,16 +674,13 @@ def main():
         else:
             print('blast data base exists already, continuing...')
 
-
-    #make a tBLASTn search against the new database
-    #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
-
+        #makes a tBLASTn search against the new database
+        #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
         print("tBLASTn search against data base")
         os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out')
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
-
     # parse blast and filter for candiate regions
         regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
 
@@ -740,20 +688,20 @@ def main():
             #no candidat region are available, no ortholog can be found
             print("No candidate region found")
             continue
-
         else:
             print(str(number_regions) + " candiate regions were found. Extracting sequences...")
             extract_seq(regions, db_path, tmp_path)
 
     ############### make Augustus PPX search ###################################
+
         print("starting augustus ppx \n")
         augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path)
         print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
+
         reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path)
 
-        print(reciprocal_sequences)
         if reciprocal_sequences == 0:
             print("No ortholog fulfilled the reciprocity criteria")
             if searchTaxon == '':
@@ -762,34 +710,33 @@ def main():
                 cleanup(tmp, tmp_path)
                 return 1
 
-    ################## checking accepted genes for co-orthologs ##########################
-        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
-        print(reciprocal_sequences)
+    ################## checking accepted genes for co-orthologs ################
 
+        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
     ################ add sequences to extended.fa in the output folder##########
+
         addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
         refBool = True
 
     ############### make Annotation with FAS ###################################
+        # if we want to search in only one Taxon
         if searchTaxon != '' and fasoff == False:
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
             os.system('mkdir ' + tmp_path + 'anno_dir' + '>/dev/null 2>&1')
             os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName )
-
-
+    #if we searched in more than one Taxon and no ortholog was found
     if refBool == False and searchTaxon == '':
         print("No orthologs found. Exciting ...")
         cleanup(tmp, tmp_path)
         return 1
-
+    #if we searched in more than one taxon
     if fasoff == False and searchTaxon == '':
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         os.system('calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group )
-
 
     ################# remove tmp folder ########################################
     if searchTaxon != '':
@@ -798,7 +745,6 @@ def main():
         cleanup(tmp, out + "/tmp/")
 
     f.close()
-
 
 if __name__ == '__main__':
     main()
