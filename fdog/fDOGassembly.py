@@ -125,7 +125,7 @@ def extract_seq(region_dic, path, tmp_path):
     for key in region_dic:
         #print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         cmd = "blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out " + tmp_path + key + ".fasta -outfmt %f"
-        result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+        result = subprocess.run(cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
 
 def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path):
     output = open(candidatesOutFile, "w")
@@ -457,8 +457,10 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
             min_dist = distance
             min_name = name
 
+    checked = []
+
     for name in candidate_names:
-        if distances[min_name , name] < distances[min_name , ref_id]:
+        if distances[min_name , name] <= distances[min_name , ref_id]:
             checked.append(name)
 
     return checked
