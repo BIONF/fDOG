@@ -195,9 +195,10 @@ use run_genewise_hamstr;
 ## 01.12.2020 (v13.4.1 - vinh) add silent option to muscle for checkCoOrthologsRef
 ## 21.01.2021 (v13.4.2 - vinh) fiexed bug when refspec has "dot" in its name
 ## 19.03.2021 (v13.4.3 - vinh) changed $path to current directory
+## 19.03.2021 (v13.4.5 - vinh) do not replace space by @ for hmm output in parseHmmer4pm
 
 ######################## start main ###########################################
-my $version = "HaMStR v.13.4.4";
+my $version = "HaMStR v.13.4.5";
 ######################## checking whether the configure script has been run ###
 my $configure = 0;
 if ($configure == 0){
@@ -1854,68 +1855,68 @@ sub revComp {
 	return($seq);
 }
 ##############################
-sub parseHmmer3pm {
-	my ($file, $path) = @_;
-	my $hits;
-	my $query;
-	my %tmphash;
-	if (!defined $path){
-		$path = '.';
-	}
-	$file = $path . '/' . $file;
-	my $in = Bio::SearchIO->new(
-	-format => 'hmmer',
-	-file   => $file
-	);
-	while( my $result = $in->next_result ) {
-		# this is a Bio::Search::Result::HMMERResult object
-		if (!defined $query){
-			$query = $result->query_name();
-			printOUT("query is $query\n");
-		}
-		my $hitcount = 0;
-		while( my $hit = $result->next_hit ) {
-			my $tmp = $hit->name();
-			my $tmpscore = $hit->score();
-			$tmp =~ s/_RF.*//;
-			if (!defined $tmphash{$tmp}){
-				$hits->[$hitcount]->{id} = $tmp;
-				$hits->[$hitcount]->{hmmscore} = $tmpscore;
-				$hitcount++;
-				$tmphash{$tmp}=1;
-				if (defined $bhh){
-					last;
-				}
-			}
-		}
-
-		if (defined $hits->[0]) {
-			####### a quick hack to obtain the lagPhase value
-			my $criticalValue; # takes the value used for candidate discrimination
-			my $hitLimitLoc = $hitlimit;
-			if (defined $autoLimit) {
-				printDebug("Entering getLag Routine\n");
-				## the user has invoked the autmated inference of a hit limit
-				($hitLimitLoc, $criticalValue)  = getLag($hits, $hitcount);
-				if (!defined $criticalValue) {
-					## there was a problem in the computatation of the lagPhase
-					print "Computation of lagPhase did not succeed, switching to score threshold using a default cutoff of $scoreCutoff\n";
-					($hitLimitLoc, $criticalValue) = getHitLimit($hits, $hitcount);
-				}
-			}
-			elsif (defined $scoreThreshold) {
-				printDebug("entering the scoreThreshold routine");
-				($hitLimitLoc, $criticalValue) = getHitLimit($hits, $hitcount);
-				printDebug("hitlimitloc is now $hitLimitLoc");
-			}
-
-			return ($query, $hits, $hitLimitLoc, $criticalValue);
-		}
-		else {
-			return ($query);
-		}
-	}
-}
+# sub parseHmmer3pm {
+# 	my ($file, $path) = @_;
+# 	my $hits;
+# 	my $query;
+# 	my %tmphash;
+# 	if (!defined $path){
+# 		$path = '.';
+# 	}
+# 	$file = $path . '/' . $file;
+# 	my $in = Bio::SearchIO->new(
+# 	-format => 'hmmer',
+# 	-file   => $file
+# 	);
+# 	while( my $result = $in->next_result ) {
+# 		# this is a Bio::Search::Result::HMMERResult object
+# 		if (!defined $query){
+# 			$query = $result->query_name();
+# 			printOUT("query is $query\n");
+# 		}
+# 		my $hitcount = 0;
+# 		while( my $hit = $result->next_hit ) {
+# 			my $tmp = $hit->name();
+# 			my $tmpscore = $hit->score();
+# 			$tmp =~ s/_RF.*//;
+# 			if (!defined $tmphash{$tmp}){
+# 				$hits->[$hitcount]->{id} = $tmp;
+# 				$hits->[$hitcount]->{hmmscore} = $tmpscore;
+# 				$hitcount++;
+# 				$tmphash{$tmp}=1;
+# 				if (defined $bhh){
+# 					last;
+# 				}
+# 			}
+# 		}
+#
+# 		if (defined $hits->[0]) {
+# 			####### a quick hack to obtain the lagPhase value
+# 			my $criticalValue; # takes the value used for candidate discrimination
+# 			my $hitLimitLoc = $hitlimit;
+# 			if (defined $autoLimit) {
+# 				printDebug("Entering getLag Routine\n");
+# 				## the user has invoked the autmated inference of a hit limit
+# 				($hitLimitLoc, $criticalValue)  = getLag($hits, $hitcount);
+# 				if (!defined $criticalValue) {
+# 					## there was a problem in the computatation of the lagPhase
+# 					print "Computation of lagPhase did not succeed, switching to score threshold using a default cutoff of $scoreCutoff\n";
+# 					($hitLimitLoc, $criticalValue) = getHitLimit($hits, $hitcount);
+# 				}
+# 			}
+# 			elsif (defined $scoreThreshold) {
+# 				printDebug("entering the scoreThreshold routine");
+# 				($hitLimitLoc, $criticalValue) = getHitLimit($hits, $hitcount);
+# 				printDebug("hitlimitloc is now $hitLimitLoc");
+# 			}
+#
+# 			return ($query, $hits, $hitLimitLoc, $criticalValue);
+# 		}
+# 		else {
+# 			return ($query);
+# 		}
+# 	}
+# }
 ##############################
 sub parseHmmer4pm {
 	my ($file, $path) = @_;
@@ -1931,9 +1932,9 @@ sub parseHmmer4pm {
 	$file = $path . '/' . $file;
 
 	$file =~ s/\|/\\\|/g;
-	my @hmmout = `$grepprog -v '#' $file |sort -rnk 9 |sed -e 's/ /@/g'`;
+	my @hmmout = `$grepprog -v '#' $file |sort -rnk 9`;
 	for (my $i = 0; $i < @hmmout; $i++) {
-		($hmmhits->[$i]->{target_name}, $hmmhits->[$i]->{target_accession}, $hmmhits->[$i]->{query_name}, $hmmhits->[$i]->{query_accession},  $hmmhits->[$i]->{total_evalue},  $hmmhits->[$i]->{total_score},  $hmmhits->[$i]->{total_bias},  $hmmhits->[$i]->{domain_evalue}, $hmmhits->[$i]->{domain_score},  $hmmhits->[$i]->{domain_bias}, @rest) = split(/@+/, $hmmout[$i]);
+		($hmmhits->[$i]->{target_name}, $hmmhits->[$i]->{target_accession}, $hmmhits->[$i]->{query_name}, $hmmhits->[$i]->{query_accession},  $hmmhits->[$i]->{total_evalue},  $hmmhits->[$i]->{total_score},  $hmmhits->[$i]->{total_bias},  $hmmhits->[$i]->{domain_evalue}, $hmmhits->[$i]->{domain_score},  $hmmhits->[$i]->{domain_bias}, @rest) = split(/\s+/, $hmmout[$i]);
 
 		if (!defined $query){
 			$query = $hmmhits->[$i]->{query_name};
