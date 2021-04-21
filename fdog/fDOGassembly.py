@@ -576,7 +576,7 @@ def main():
     if out == '':
         #print('test out \n')
         out = os.getcwd()
-        os.system('mkdir ' + out + '/' + group)
+        os.system('mkdir ' + out + '/' + group + '>/dev/null 2>&1')
         out = out + '/' + group + '/'
 
     try:
