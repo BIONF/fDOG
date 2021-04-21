@@ -144,7 +144,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
             # transfer augustus output to as sequence
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
-            result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+            result = subprocess.run(cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
             # parsing header and sequences
             try:
                 sequence_file = open(tmp_path + name + ".aa", "r")
