@@ -83,7 +83,7 @@ def runBlast(args):
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.6'
+    version = '0.0.7'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -147,48 +147,53 @@ def main():
         f = open(specFile, 'w')
         index = 0
         modIdIndex = 0
-        longId = 'no'
+        # longId = 'no'
         tmpDict = {}
-        with open(specFile + '.mapping', 'a') as mappingFile:
-            for id in inSeq:
-                seq = str(inSeq[id].seq)
-                # check ID
-                oriId = id
-                id = re.sub('\|', '_', id)
-                if len(id) > 20:
-                    modIdIndex = modIdIndex + 1
-                    id = modIdIndex
-                    longId = 'yes'
-                if not id in tmpDict:
-                    tmpDict[id] = 1
+        # with open(specFile + '.mapping', 'a') as mappingFile:
+        for id in inSeq:
+            seq = str(inSeq[id].seq)
+            # check ID
+            # oriId = id
+            if ' ' in id:
+                sys.exit('\033[91mERROR: Sequence IDs (e.g. %s) must not contain space(s)!\033[0m' % id)
+            else:
+                if '\|' in id:
+                    print('\033[91mWARNING: Sequence IDs contain pipe(s). They will be replaced by "_"!\033[0m')
+                    id = re.sub('\|', '_', id)
+            # if len(id) > 20:
+            #     modIdIndex = modIdIndex + 1
+            #     id = modIdIndex
+            #     longId = 'yes'
+            # if not id in tmpDict:
+            #     tmpDict[id] = 1
+            # else:
+            #     index = index + 1
+            #     id = str(index)
+            #     tmpDict[id] = 1
+            # mappingFile.write('%s\t%s\n' % (id, oriId))
+            # check seq
+            if seq[-1] == '*':
+                seq = seq[:-1]
+            specialChr = 'no'
+            if any(c for c in seq if not c.isalpha()):
+                specialChr = 'yes'
+            if specialChr == 'yes':
+                if replace or delete:
+                    if replace:
+                        seq = re.sub('[^a-zA-Z]', 'X', seq)
+                    if delete:
+                        seq = re.sub('[^a-zA-Z]', '', seq)
                 else:
-                    index = index + 1
-                    id = str(index)
-                    tmpDict[id] = 1
-                mappingFile.write('%s\t%s\n' % (id, oriId))
-                # check seq
-                if seq[-1] == '*':
-                    seq = seq[:-1]
-                specialChr = 'no'
-                if any(c for c in seq if not c.isalpha()):
-                    specialChr = 'yes'
-                if specialChr == 'yes':
-                    if replace or delete:
-                        if replace:
-                            seq = re.sub('[^a-zA-Z]', 'X', seq)
-                        if delete:
-                            seq = re.sub('[^a-zA-Z]', '', seq)
-                    else:
-                        sys.exit('\033[91mERROR: %s sequence contains special character!\033[0m\nYou can use --replace or --delete to solve it.' % (id))
-                f.write('>%s\n%s\n' % (id, seq))
-            f.close()
-            # write .checked file
-            cf = open(specFile+'.checked', 'w')
-            cf.write(str(datetime.now()))
-            cf.close()
+                    sys.exit('\033[91mERROR: %s sequence contains special character!\033[0m\nYou can use --replace or --delete to solve it.' % (id))
+            f.write('>%s\n%s\n' % (id, seq))
+        f.close()
+        # write .checked file
+        cf = open(specFile+'.checked', 'w')
+        cf.write(str(datetime.now()))
+        cf.close()
         # warning about long header
-        if longId == 'yes':
-            print('\033[91mWARNING: Some headers longer than 80 characters have been automatically shortened. PLease check the %s.mapping file for details!\033[0m' % specFile)
+        # if longId == 'yes':
+        #     print('\033[91mWARNING: Some headers longer than 80 characters have been automatically shortened. PLease check the %s.mapping file for details!\033[0m' % specFile)
     else:
         print(genomePath + '/' + specName + '.fa already exists!')
 

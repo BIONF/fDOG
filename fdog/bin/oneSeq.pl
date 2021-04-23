@@ -127,13 +127,14 @@ my $startTime = gettime();
 ## Modified 24. March 2021 v2.2.8 (Vinh)	- skip fa.mapping while checking genome_dir
 ## Modified 29. March 2021 v2.2.9 (Vinh)	- check for zero $maxAlnScore
 ##                                        - solved problem with long input path for fasta36 tools
+## Modified 23. April 2021 v2.3.0 (Vinh)	- parse fasta36 output for long IDs (longer than 60 chars)
 
 ############ General settings
-my $version = 'oneSeq v.2.2.9';
+my $version = 'oneSeq v.2.3.0';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
-	die "\n\n$version\n\nPLEASE RUN fdog.setup BEFORE USING fdog\n\n";
+	die "\n\nPLEASE RUN fdog.setup BEFORE USING fdog\n\n";
 }
 ##### hostname
 my $hostname = `hostname`;
@@ -1226,9 +1227,9 @@ sub checkOptions {
 		$refSpec = $besthit->{species};
 		my $details = "Evalue: " . $besthit->{evalue};
 		printOut("Seq id has been determined as $seqId in $refSpec with $details", 2);
-		if(length("$seqName|$refSpec|$seqId") > 60) {
-			die "Output file will have header longer than 60 characters ($seqName|$refSpec|$seqId). Please consider shorten the sequence IDs! More at https://github.com/BIONF/fDOG/wiki/Check-data-validity\n";
-		}
+		# if(length("$seqName|$refSpec|$seqId") > 60) {
+		# 	die "Output file will have header longer than 60 characters ($seqName|$refSpec|$seqId). Please consider shorten the sequence IDs! More at https://github.com/BIONF/fDOG/wiki/Check-data-validity\n";
+		# }
 		if($seqId eq '') {
 			print "There was no significant hit for your sequence in " . $refSpec . ".\nPlease specify a sequence id on your own.\n";
 			exit;
@@ -1697,8 +1698,9 @@ sub cumulativeAlnScore{
 			my $line = $_;
 			$line =~ s/[\(\)]//g;
 			my @line = split('\s+',$line);
-
-			if($line[0] && ($line[0] eq $key)){
+			my $shortedId = substr($key, 0, 60);
+			# if($line[0] && ($line[0] eq $key)){
+			if($line[0] && ($line[0] eq $shortedId)){
 				if(exists $cumscores{$key}) {
 					$gotScore = 1;
 					$cumscores{$key} = $cumscores{$key} + $line[2];
