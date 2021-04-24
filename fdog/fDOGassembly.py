@@ -125,7 +125,8 @@ def extract_seq(region_dic, path, tmp_path):
     for key in region_dic:
         #print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         cmd = "blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out " + tmp_path + key + ".fasta -outfmt %f"
-        result = subprocess.run(cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
+        #result = subprocess.run(cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
+        result = subprocess.run(cmd, shell=True)
 
 def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path):
     output = open(candidatesOutFile, "w")
