@@ -141,7 +141,8 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             name = key + "_" + str(counter)
             # augutus call
             cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
-            result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
+            #result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
+            result = subprocess.run(cmd, shell=True)
             # transfer augustus output to as sequence
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             result = subprocess.run(cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
