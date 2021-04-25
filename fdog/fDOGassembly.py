@@ -383,7 +383,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
         for species in species_list:
             for entry_core in seq_records_core:
                 if species in entry_core.id:
-                    output_file.write(">" + entry_core.id + "\n")
+                    output_file.write(">" + entry_core.id + "|1" + "\n")
                     output_file.write(str(entry_core.seq) + "\n")
 
     seq_records_candidate = readFasta(candidate_fasta)
@@ -403,6 +403,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
 def createFasInput(orthologsOutFile, mappingFile):
     with open(orthologsOutFile, "r") as f:
         fas_seed_id = (f.readline())[1:-1]
+        fas_seed_id = fas_seed_id.split("|")[0]
 
     mappingFile = open(mappingFile, "a+")
 
