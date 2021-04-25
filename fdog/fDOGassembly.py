@@ -390,7 +390,8 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_candidate = list(seq_records_candidate)
     for entry_candidate in seq_records_candidate:
         if entry_candidate.id in sequenceIds:
-            if entry_candidate == sequenceIds[0]:
+            if entry_candidate.id == sequenceIds[0]:
+                print(entry_candidate.id)
                 output_file.write(">" + entry_candidate.id + "|1" + "\n")
                 output_file.write(str(entry_candidate.seq) + "\n")
             else:
@@ -751,7 +752,7 @@ def main():
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
         result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
-
+        print(cmd)
     ################# remove tmp folder ########################################
     if searchTaxon != '':
         cleanup(tmp, tmp_path)
