@@ -752,7 +752,7 @@ def main():
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
-        result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
+        result = subprocess.run(cmd, shell=True)
         print(cmd)
     ################# remove tmp folder ########################################
     if searchTaxon != '':
