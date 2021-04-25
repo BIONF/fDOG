@@ -390,8 +390,12 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
     seq_records_candidate = list(seq_records_candidate)
     for entry_candidate in seq_records_candidate:
         if entry_candidate.id in sequenceIds:
-            output_file.write(">" + entry_candidate.id + "\n")
-            output_file.write(str(entry_candidate.seq) + "\n")
+            if entry_candidate == sequenceIds[0]:
+                output_file.write(">" + entry_candidate.id + "|1" + "\n")
+                output_file.write(str(entry_candidate.seq) + "\n")
+            else:
+                output_file.write(">" + entry_candidate.id + "|0" + "\n")
+                output_file.write(str(entry_candidate.seq) + "\n")
     output_file.close()
     return 0
 
@@ -459,10 +463,12 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
             min_dist = distance
             min_name = name
 
-    checked = []
+    checked = [min_name]
 
     for name in candidate_names:
-        if distances[min_name , name] <= distances[min_name , ref_id]:
+        if name == min_name:
+            pass
+        elif distances[min_name , name] <= distances[min_name , ref_id]:
             checked.append(name)
 
     return checked
