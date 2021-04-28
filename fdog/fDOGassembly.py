@@ -401,7 +401,6 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
         for entry_candidate in seq_records_candidate:
             if entry_candidate.id in sequenceIds:
                 if entry_candidate.id == sequenceIds[0]:
-                    print(entry_candidate.id)
                     output_file.write(">" + entry_candidate.id + "|1" + "\n")
                     output_file.write(str(entry_candidate.seq) + "\n")
                 else:
@@ -485,16 +484,22 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     return checked
 
-def clean_fas(path):
+def clean_fas(path, file_type):
     file = open(path, "r")
     lines = file.readlines()
     file.close()
     file = open(path,"w")
 
     for line in lines:
-        long_id, remain = line.split("#")
-        id = long_id.split("|")[0]
-        new_line = id + "#" + remain
+        if file_type == 'domains':
+            long_id, remain = line.split("#")
+            id = long_id.split("|")[0]
+            new_line = id + "#" + remain
+        else:
+            long_id, remain = line.split("\t")
+            id = long_id.split("|")[0]
+            new_line = id + "\t" + remain
+
         file.write(new_line)
 
 class Logger(object):
@@ -808,8 +813,9 @@ def main():
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
         starting_subprocess(cmd, mode)
-        clean_fas(out + group + "_forward.domains")
-        clean_fas(out + group + "_reverse.domains")
+        clean_fas(out + group + "_forward.domains", 'domains')
+        clean_fas(out + group + "_reverse.domains", 'domains')
+        clean_fas(out + group + ".phyloprofile", 'phyloprofile')
     ################# remove tmp folder ########################################
     if searchTaxon != '':
         cleanup(tmp, tmp_path)
