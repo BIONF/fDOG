@@ -754,7 +754,7 @@ def main():
     ################# backward search to filter for orthologs###################
         if int(os.path.getsize(candidatesOutFile)) <= 0:
             print("No genes found at candidate regions\n")
-            if searchTaxon == '':
+            if searchTaxon == '' and refBool == True:
                 continue
             else:
                 reciprocal_sequences = 0
@@ -765,7 +765,7 @@ def main():
     ################## checking accepted genes for co-orthologs ################
         if reciprocal_sequences == 0:
             print("No ortholog fulfilled the reciprocity criteria")
-            if searchTaxon == '':
+            if searchTaxon == '' and refBool == True:
                 continue
             else:
                 reciprocal_sequences = 0
@@ -788,6 +788,7 @@ def main():
             cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
             starting_subprocess(cmd, mode)
     #if we searched in more than one Taxon and no ortholog was found
+
     if refBool == False and searchTaxon == '':
         print("No orthologs found. Exciting ...")
         cleanup(tmp, tmp_path)
