@@ -496,7 +496,7 @@ def clean_fas(path, file_type):
             id = long_id.split("|")[0]
             new_line = id + "#" + remain
         else:
-            long_id, remain = line.split("\t")
+            long_id, remain = line.split("\t", 1)
             id = long_id.split("|")[0]
             new_line = id + "\t" + remain
 
