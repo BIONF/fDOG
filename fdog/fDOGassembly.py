@@ -247,7 +247,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #rejected
         return 0, distance_ref_hit, distance_hit_query
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, dataPath, filter, tmp_path):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, dataPath, filter, tmp_path, mode):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
     seedDic = getSeedInfo(fasta_path)
@@ -263,7 +263,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
             return 0, seed
         if searchTool == "blast":
-            os.system("blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            cmd = "blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
+            starting_subprocess(cmd, mode)
         else:
             print("diamonds are the girls best friends")
             ##### diamond call
@@ -348,7 +349,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                 print("The species " + species + " isn't part of the core ortholog group, ... exciting")
                 return 0, seed
 
-            os.system("blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -seg " + filter + " -out " + tmp_path + "/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile)
+            cmd = "blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -seg " + filter + " -out " + tmp_path + "/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
+            starting_subprocess(cmd, mode)
             alg_file = open(tmp_path + "/blast_" + species, "r")
             lines = alg_file.readlines()
             alg_file.close()
@@ -393,17 +395,18 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
                     output_file.write(">" + entry_core.id + "\n")
                     output_file.write(str(entry_core.seq) + "\n")
 
-    seq_records_candidate = readFasta(candidate_fasta)
-    seq_records_candidate = list(seq_records_candidate)
-    for entry_candidate in seq_records_candidate:
-        if entry_candidate.id in sequenceIds:
-            if entry_candidate.id == sequenceIds[0]:
-                print(entry_candidate.id)
-                output_file.write(">" + entry_candidate.id + "|1" + "\n")
-                output_file.write(str(entry_candidate.seq) + "\n")
-            else:
-                output_file.write(">" + entry_candidate.id + "|0" + "\n")
-                output_file.write(str(entry_candidate.seq) + "\n")
+    if sequenceIds != 0:
+        seq_records_candidate = readFasta(candidate_fasta)
+        seq_records_candidate = list(seq_records_candidate)
+        for entry_candidate in seq_records_candidate:
+            if entry_candidate.id in sequenceIds:
+                if entry_candidate.id == sequenceIds[0]:
+                    print(entry_candidate.id)
+                    output_file.write(">" + entry_candidate.id + "|1" + "\n")
+                    output_file.write(str(entry_candidate.seq) + "\n")
+                else:
+                    output_file.write(">" + entry_candidate.id + "|0" + "\n")
+                    output_file.write(str(entry_candidate.seq) + "\n")
     output_file.close()
     return 0
 
@@ -738,16 +741,24 @@ def main():
         print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
+        if int(os.path.getsize(candidatesOutFile)) > 0:
+            print("No genes found at candidate regions\n")
+            if searchTaxon == '':
+                continue
+            else:
+                addSequences(0, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
+                return 0
 
-        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path)
+        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
 
         if reciprocal_sequences == 0:
             print("No ortholog fulfilled the reciprocity criteria")
             if searchTaxon == '':
                 continue
             else:
+                addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
                 cleanup(tmp, tmp_path)
-                return 1
+                return 0
 
     ################## checking accepted genes for co-orthologs ################
 
