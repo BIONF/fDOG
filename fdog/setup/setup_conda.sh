@@ -116,6 +116,7 @@ dependencies=(
   mafft # for linsi
   muscle
   fasta36
+  augustus #for fdog.assembly
 )
 
 for i in "${dependencies[@]}"; do
@@ -134,6 +135,8 @@ for i in "${dependencies[@]}"; do
       fi
     elif [ "$tool" = "fasta36" ]; then
       conda install -y -c bioconda fasta3
+    elif [ "$tool" = "augustus" ]; then
+      conda install -y -c bioconda augustus
     else
       conda install -y -c bioconda $i
     fi
