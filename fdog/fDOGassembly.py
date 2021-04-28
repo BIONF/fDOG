@@ -739,6 +739,7 @@ def main():
 
         if regions == 0:
             #no candidat region are available, no ortholog can be found
+            reciprocal_sequences = 0
             if refBool == True:
                 print("No candidate region found")
                 continue
@@ -771,10 +772,7 @@ def main():
             else:
                 reciprocal_sequences = 0
         else:
-            if regions != 0:
-                reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
-            else:
-                reciprocal_sequences = 0
+            reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
     ################ add sequences to extended.fa in the output folder##########
 
