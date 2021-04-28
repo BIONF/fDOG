@@ -747,7 +747,7 @@ def main():
             if refBool == True:
                 continue
             else:
-                taxa = fdog_ref_species
+                taxa = [fdog_ref_species]
                 reciprocal_sequences = 0
         else:
             print(str(number_regions) + " candiate regions were found. Extracting sequences...")
@@ -766,7 +766,7 @@ def main():
                     continue
                 else:
                     reciprocal_sequences = 0
-                    taxa = fdog_ref_species
+                    taxa = [fdog_ref_species]
             else:
                 reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
 
