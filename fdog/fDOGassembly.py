@@ -384,10 +384,6 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     return list(orthologs), seed
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool, tmp_path):
-    print(output)
-    print(refBool)
-    print(core_fasta)
-    print(species_list)
 
     output_file = open(output, "a+")
     if refBool == False:
@@ -489,16 +485,17 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     return checked
 
-def changes_for_fas(file, header, mode):
-    #def replace_first_line( src_filename, target_filename, replacement_line):
-    f_in = open(file)
-    first_line, remainder = f.readline(), f.read()
-    line = first_line.split("|")[0]
-    f_in.close()
-    f_out = open(file + "s","w")
-    f_out.write(line + "\n")
-    f_out.write(remainder)
-    f_out.close()
+def clean_fas(path):
+    file = open(path, "r")
+    lines = file.readlines()
+    file.close()
+    file.open(path,"w")
+
+    for line in lines:
+        long_id, remain = line.split("#")
+        id = long_id.split("|")[0]
+        new_line = id + "#" + remain
+        file.write(new_line)
 
 class Logger(object):
     def __init__(self, file):
@@ -811,6 +808,8 @@ def main():
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
         starting_subprocess(cmd, mode)
+        clean_fas(group + "_forward.domains")
+        clean_fas(group + "_reverse.domains")
     ################# remove tmp folder ########################################
     if searchTaxon != '':
         cleanup(tmp, tmp_path)
