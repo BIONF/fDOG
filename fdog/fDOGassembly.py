@@ -16,6 +16,14 @@ def load_config(config_file):
         except yaml.YAMLError as exc:
             print(exc)
 
+def starting_subprocess(cmd, mode):
+    if mode == 'debug':
+        result = subprocess.run(cmd, shell=True)
+    elif mode == 'silent':
+        result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
+    elif mode == 'normal':
+        result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+
 def merge(blast_results, insert_length):
     #merging overlapping and contigous candidate regions
     number_regions = 0
@@ -120,15 +128,14 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
 
         return candidate_regions, number_regions
 
-def extract_seq(region_dic, path, tmp_path):
+def extract_seq(region_dic, path, tmp_path, mode):
 
     for key in region_dic:
         #print("blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out tmp/" + key + ".fasta -outfmt %f")
         cmd = "blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out " + tmp_path + key + ".fasta -outfmt %f"
-        #result = subprocess.run(cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
-        result = subprocess.run(cmd, shell=True)
+        starting_subprocess(cmd, mode)
 
-def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path):
+def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
     output = open(candidatesOutFile, "w")
 
     for key in regions:
@@ -143,10 +150,10 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             # augutus call
             cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
-            result = subprocess.run(cmd, shell=True)
+            starting_subprocess(cmd, mode)
             # transfer augustus output to as sequence
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
-            result = subprocess.run(cmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, shell=True)
+            starting_subprocess(cmd, mode)
             # parsing header and sequences
             try:
                 sequence_file = open(tmp_path + name + ".aa", "r")
@@ -524,6 +531,8 @@ def main():
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
     optional.add_argument('--searchTaxon', help='Search Taxon name', action='store', default='')
     optional.add_argument('--silent', help='Output will only be written into the log file', action='store_true', default=False)
+    optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed', action='store_true', default=False)
+
 
     args = parser.parse_args()
 
@@ -561,6 +570,18 @@ def main():
     fasoff = args.fasoff
     searchTaxon = args.searchTaxon
     silent = args.silent
+    debug = args.debug
+
+    if debug == True and silent == True:
+        print("It's not possible to use booth modes, please restart and use --debug or --silent")
+        return 1
+    else:
+        if debug == True:
+            mode = 'debug'
+        elif silent == True:
+            mode = 'silent'
+        else:
+            mode = 'normal'
 
     #checking paths
     if dataPath == '':
@@ -598,11 +619,12 @@ def main():
 
     ################## How to handle std output and std error ##################
 
-    if silent == True:
+    if mode == 'silent':
         sys.stderr = f
         sys.stdout = f
     else:
         sys.stdout = Logger(f)
+
     # user input has to be checked here before fDOGassembly continues
     assembly_names = os.listdir(assemblyDir)
 
@@ -620,20 +642,22 @@ def main():
 
     ###################### create tmp folder ###################################
 
-    os.system('mkdir ' + out + '/tmp' + ' >/dev/null 2>&1')
+    cmd = 'mkdir ' + out + '/tmp'
+    starting_subprocess(cmd, 'silent')
 
     ######################## consensus sequence ################################
 
     #make a majority-rule consensus sequence with the tool hmmemit from hmmer
     print("Building a consensus sequence for gene " + group + " \n")
-    os.system('hmmemit -c -o' + consensus_path + ' ' + hmm_path)
+    cmd = 'hmmemit -c -o' + consensus_path + ' ' + hmm_path
+    starting_subprocess(cmd, mode)
     print("consensus sequence is finished\n")
 
     ######################## block profile #####################################
 
     print("Building a block profile for gene " + group + " \n")
     cmd = 'msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path
-    result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+    starting_subprocess(cmd, mode)
 
     if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
@@ -642,10 +666,10 @@ def main():
         new_path = core_path + group +"/"+ group + "_new.aln"
         #print(cmd)
         cmd = 'prepareAlign < ' + msa_path + ' > ' + new_path
-        result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+        starting_subprocess(cmd, mode)
         cmd = 'msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path
         #print(cmd)
-        result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+        starting_subprocess(cmd, mode)
         print("block profile is finished \n")
 
     searchBool = False
@@ -660,7 +684,8 @@ def main():
 
         ################### path definitions ###################################
 
-        os.system('mkdir ' + out + '/tmp/' + asName + '>/dev/null 2>&1')
+        cmd = 'mkdir ' + out + '/tmp/' + asName
+        starting_subprocess(cmd, 'silent')
         tmp_path = out + "/tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
         if searchTaxon != '':
@@ -681,7 +706,8 @@ def main():
         db_check = searching_for_db(db_path)
         if db_check == 0:
             print("creating a blast data base \n")
-            os.system('makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path)
+            cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
+            starting_subprocess(cmd, mode)
             print("database is finished \n")
         else:
             print('blast data base exists already, continuing...')
@@ -689,7 +715,8 @@ def main():
         #makes a tBLASTn search against the new database
         #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
         print("tBLASTn search against data base")
-        os.system('tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out')
+        cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
+        starting_subprocess(cmd, mode)
         print("tBLASTn search is finished")
 
     ################### search for candidate regions and extract seq ###########
@@ -702,12 +729,12 @@ def main():
             continue
         else:
             print(str(number_regions) + " candiate regions were found. Extracting sequences...")
-            extract_seq(regions, db_path, tmp_path)
+            extract_seq(regions, db_path, tmp_path, mode)
 
     ############### make Augustus PPX search ###################################
 
         print("starting augustus ppx \n")
-        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path)
+        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
         print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
@@ -737,9 +764,10 @@ def main():
             print("Calculating FAS scores")
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
-            os.system('mkdir ' + tmp_path + 'anno_dir' + '>/dev/null 2>&1')
+            cmd = 'mkdir ' + tmp_path + 'anno_dir'
+            starting_subprocess(cmd, 'silent')
             cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
-            result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
+            starting_subprocess(cmd, mode)
     #if we searched in more than one Taxon and no ortholog was found
     if refBool == False and searchTaxon == '':
         print("No orthologs found. Exciting ...")
@@ -752,8 +780,7 @@ def main():
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
-        result = subprocess.run(cmd, shell=True)
-        print(cmd)
+        starting_subprocess(cmd, mode)
     ################# remove tmp folder ########################################
     if searchTaxon != '':
         cleanup(tmp, tmp_path)
