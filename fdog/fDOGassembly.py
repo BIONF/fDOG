@@ -22,7 +22,7 @@ def starting_subprocess(cmd, mode):
     elif mode == 'silent':
         result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
     elif mode == 'normal':
-        result = subprocess.run(cmd, stderr = subprocess.PIPE, shell=True)
+        result = subprocess.run(cmd, stdout = subprocess.PIPE, shell=True)
 
 def merge(blast_results, insert_length):
     #merging overlapping and contigous candidate regions
@@ -485,6 +485,17 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     return checked
 
+def changes_for_fas(file, header, mode):
+    #def replace_first_line( src_filename, target_filename, replacement_line):
+    f_in = open(file)
+    first_line, remainder = f.readline(), f.read()
+    line = first_line.split("|")[0]
+    f_in.close()
+    f_out = open(file + "s","w")
+    f_out.write(line + "\n")
+    f_out.write(remainder)
+    f_out.close()
+
 class Logger(object):
     def __init__(self, file):
         self.file = file
@@ -746,23 +757,20 @@ def main():
             if searchTaxon == '':
                 continue
             else:
-                addSequences(0, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
-                return 0
+                reciprocal_sequences = 0
+        else:
+            reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
 
-        reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
 
+    ################## checking accepted genes for co-orthologs ################
         if reciprocal_sequences == 0:
             print("No ortholog fulfilled the reciprocity criteria")
             if searchTaxon == '':
                 continue
             else:
-                addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
-                cleanup(tmp, tmp_path)
-                return 0
-
-    ################## checking accepted genes for co-orthologs ################
-
-        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
+                reciprocal_sequences = 0
+        else:
+            reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
     ################ add sequences to extended.fa in the output folder##########
 
