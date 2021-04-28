@@ -739,21 +739,23 @@ def main():
 
         if regions == 0:
             #no candidat region are available, no ortholog can be found
-            print("No candidate region found")
-            continue
+            if refBool == True:
+                print("No candidate region found")
+                continue
         else:
             print(str(number_regions) + " candiate regions were found. Extracting sequences...")
             extract_seq(regions, db_path, tmp_path, mode)
 
     ############### make Augustus PPX search ###################################
 
-        print("starting augustus ppx \n")
-        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
-        print("augustus is finished \n")
+            print("starting augustus ppx \n")
+            augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
+            print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
-        if int(os.path.getsize(candidatesOutFile)) <= 0:
-            print("No genes found at candidate regions\n")
+        if int(os.path.getsize(candidatesOutFile)) <= 0 or regions == 0:
+            if regions != 0:
+                print("No genes found at candidate regions\n")
             if searchTaxon == '' and refBool == True:
                 continue
             else:
