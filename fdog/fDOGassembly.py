@@ -384,6 +384,10 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     return list(orthologs), seed
 
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool, tmp_path):
+    print(output)
+    print(refBool)
+    print(core_fasta)
+    print(species_list)
 
     output_file = open(output, "a+")
     if refBool == False:
@@ -739,10 +743,11 @@ def main():
 
         if regions == 0:
             #no candidat region are available, no ortholog can be found
-            reciprocal_sequences = 0
+            print("No candidate region found")
             if refBool == True:
-                print("No candidate region found")
                 continue
+            else:
+                reciprocal_sequences = 0
         else:
             print(str(number_regions) + " candiate regions were found. Extracting sequences...")
             extract_seq(regions, db_path, tmp_path, mode)
@@ -766,7 +771,8 @@ def main():
 
     ################## checking accepted genes for co-orthologs ################
         if reciprocal_sequences == 0:
-            print("No ortholog fulfilled the reciprocity criteria")
+            if regions != 0:
+                print("No ortholog fulfilled the reciprocity criteria")
             if searchTaxon == '' and refBool == True:
                 continue
             else:
