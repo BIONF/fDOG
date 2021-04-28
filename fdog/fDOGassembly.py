@@ -489,7 +489,7 @@ def clean_fas(path):
     file = open(path, "r")
     lines = file.readlines()
     file.close()
-    file.open(path,"w")
+    file = open(path,"w")
 
     for line in lines:
         long_id, remain = line.split("#")
