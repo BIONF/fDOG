@@ -741,7 +741,7 @@ def main():
         print("augustus is finished \n")
 
     ################# backward search to filter for orthologs###################
-        if int(os.path.getsize(candidatesOutFile)) > 0:
+        if int(os.path.getsize(candidatesOutFile)) <= 0:
             print("No genes found at candidate regions\n")
             if searchTaxon == '':
                 continue
