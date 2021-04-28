@@ -808,8 +808,8 @@ def main():
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
         starting_subprocess(cmd, mode)
-        clean_fas(group + "_forward.domains")
-        clean_fas(group + "_reverse.domains")
+        clean_fas(out + group + "_forward.domains")
+        clean_fas(out + group + "_reverse.domains")
     ################# remove tmp folder ########################################
     if searchTaxon != '':
         cleanup(tmp, tmp_path)
