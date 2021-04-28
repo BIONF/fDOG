@@ -771,7 +771,7 @@ def main():
             else:
                 reciprocal_sequences = 0
         else:
-            if regions != 0
+            if regions != 0:
                 reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
             else:
                 reciprocal_sequences = 0
