@@ -316,7 +316,7 @@ my $runublast = 1;
 my $ublast = 0;
 my $accel = 0.8;
 #####determine the hostname#######
-push @log, "VERSION:\t$version\n";
+# push @log, "VERSION:\t$version\n";
 my $hostname = `hostname`;
 chomp $hostname;
 push @log, "HOSTNAME\t$hostname\n";
@@ -521,7 +521,7 @@ if ($check == 0) {
 	exit;
 }
 else {
-	open (OUT, ">$outpath/hamstrsearch.log") or die "could not open logfile\n";
+	open (OUT, ">$outpath/fdog.log") or die "could not open logfile\n";
 	print OUT join "\n", @log;
 	close OUT;
 }
@@ -1060,7 +1060,7 @@ sub checkInput {
 					}
 				}
 			} else {
-				push @log, "\trunning HaMStR with all hmms in $hmm_dir";
+				push @log, "\trunning fDOG with all hmms in $hmm_dir";
 				my $hmm_dir_tmp = $hmm_dir; $hmm_dir_tmp =~ s/\|/\\\|/g;
 				@hmms = `ls $hmm_dir_tmp`;
 			}
@@ -1300,10 +1300,10 @@ sub checkInput {
 	}
 	## 14) determin whether or not the -representative flag has been set
 	if (defined $rep) {
-		push @log, "\tHaMStR will run with the -representative option";
+		push @log, "\tfDOG will run with the -representative option";
 	}
 	else {
-		push @log, "\tHaMStR was called without the -representative option. More than one ortholog may be identified per core-ortholog group!";
+		push @log, "\tfDOG was called without the -representative option. More than one ortholog may be identified per core-ortholog group!";
 	}
 
 	## check further options

@@ -725,7 +725,10 @@ print "==> fdog finished after " . roundtime(gettime() - $startTime) . " sec!\n"
 push @logOUT, "fdog finished after " . roundtime(gettime() - $startTime) . " sec!\n";
 
 #### writing the log
-open (LOGOUT, ">$outputPath/fdog.log") or warn "Failed to open fdog.log for writing";
+open (LOGOUT, ">>$outputPath/fdog.log") or die "Could not open $outputPath/fdog.log for writing\n";
+print LOGOUT "\n\n";
+my $fdogVersion = `fdog.run --version`;
+print LOGOUT "fDOG v$fdogVersion\n";
 print LOGOUT join "\n", @logOUT;
 close LOGOUT;
 exit;

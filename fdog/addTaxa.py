@@ -37,6 +37,7 @@ from io import StringIO
 import re
 import shutil
 from tqdm import tqdm
+from datetime import datetime
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
@@ -68,7 +69,7 @@ def parseMapFile(mappingFile):
             try:
                 ver = tmp[3].strip()
             except:
-                ver = 1
+                ver = datetime.today().strftime('%y%m%d') #1
             # print(taxName+"@"+str(taxId)+"@"+str(ver))
             nameDict[fileName] = (taxName, str(taxId), str(ver))
     return(nameDict)
@@ -95,7 +96,7 @@ def runAddTaxon(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.5'
+    version = '0.0.6'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxa version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
