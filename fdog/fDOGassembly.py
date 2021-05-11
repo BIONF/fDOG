@@ -149,8 +149,8 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             name = key + "_" + str(counter)
             # augutus call
             cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
-            #result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
-            starting_subprocess(cmd, mode)
+            #print(cmd)
+            starting_subprocess(cmd, 'silent')
             # transfer augustus output to as sequence
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             starting_subprocess(cmd, mode)
@@ -396,6 +396,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
                     output_file.write(str(entry_core.seq) + "\n")
 
     if sequenceIds != 0:
+        #print(sequenceIds)
         seq_records_candidate = readFasta(candidate_fasta)
         seq_records_candidate = list(seq_records_candidate)
         for entry_candidate in seq_records_candidate:
@@ -677,7 +678,7 @@ def main():
 
     print("Building a block profile for gene " + group + " \n")
     cmd = 'msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path
-    starting_subprocess(cmd, mode)
+    starting_subprocess(cmd, 'silent')
 
     if int(os.path.getsize(profile_path)) > 0:
         print("block profile is finished \n")
@@ -689,7 +690,7 @@ def main():
         starting_subprocess(cmd, mode)
         cmd = 'msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path
         #print(cmd)
-        starting_subprocess(cmd, mode)
+        starting_subprocess(cmd, 'silent')
         print("block profile is finished \n")
 
     searchBool = False
@@ -798,7 +799,7 @@ def main():
             cmd = 'mkdir ' + tmp_path + 'anno_dir'
             starting_subprocess(cmd, 'silent')
             cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
-            starting_subprocess(cmd, mode)
+            starting_subprocess(cmd, 'silent')
     #if we searched in more than one Taxon and no ortholog was found
 
     if refBool == False and searchTaxon == '':
@@ -812,7 +813,7 @@ def main():
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
         cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
-        starting_subprocess(cmd, mode)
+        starting_subprocess(cmd, 'silent')
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
