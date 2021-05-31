@@ -396,7 +396,6 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
                     output_file.write(str(entry_core.seq) + "\n")
 
     if sequenceIds != 0:
-        print(sequenceIds)
         seq_records_candidate = readFasta(candidate_fasta)
         seq_records_candidate = list(seq_records_candidate)
         for entry_candidate in seq_records_candidate:
@@ -800,6 +799,11 @@ def main():
             starting_subprocess(cmd, 'silent')
             cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
             starting_subprocess(cmd, 'silent')
+            clean_fas(out + group + "_forward.domains", 'domains')
+            clean_fas(out + group + "_reverse.domains", 'domains')
+            clean_fas(out + group + ".phyloprofile", 'phyloprofile')
+
+
     #if we searched in more than one Taxon and no ortholog was found
 
     if refBool == False and searchTaxon == '':
