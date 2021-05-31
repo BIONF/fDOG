@@ -631,6 +631,10 @@ def main():
         out = os.getcwd()
         os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
         out = out + '/' + group + '/'
+    else:
+        if out[-1] != "/":
+            out = out + "/"
+
 
     try:
         f = open(out + "/fdog.log", "a+")
