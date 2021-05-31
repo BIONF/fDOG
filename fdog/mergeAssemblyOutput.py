@@ -107,7 +107,8 @@ def main():
                 set_fasta = header
             if cleanup == True:
                 os.remove(directory + '/' +infile)
-                os.system("rm  " + directory + "/'*.tsv'")
+        elif infile.endswith('.tsv'):
+            os.remove(directory + '/' + infile)
 
     if phyloprofile:
         phyloprofile.close()
