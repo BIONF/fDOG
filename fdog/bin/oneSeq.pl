@@ -701,7 +701,7 @@ if (!$coreOnly) {
 		if ($assembly){
 			$eval_blast = sprintf("%f", $eval_blast);
 			if ($seqFile ne "") {
-				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
+				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath, "--silent");
 
 				if (defined $assemblyPath){
 					push(@assembly_cmd, "--assemblyPath $assemblyPath")
