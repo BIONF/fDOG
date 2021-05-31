@@ -176,7 +176,7 @@ def joinOutputs(outpath, jobName, seeds, keep, silent):
 def calcFAS (outpath, extendedFa, weightpath, cpu):
     print('Starting calculating FAS scores...')
     start = time.time()
-    fasCmd = 'fdogFAS -i %s -w %s --cores %s' % (extendedFa, weightpath, cpu)
+    fasCmd = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (extendedFa, weightpath, cpu)
     try:
         subprocess.call([fasCmd], shell = True)
         end = time.time()
@@ -189,7 +189,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.39'
+    version = '0.0.40'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -368,9 +368,9 @@ def main():
     ### check fas
     if not fasoff:
         try:
-            fasVersion = subprocess.run(['calcFAS --version'], shell = True, capture_output = True, check = True)
+            fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
         except:
-            sys.exit('Problem with calcFAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
+            sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
 
     ### delete output folder and files if needed
     if forceComplete:
@@ -384,7 +384,10 @@ def main():
             outfiles = os.listdir(outpath)
             for item in outfiles:
                 if item.startswith(jobName):
-                    os.remove(os.path.join(outpath, item))
+                    try:
+                        os.remove(os.path.join(outpath, item))
+                    except:
+                        shutil.rmtree(outpath+'/'+item)
                 if item.startswith("runtime"):
                     os.remove(os.path.join(outpath, item))
             if os.path.exists(outpath + '/missing.txt'):

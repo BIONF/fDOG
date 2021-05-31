@@ -83,7 +83,7 @@ def runBlast(args):
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.8'
+    version = '0.0.9'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -93,8 +93,7 @@ def main():
     optional.add_argument('-n', '--name', help='Acronym name of input taxon', action='store', default='', type=str)
     optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default='', type=str)
     optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in blast_dir folder)', action='store_true', default=False)
-    optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using annoFAS', action='store_true', default=False)
-    optional.add_argument('--oldFAS', help='Use old verion of FAS (annoFAS ≤ 1.2.0)', action='store_true', default=False)
+    optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using fas.doAnno', action='store_true', default=False)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = available cores - 1', action='store', default=0, type=int)
     optional.add_argument('--replace', help='Replace special characters in sequences by "X"', action='store_true', default=False)
     optional.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
@@ -121,7 +120,6 @@ def main():
     ver = str(args.verProt)
     if ver == '':
         ver = datetime.today().strftime('%y%m%d')
-    oldFAS = args.oldFAS
     cpus = args.cpus
     if cpus == 0:
         cpus = mp.cpu_count()-2
@@ -214,16 +212,13 @@ def main():
     ### create annotation
     if not noAnno:
         Path(outPath + '/weight_dir').mkdir(parents = True, exist_ok = True)
-        annoCmd = 'annoFAS -i %s/%s.fa -o %s --cpus %s' % (genomePath, specName, outPath+'/weight_dir', cpus)
+        annoCmd = 'fas.doAnno -i %s/%s.fa -o %s --cpus %s' % (genomePath, specName, outPath+'/weight_dir', cpus)
         if force:
             annoCmd = annoCmd + " --force"
-        if oldFAS:
-            print("running old version of FAS...")
-            annoCmd = 'annoFAS -i %s/%s.fa -o %s -n %s --cores %s' % (genomePath, specName, outPath+'/weight_dir', specName, cpus)
         try:
             subprocess.call([annoCmd], shell = True)
         except:
-            print('\033[91mProblem with running annoFAS. You can check it with this command:\n%s\033[0m' % annoCmd)
+            print('\033[91mProblem with running fas.doAnno. You can check it with this command:\n%s\033[0m' % annoCmd)
 
     print('Output for %s can be found in %s within genome_dir [and blast_dir, weight_dir] folder[s]' % (specName, outPath))
 

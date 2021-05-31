@@ -128,9 +128,10 @@ my $startTime = gettime();
 ## Modified 29. March 2021 v2.2.9 (Vinh)	- check for zero $maxAlnScore
 ##                                        - solved problem with long input path for fasta36 tools
 ## Modified 23. April 2021 v2.3.0 (Vinh)	- parse fasta36 output for long IDs (longer than 60 chars)
+## Modified 31. May 2021 v2.3.1 (Vinh)	- added auto annotation for fdogFas
 
 ############ General settings
-my $version = 'oneSeq v.2.3.0';
+my $version = 'oneSeq v.2.3.1';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -174,9 +175,9 @@ my $blast_prog = 'blastp';
 my $outputfmt = 'blastxml';
 my $eval_blast_query = 0.0001;
 my $filter = 'F'; # default for blastp
-my $annotation_prog = "annoFAS";
-my $fas_prog = "calcFAS";
-my $fdogFAS_prog = "fdogFAS";
+my $annotation_prog = "fas.doAnno";
+my $fas_prog = "fas.run";
+my $fdogFAS_prog = "fas.runFdogFas";
 
 ##### ublast Baustelle: not implemented yet
 my $runublast = 0;
@@ -697,7 +698,7 @@ if(!$coreOnly){
 	# calculate FAS scores for final extended.fa
 	if ($fas_support) {
 		print "Starting the feature architecture similarity score computation...\n";
-		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu";
+		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu --redo_anno";
 		unless ($countercheck) {
 			$fdogFAScmd .= " --bidirectional"
 		}
@@ -2555,9 +2556,9 @@ sub initialCheck {
 	}
 
 	# check executable FAS
-	my $fasCheckMsg = `setupFAS -t ./ -c 2>&1`;
+	my $fasCheckMsg = `fas.setup -t ./ -c 2>&1`;
 	if ($fasoff != 1 && $fasCheckMsg =~ /ERROR/) {
-		die "ERROR: greedyFAS not ready to use! Please check https://github.com/BIONF/FAS/wiki/prepareFAS\n";
+		die "ERROR: FAS not ready to use! Please check https://github.com/BIONF/FAS/wiki/setup\n";
 	}
 
 	# check seed fasta file
