@@ -803,9 +803,9 @@ def main():
             starting_subprocess(cmd, 'silent')
             cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
             starting_subprocess(cmd, 'silent')
-            clean_fas(out + group + "_forward.domains", 'domains')
-            clean_fas(out + group + "_reverse.domains", 'domains')
-            clean_fas(out + group + ".phyloprofile", 'phyloprofile')
+            clean_fas(fasOutFile + "_forward.domains", 'domains')
+            clean_fas(fasOutFile + "_reverse.domains", 'domains')
+            clean_fas(fasOutFile + ".phyloprofile", 'phyloprofile')
 
 
     #if we searched in more than one Taxon and no ortholog was found
