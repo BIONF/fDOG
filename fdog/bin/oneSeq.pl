@@ -121,9 +121,15 @@ my $startTime = gettime();
 ## Modified 22. Sep 2020 v2.2.1 (Vinh)	- make sure that seed sequence always at the beginning of extended.fa output
 ## Modified 23. Sep 2020 v2.2.3 (Vinh)	- use full taxonomy name instead of abbr taxon name for LOG
 ## Modified 01. Dec 2020 v2.2.4 (Vinh)	- fixed bug while creating final extended.fa (and replaced grep and sed by bioperl)
+## Modified 16. Feb 2021 v2.2.5 (Vinh)	- core compilation works with fasoff
+## Modified 18. Feb 2021 v2.2.6 (Vinh)	- fixed searchTaxa and coreTaxa options
+## Modified 19. March 2021 v2.2.7 (Vinh)	- check for long sequence ID
+## Modified 24. March 2021 v2.2.8 (Vinh)	- skip fa.mapping while checking genome_dir
+## Modified 29. March 2021 v2.2.9 (Vinh)	- check for zero $maxAlnScore
+##                                        - solved problem with long input path for fasta36 tools
 
 ############ General settings
-my $version = 'oneSeq v.2.2.4';
+my $version = 'oneSeq v.2.2.9';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -133,10 +139,10 @@ if ($configure == 0){
 my $hostname = `hostname`;
 chomp $hostname;
 #############
-my $termios = new POSIX::Termios; $termios->getattr;
-my $ospeed = $termios->getospeed;
-my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
-my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
+# my $termios = new POSIX::Termios; $termios->getattr;
+# my $ospeed = $termios->getospeed;
+# my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
+# my ($norm, $under, $bold) = map { $t->Tputs($_,1) } qw/me md us/;
 #### Paths
 my $path = abs_path(dirname(__FILE__));
 $path =~ s/\/bin//;
@@ -166,7 +172,7 @@ my $algorithm = "blastp";
 my $blast_prog = 'blastp';
 my $outputfmt = 'blastxml';
 my $eval_blast_query = 0.0001;
-my $filter = 'T';
+my $filter = 'F'; # default for blastp
 my $annotation_prog = "annoFAS";
 my $fas_prog = "calcFAS";
 my $fdogFAS_prog = "fdogFAS";
@@ -197,6 +203,7 @@ my $blastPath = "$path/blast_dir/";
 my $idx_dir = "$path/taxonomy/";
 my $dataDir = $path . '/data';
 my $weightPath = "$path/weight_dir/";
+my $assembly_dir = "$path/assembly_dir/";
 
 my @defaultRanks = (
 	'superkingdom', 'kingdom',
@@ -300,6 +307,15 @@ my $breakAfter = 5; 		## Number of Significantly bad candidates after which the 
 my %hashTree;
 my $aln = 'muscle';
 my $searchTaxa;
+#variables for fdog_goes_assembly
+my $assembly;
+my $augustusRefSpec;
+my $avIntron;
+my $lengthExtension;
+my $assemblyPath;
+my $searchTool = 'blast';
+my $matrix = 'blosum62';
+my $dataPath = '';
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -361,7 +377,15 @@ GetOptions (
 	"distDeviation=s"	=> \$distDeviation,
 	"aligner=s"	=> \$aln,
 	"hyperthread" => \$hyperthread,
-	"searchTaxa=s" => \$searchTaxa
+	"searchTaxa=s" => \$searchTaxa,
+	"assembly" => \$assembly,
+	"assemblypath=s" => \$assemblyPath,
+	"augustusRefSpec=s" => \$augustusRefSpec,
+	"avIntron=s" => \$avIntron,
+	"lengthExtension=s" => \$lengthExtension,
+	"searchTool=s" => \$searchTool,
+	"scoringmatrix=s" => \$matrix,
+	"dataPath=s" => \$dataPath
 );
 
 $outputPath = abs_path($outputPath);
@@ -373,6 +397,8 @@ $blastPath = abs_path($blastPath)."/";
 $weightPath = abs_path($weightPath)."/";
 $genome_dir = abs_path($genome_dir)."/";
 $taxaPath = $genome_dir;
+$dataPath = abs_path($dataPath)."/";
+$assembly_dir = abs_path($assemblyPath)."/";
 
 ############# do initial check
 if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
@@ -381,7 +407,7 @@ if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 	initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
 	print "Check finished in " . roundtime(gettime() - $checkStTime). " sec!\n";
 
-	if (!defined $coreex) {
+	if (!defined $coreex && !defined $assembly) {
 		if (!grep(/$minDist/, @defaultRanks)) {
 			die "ERROR: minDist $minDist invalid!\n";
 		}
@@ -464,7 +490,7 @@ my $maxAlnScore = 0;
 
 # create weight_dir in oneseq's home dir (used for annotations,weighting,feature extraction)
 # get annotations for seed sequence if fas support is on
-if ($fas_support){
+if ($fas_support && !$assembly){
 	if (!$weightPath) {
 		createWeightFolder();
 	}
@@ -473,7 +499,7 @@ if ($fas_support){
 
 my $coreStTime = gettime(); #time;
 #core-ortholog search
-if (!$coreex) {
+if (!$coreex && !$assembly) {
 	print "\nCore compiling...\n";
 	$coremode = 1;
 	$taxaPath = $blastPath;
@@ -562,11 +588,14 @@ if (!$coreex) {
 			}
 		}
 		printDebug("The maximum alignmentscore is: $maxAlnScore");
+		if ($maxAlnScore == 0) {
+			die("Maximum alignment score is Zero! Something went wrong with fasta36 functions!\n")
+		}
 		clearTmpFiles();
 
 		my $addedTaxon = getBestOrtholog();
 		my $addedTaxonName = getTaxonName($addedTaxon);
-		print "Added TAXON: $addedTaxon\_$addedTaxonName\n";
+		print "Added TAXON: $addedTaxon\t$addedTaxonName\n";
 		#if a new core ortholog was found
 		if($addedTaxon ne "") {
 			$hamstrSpecies = $hamstrSpecies . "," . $addedTaxon;
@@ -608,12 +637,17 @@ if (!$coreOnly) {
 	my $final_eval_blast = $eval_blast*$eval_relaxfac;
 	my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
 
-	$taxaPath = $genome_dir;
+	if (!$assembly){
+		$taxaPath = $genome_dir;
+	}
+	else{
+		$taxaPath = $assembly_dir;
+	}
 	my @searchTaxa;
-	unless($groupNode) {
-		@searchTaxa = keys %taxa;
-	} else {
-		unless ($searchTaxa) {
+	unless ($searchTaxa) {
+		unless($groupNode) {
+			@searchTaxa = keys %taxa;
+		} else {
 			# %taxa = getTaxa();
 			# print "GET TAXA TIME: ", roundtime(gettime() - $startTmp),"\n";
 			my $tree = getTree();
@@ -629,11 +663,11 @@ if (!$coreOnly) {
 			foreach (get_leaves($tree)) {
 				push(@searchTaxa, @{$_->name('supplied')}[0]);
 			}
-		} else {
-			open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
-			@searchTaxa = <SEARCH>;
-			close (SEARCH);
 		}
+	} else {
+		open(SEARCH, $searchTaxa) || die "Cannot open $searchTaxa file!\n";
+		@searchTaxa = <SEARCH>;
+		close (SEARCH);
 	}
 	# print "PREPARE TIME: ", roundtime(gettime() - $startTmp),"\n";
 
@@ -645,15 +679,82 @@ if (!$coreOnly) {
 	foreach (sort @searchTaxa) {
 		chomp(my $searchTaxon = $_);
 		my $pid = $pm->start and next;
+		if ($coreex) {
+			$db = Bio::DB::Taxonomy->new(-source    => 'flatfile',
+				-nodesfile => $idx_dir . 'nodes.dmp',
+				-namesfile => $idx_dir . 'names.dmp',
+				-directory => $idx_dir);
+			$db_bkp = $db;
+		}
 		my $searchTaxonName = getTaxonName($searchTaxon);
 		if (defined($searchTaxonName)) {
 			unless ($silent) {
 				print $searchTaxon, "\t", $searchTaxonName, "\n";
 			} else {
-				print $searchTaxonName, "\n";
+				unless ($searchTaxonName eq "Unk") {
+					print $searchTaxonName, "\n";
+				} else {
+					print $searchTaxon, "\n";
+				}
 			}
 		}
+		if ($assembly){
+			$eval_blast = sprintf("%f", $eval_blast);
+			if ($seqFile ne "") {
+				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath, "--silent");
+
+				if (defined $assemblyPath){
+					push(@assembly_cmd, "--assemblyPath $assemblyPath")
+				}
+				if (defined $avIntron){
+					push(@assembly_cmd, "--avIntron $avIntron ");
+				}
+				if (defined $lengthExtension){
+					push(@assembly_cmd, "--lengthExtension $lengthExtension ");
+				}
+				if (!$autoclean){
+					push(@assembly_cmd, "--tmp ");
+				}
+				if ($outputPath){
+					push(@assembly_cmd, "--out $outputPath ");
+				}
+				if (defined $strict){
+					push(@assembly_cmd, "--strict");
+				}
+				if ($eval_blast){
+					push(@assembly_cmd, "--evalBlast $eval_blast ");
+				}
+				if ($searchTool){
+					push(@assembly_cmd, "--msaTool $aln ");
+				}
+				if (defined $checkcoorthologsref){
+					push(@assembly_cmd, "--checkCoorthologsRef");
+				}
+				if ($searchTool){
+					push(@assembly_cmd, "--searchTool $searchTool");
+				}
+				if ($matrix){
+					push(@assembly_cmd, "--scoringmatrix $matrix");
+				}
+				if ($coreOrthologsPath){
+					push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
+				}
+				if ($fasoff){
+					push(@assembly_cmd, "--fasoff");
+				}
+				if ($searchTaxon){
+					push(@assembly_cmd, "--searchTaxon $searchTaxon");
+				}
+				if ($filter){
+					push(@assembly_cmd, "--filter $filter");
+				}
+				printDebug(@assembly_cmd);
+				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
+			}
+		}
+		else{
 		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
+		}
 		$pm->finish;
 	}
 	$pm->wait_all_children;
@@ -661,8 +762,8 @@ if (!$coreOnly) {
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
 
-## Evaluation of all orthologs that are predicted by the final run
-if(!$coreOnly){
+
+if(!$coreOnly && !$assembly){
 	my $fasStTime = gettime();
 	my $processID = $$;
 
@@ -671,10 +772,10 @@ if(!$coreOnly){
 		die "ERROR: Could not find $finalOutput\n";
 	}
 	# check and add seed to final extended.fa if needed
-	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput); # BLABLABLABLA
+	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 
 	# calculate FAS scores for final extended.fa
-	if ($fas_support) {
+	if ($fas_support && !$assembly) {
 		print "Starting the feature architecture similarity score computation...\n";
 		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu";
 		unless ($countercheck) {
@@ -687,12 +788,21 @@ if(!$coreOnly){
 	}
 	push @logOUT, "FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
 	print "==> FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
+
 	if($autoclean){
 		print "Cleaning up...\n";
 		runAutoCleanUp($processID);
 	}
 }
 
+if ($assembly){
+	my $file_assembly_out;
+	$file_assembly_out = $outputPath . '/' . $seqName;
+	my $cmd_merge;
+	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
+	printDebug($cmd_merge);
+	system($cmd_merge);
+}
 ## Delete tmp folder
 unless ($debug) {
 	my $delTmp = "rm -rf $tmpdir";
@@ -721,8 +831,12 @@ sub clearTmpFiles {
 	}
 
 	#clear all alignment files
-	my @files = glob("*.scorefile");
-	foreach my $file (@files) {
+	my @scorefiles = glob("*.scorefile");
+	foreach my $file (@scorefiles) {
+		unlink($file);
+	}
+	my @fastaInfiles = glob("*_fasta36.fa");
+	foreach my $file (@fastaInfiles) {
 		unlink($file);
 	}
 }
@@ -761,21 +875,19 @@ sub getCandicontent{
 sub getCumulativeAlnScores{
 	chdir($coreOrthologsPath . $seqName);
 	my $candidatesFile = $outputFa . ".extended";
-	my $scorefile = $$ . ".scorefile";
+	my $fileId = $$;
+	my $scorefile = $fileId . ".scorefile";
+	my $fasta36file1 = $fileId . ".1_fasta36.fa";
+	my $fasta36file2 = $fileId . ".2_fasta36.fa";
 	my %scores;
+
 	########################
 	## step: 1
-	## setup
-	## set alignment command (glocal, local, or global)
-	#local      local:local    ssearch36   Smith-Waterman
-	#glocal     global:local   glsearch36  Needleman-Wunsch
-	#global     global:global  ggsearch36  Needleman-Wunsch
-	my $loclocCommand = "$localaligner \"" . $outputFa . "\" \"" . $candidatesFile . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globlocCommand = "$glocalaligner \"" . $outputFa . "\" \"" . $candidatesFile . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globglobCommand = "$globalaligner \"" . $outputFa . "\" \"" . $candidatesFile . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
+	## set alignment parameters for fasta36
+	my $fasta36cmd = $fasta36file1 . "\" \"" . $fasta36file2 . "\" -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
+
 	########################
 	## step: 2
-	## setup
 	## candidates to hash
 	## %candicontent keeps info about all candidates (header and sequence)
 	my %candicontent = getCandicontent();
@@ -784,11 +896,25 @@ sub getCumulativeAlnScores{
 	## step: 3
 	## get alignment scores
 	chdir($coreOrthologsPath . $seqName);
+	symlink($outputFa, $fasta36file1);
+	symlink($candidatesFile, $fasta36file2);
 	if ($glocal){
+		#glocal     global:local   glsearch36  Needleman-Wunsch
+		my $globlocCommand = "$glocalaligner \"" . $fasta36cmd;
+		printDebug($globlocCommand);
+		# print $globlocCommand,"\n";<>;
 		system($globlocCommand);
 	}elsif ($global){
+		#global     global:global  ggsearch36  Needleman-Wunsch
+		my $globglobCommand = "$globalaligner \"" . $fasta36cmd;
+		printDebug($globglobCommand);
+		# print $globglobCommand,"\n";<>;
 		system($globglobCommand);
 	}elsif ($local){
+		#local      local:local    ssearch36   Smith-Waterman
+		my $loclocCommand = "$localaligner \"" . $fasta36cmd;
+		printDebug($loclocCommand);
+		# print $loclocCommand,"\n";<>;
 		system($loclocCommand);
 	}
 	########################
@@ -806,49 +932,7 @@ sub getCumulativeAlnScores{
 ## Get the alinment scores for the current candidate file
 sub getAlnScores{
 	chdir($coreOrthologsPath . $seqName);
-	my $candidatesFile = $outputFa . ".extended";
-	my $scorefile = $$ . ".scorefile";
-	my %scores;
-
-	########################
-	## step: 1
-	## setup
-	## set alignment command (glocal, local, or global)
-	#local      local:local    ssearch36   Smith-Waterman
-	#glocal     global:local   glsearch36  Needleman-Wunsch
-	#global     global:global  ggsearch36  Needleman-Wunsch
-	my $loclocCommand = "$localaligner " . $outputFa . " " . $candidatesFile . " -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globlocCommand = "$glocalaligner " . $outputFa . " " . $candidatesFile . " -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-	my $globglobCommand = "$globalaligner " . $outputFa . " " . $candidatesFile . " -s " . $alignmentscoreMatrix . " -m 9 -d 0 -z -1 -E 100" . " > " . $scorefile;
-
-	########################
-	## step: 2
-	## setup
-	## candidates to hash
-	## %candicontent keeps info about all candidates (header and sequence)
-	my %candicontent = getCandicontent();
-
-	########################
-	## step: 3
-	## get alignment scores
-	chdir($coreOrthologsPath . $seqName);
-	if ($glocal){
-		system($globlocCommand);
-	}elsif ($global){
-		system($globglobCommand);
-	}elsif ($local){
-		system($loclocCommand);
-	}
-
-	########################
-	## step: 4
-	## collect alignment score
-	## keep track about min and max for each query/coreortholog vs candidate set
-	my $max = -10000000;
-	my $min = 10000000;
-
-	%scores = cumulativeAlnScore($scorefile, \%candicontent);
-
+	my %scores = getCumulativeAlnScores();
 	## Normalize Alignment scores (unity-based)
 	printDebug("Normalize alignment scores:\n");
 	foreach my $key (keys %scores){
@@ -885,8 +969,8 @@ sub getFasScore{
 	## step: 2
 	## get FAS score
 	## fas support: on/off
+	my @candidateIds = keys(%candicontent);
 	if ($fas_support){
-		my @candidateIds = keys(%candicontent);
 		my ($name,$gene_set,$gene_id,$rep_id) = split(/\|/, $candidateIds[0]);
 		unless (-e "$weightPath/$gene_set.json") {
 			print "ERROR: $weightPath/$gene_set.json not found! FAS Score will be set as zero.\n";
@@ -898,6 +982,8 @@ sub getFasScore{
 			my @fasOutTmp = split(/\t/,$fasOutTmp);
 			$fas_box{$candidateIds[0]} = $fasOutTmp[1];
 		}
+	} else {
+		$fas_box{$candidateIds[0]} = 1;
 	}
 	return %fas_box;
 }
@@ -1123,10 +1209,10 @@ sub checkOptions {
 	if ($force == 1 and $append ==1) {
 		$force = 0;
 	}
-	### check the presence of the pre-computed core set
-	if ($coreex) {
+	### check the presence of the pre-computed core set if options reuseCore or assembly is used
+	if ($coreex || $assembly) {
 		if (! -e "$coreOrthologsPath/$seqName/$seqName.fa") {
-			print "You selected the option -reuseCore, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
+			print "You selected the option -reuseCore or -assembly, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
 			exit;
 		}
 	}
@@ -1155,7 +1241,7 @@ sub checkOptions {
 	### end move up
 	### adding new routine to generate the input sequence if -reuseCore has been set
 	if ($coreex) {
-		my @refseq=`$grepprog -A 1 ">$seqName|$refSpec" $coreOrthologsPath/$seqName/$seqName.fa`;
+		my @refseq=`$grepprog -A 1 ">$seqName|$refSpec" $coreOrthologsPath/$seqName/$seqName.fa | grep -v "^\-\-\$"`;
 		chomp @refseq;
 		unless ($silent) {
 			print "$refseq[0]\n";
@@ -1197,7 +1283,7 @@ sub checkOptions {
 
 	### checking the number of core orthologs. Omit this check if the option -reuseCore has been selected
 	$optbreaker = 0;
-	while(!$minCoreOrthologs and !$coreex) {
+	while(!$minCoreOrthologs and (!$coreex and !$assembly)) {
 		if ($optbreaker >= 3){
 			print "No proper number given ... exiting.\n";
 			exit;
@@ -1212,10 +1298,12 @@ sub checkOptions {
 		$filter = 'no' if $filter eq 'F';
 	}
 
-	$inputSeq = fetchSequence($seqFile, $dataDir);
+	if (!$assembly){
+		$inputSeq = fetchSequence($seqFile, $dataDir);
+	}
 
 	## the user has not provided a sequence id, however, the refspec is determined.
-	if($seqId eq '') {
+	if($seqId eq '' && !$assembly) {
 		my $besthit;
 		if (!$blast){
 			## a refspec has been determined
@@ -1230,6 +1318,9 @@ sub checkOptions {
 		$refSpec = $besthit->{species};
 		my $details = "Evalue: " . $besthit->{evalue};
 		printOut("Seq id has been determined as $seqId in $refSpec with $details", 2);
+		if(length("$seqName|$refSpec|$seqId") > 60) {
+			die "Output file will have header longer than 60 characters ($seqName|$refSpec|$seqId). Please consider shorten the sequence IDs! More at https://github.com/BIONF/fDOG/wiki/Check-data-validity\n";
+		}
 		if($seqId eq '') {
 			print "There was no significant hit for your sequence in " . $refSpec . ".\nPlease specify a sequence id on your own.\n";
 			exit;
@@ -1241,13 +1332,13 @@ sub checkOptions {
 			print "Please specify a valid file with taxa for the core orthologs search\n";
 			exit;
 		}
-		my @userTaxa = parseTaxaFile();
+		my @userTaxa = parseTaxaFile($coreTaxa);
 		my %newTaxa = ();
 		foreach (@userTaxa) {
 			$newTaxa{$_} = $taxa{$_};
 		}
 		$newTaxa{$refSpec} = $refTaxa{$refSpec};
-		%taxa = %newTaxa;
+		%refTaxa = %newTaxa;
 	}
 
 	if($group) {
@@ -1334,14 +1425,14 @@ sub checkOptions {
 		}
 	}
 
-	my $node;
-	$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
-	$node->name('supplied', $refSpec);
-
 	#### checking for the min and max distance for the core set compilation
 	#### omit this check, if the option reuseCore has been selected (added 2019-02-04)
 	$optbreaker = 0;
-	if (!$coreex) {
+	if (!$coreex and !$assembly) {
+		my $node;
+		#print "Testing coreex assembly\n";
+		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
+		$node->name('supplied', $refSpec);
 		if (lc($maxDist) eq "root"){
 			$maxDist = 'no rank';
 		}
@@ -1357,9 +1448,6 @@ sub checkOptions {
 			$maxDist = parseInput($node, $in);
 			print "You selected ". $maxDist . " as maximum rank\n\n";
 		}
-	}
-	$optbreaker = 0;
-	if (!$coreex){
 		while (!$minDist or (checkRank($minDist, $node) == 0)) {
 			if ($optbreaker >= 3){
 				print "No proper minDist given ... exiting.\n";
@@ -1373,6 +1461,7 @@ sub checkOptions {
 			print "You selected " . $minDist . " as minimum rank\n\n";
 		}
 	}
+	$optbreaker = 0;
 
 	#### checking in fas options
 	if($fasoff){
@@ -1596,8 +1685,9 @@ sub getBestOrtholog {
 					## candidates alnScore is high enought, that it would be better with a fasScore of one
 					## -> evaluate
 					if ($alnScores{$candiKey} > $rankScore * (1 + $distDeviation) - 1){
+						%fas_box = getFasScore();
 						if (!$gotFasScore and $fas_support){
-							%fas_box = getFasScore();
+							# %fas_box = getFasScore();
 							$gotFasScore = 1;
 						}
 						## get rankscore
@@ -1622,8 +1712,9 @@ sub getBestOrtholog {
 				}
 				## candidate has the same distance, as the last one and could be better, with a fasScore of one
 				elsif (defined $hashTree{$newNoRankDistNode}{$key->id} and $alnScores{$candiKey} > $rankScore - 1){
+					%fas_box = getFasScore();
 					if (!$gotFasScore and $fas_support){
-						%fas_box = getFasScore();
+						# %fas_box = getFasScore();
 						$gotFasScore = 1;
 					}
 					## get rankscore
@@ -1909,7 +2000,7 @@ sub getTaxonName {
 	if (defined($taxon)) {
 		return($taxon->scientific_name);
 	} else {
-		return("Unk NCBI taxon for $taxAbbr");
+		return("Unk");
 	}
 }
 
@@ -2008,6 +2099,7 @@ sub runHamstr {
 						print EXTENDEDFA ">$tmpId[0]\|$tmpId[-3]\|$tmpId[-2]\|$tmpId[-1]\n",$resultSeq->seq,"\n";
 					}
 				}
+				# addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
 			} else {
 				# add seed sequence to output extended.fa if no ortholog was found in refSpec
 				if ($taxon eq $refSpec) {
@@ -2054,11 +2146,13 @@ sub addSeedSeq {
 	# get seed sequence and add it to the beginning of the fasta output
 	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
 	my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
+	my %idTmp; # used to check which seq has already been written to output
 	while(my $seq = $seqio->next_seq) {
 		my $id = $seq->id;
 		if ($id =~ /$refSpec/) {
+			$idTmp{"$id|1"} = 1;
 			print TEMP ">$id|1\n", $seq->seq, "\n";
-			last;
+			#last;
 		}
 	}
 	# then write other sequences
@@ -2066,7 +2160,9 @@ sub addSeedSeq {
 	while(my $seq = $seqio2->next_seq) {
 		my $id = $seq->id;
 		unless ($id =~ /$refSpec\|$seqId/) { # /$refSpec/) {
-			print TEMP ">$id\n", $seq->seq, "\n";
+			unless ($idTmp{$id}) {
+				print TEMP ">$id\n", $seq->seq, "\n";
+			}
 		}
 	}
 	close(TEMP);
@@ -2096,17 +2192,19 @@ sub parseInput {
 }
 ##########################
 sub parseTaxaFile {
-	open (INPUT, "<$coreTaxa") or die print "Error opening file with taxa for core orthologs search\n";
+	my $coreTaxaFile = $_[0];
+	open (INPUT, "<$coreTaxaFile") or die print "Error opening file with taxa for core orthologs search\n";
 	my @userTaxa;
 	while(<INPUT>) {
 		my $line = $_;
 		chomp($line);
-		if(!$taxa{$line}) {
-			print "You specified " . $line . " in your core orthologs file but the taxon is not in the database!\n";
-			exit;
-		}
-		else {
-			push(@userTaxa, $line);
+		if (length($line) > 0) {
+			if(!$taxa{$line}) {
+				print "You specified " . $line . " in your core orthologs file but the taxon is not in the database!\n";
+				exit;
+			} else {
+				push(@userTaxa, $line);
+			}
 		}
 	}
 	close INPUT;
@@ -2592,7 +2690,7 @@ sub initialCheck {
 		}
 	}
 	# check weight_dir
-	if ($fasoff != 1) {
+	if ($fasoff != 1 && !$assembly) {
 		my %seen;
 		my @allTaxa = grep( !$seen{$_}++, @genomeDir, @blastDir);
 		chomp(my $allAnno = `ls $weightDir | $sedprog \'s/\\.json//\'`);
@@ -2607,7 +2705,7 @@ sub initialCheck {
 
 sub getGenomeFile {
 	my ($folder, $filename) = @_;
-	chomp(my $faFile = `ls $folder/$filename.fa* | $grepprog -v \"\\.checked\\|\\.mod\\|\\.tmp\"`);
+	chomp(my $faFile = `ls $folder/$filename.fa* | $grepprog -v \"\\.checked\\|\\.mod\\|\\.mapping\\|\\.tmp\"`);
 	my $out = $faFile;
 	chomp(my $link = `$readlinkprog -f $faFile`);
 	if ($link ne "") {
@@ -2641,23 +2739,23 @@ sub roundtime { sprintf("%.2f", $_[0]); }
 ###########################
 sub helpMessage {
 	my $helpmessage = "
-${bold}YOU ARE RUNNING $version on $hostname$norm
+YOU ARE RUNNING $version on $hostname
 
 This program is freely distributed under a GPL.
 Copyright (c) GRL limited: portions of the code are from separate copyrights
 
-\n${bold}USAGE:${norm} oneSeq.pl -seqFile=<> -seqId=<>  -seqName=<> -refSpec=<> -minDist=<> -maxDist=<> [OPTIONS]
+\nUSAGE: oneSeq.pl -seqFile=<> -seqId=<>  -seqName=<> -refSpec=<> -minDist=<> -maxDist=<> [OPTIONS]
 
-${bold}OPTIONS:$norm
+OPTIONS:
 
-${bold}GENERAL$norm
+GENERAL
 
 -h
 	Invoke this help method
 -version
 	Print the program version
 
-${bold}REQUIRED$norm
+REQUIRED
 
 -seqFile=<>
 	Specifies the file containing the seed sequence (protein only) in fasta format.
@@ -2677,7 +2775,7 @@ ${bold}REQUIRED$norm
 -coreOrth=<>
 	Specify the number of orthologs added to the core set.
 
-${bold}USING NON-DEFAULT PATHS$norm
+USING NON-DEFAULT PATHS
 
 -outpath=<>
 	Specifies the path for the output directory. Default is $outputPath;
@@ -2690,7 +2788,7 @@ ${bold}USING NON-DEFAULT PATHS$norm
 -weightpath=<>
 	Specifies the path for the pre-calculated feature annotion directory. Default is $weightPath;
 
-${bold}ADDITIONAL OPTIONS$norm
+ADDITIONAL OPTIONS
 
 -append
 	Set this flag to append the output to existing output files
@@ -2777,7 +2875,7 @@ ${bold}ADDITIONAL OPTIONS$norm
 	Set the alignment strategy during core ortholog compilation to glocal.
 -searchTaxa
 	Input file containing list of search taxa.
-${bold}SPECIFYING FAS SUPPORT OPTIONS$norm
+SPECIFYING FAS SUPPORT OPTIONS
 
 -fasoff
 	Turn OFF FAS support. Default is ON.
@@ -2790,7 +2888,7 @@ ${bold}SPECIFYING FAS SUPPORT OPTIONS$norm
 -countercheck
 	Set this flag to counter-check your final profile. The FAS score will be computed in two ways (seed vs. hit and hit vs. seed).
 
-${bold}SPECIFYING EXTENT OF OUTPUT TO SCREEN$norm
+SPECIFYING EXTENT OF OUTPUT TO SCREEN
 
 -debug
 	Set this flag to obtain more detailed information about the programs actions

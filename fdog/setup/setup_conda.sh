@@ -116,6 +116,7 @@ dependencies=(
   mafft # for linsi
   muscle
   fasta36
+  augustus #for fdog.assembly
 )
 
 for i in "${dependencies[@]}"; do
@@ -134,6 +135,8 @@ for i in "${dependencies[@]}"; do
       fi
     elif [ "$tool" = "fasta36" ]; then
       conda install -y -c bioconda fasta3
+    elif [ "$tool" = "augustus" ]; then
+      conda install -y -c bioconda augustus
     else
       conda install -y -c bioconda $i
     fi
@@ -258,7 +261,8 @@ echo "done!"
 data_fdog_file="data_HaMStR-2019c.tar.gz"
 checkSumData="1748371655 621731824 $data_fdog_file"
 cd $outDir
-if [ ! -d "$outDir/core_orthologs" ]; then mkdir "$outDir/core_orthologs"; fi
+if [ ! -d "$outDir/genome_dir" ]; then mkdir "$outDir/genome_dir"; fi
+if [ ! -d "$outDir/assembly_dir" ]; then mkdir "$outDir/assembly_dir"; fi
 
 if ! [ "$(ls -A $outDir/genome_dir)" ]; then
   echo "-------------------------------------"
