@@ -396,7 +396,7 @@ def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species
                     output_file.write(str(entry_core.seq) + "\n")
 
     if sequenceIds != 0:
-        #print(sequenceIds)
+        print(sequenceIds)
         seq_records_candidate = readFasta(candidate_fasta)
         seq_records_candidate = list(seq_records_candidate)
         for entry_candidate in seq_records_candidate:
