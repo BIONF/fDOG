@@ -163,12 +163,27 @@ def checkDataFolder(checkDir, replace, delete, concat):
                 sys.exit()
     return(taxaList)
 
-def checkCompleteAnno(weightDir, taxaList):
+def checkMissingJson(weightDir, taxaList):
     allAnno = [f for f in listdir(weightDir) if isfile(join(weightDir, f))]
     taxaAnno = [s + '.json' for s in taxaList]
     s = set(allAnno)
     missingAnno = [x for x in taxaAnno if x not in s]
     return(missingAnno)
+
+def checkCompleteAnno(weightDir, genomeDir):
+    allAnno = [f for f in listdir(weightDir) if isfile(join(weightDir, f))]
+    for f in allAnno:
+        tax = f.replace('.json', '')
+        print('...check annotations for %s' % tax)
+        jf = '%s/%s.json' % (weightDir, tax)
+        gf = '%s/%s/%s.fa' % (genomeDir, tax, tax)
+        cmd = 'fas.checkAnno -s %s -a %s -o %s' % (gf, jf, weightDir)
+        try:
+            subprocess.call([cmd], shell = True)
+        except:
+            print('*** ERROR: Problem while checking annotation file using fas.checkAnno!')
+            print(e.output.decode(sys.stdout.encoding))
+            sys.exit()
 
 def checkMissingNcbiID(namesDmp, taxaList):
     ncbiId = {}
@@ -194,7 +209,7 @@ def checkMissingNcbiID(namesDmp, taxaList):
     return(missingTaxa.keys(), dupTaxa)
 
 def main():
-    version = '0.0.4'
+    version = '0.0.5'
     parser = argparse.ArgumentParser(description='You are running fdog.checkData version ' + str(version) + '.')
     parser.add_argument('-g', '--genomeDir', help='Path to search taxa directory (e.g. fdog_dataPath/genome_dir)', action='store', default='')
     parser.add_argument('-b', '--blastDir', help='Path to blastDB directory (e.g. fdog_dataPath/blast_dir)', action='store', default='')
@@ -238,12 +253,13 @@ def main():
 
     ### check weightDir
     print('=> Checking %s...' % weightDir)
-    missingAnno = checkCompleteAnno(weightDir, join2Lists(genomeTaxa, blastTaxa))
+    missingAnno = checkMissingJson(weightDir, join2Lists(genomeTaxa, blastTaxa))
     if len(missingAnno) > 0:
-        print('\033[92m*** WARNING: Annotations not found for:\033[0m')
+        print('\033[92m*** WARNING: Annotation files not found for:\033[0m')
         print(*missingAnno, sep = "\n")
         print('NOTE: You still can run fdog without FAS using the option "-fasoff"')
         caution = 1
+    checkCompleteAnno(weightDir, genomeDir)
 
     ### check ncbi IDs
     print('=> Checking NCBI taxonomy IDs...')

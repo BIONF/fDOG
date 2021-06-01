@@ -32,6 +32,7 @@ import subprocess
 import multiprocessing as mp
 from ete3 import NCBITaxa
 import re
+import shutil
 from datetime import datetime
 
 def checkFileExist(file):
@@ -83,7 +84,7 @@ def runBlast(args):
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.9'
+    version = '0.0.10'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -134,6 +135,13 @@ def main():
         name = getTaxName(taxId)
     specName = name+'@'+taxId+'@'+ver
     print('Species name\t%s' % specName)
+
+    ### remove old folder if force is set
+    if force:
+        if os.path.exists(outPath + '/genome_dir/' + specName):
+            shutil.rmtree(outPath + '/genome_dir/' + specName)
+        if os.path.exists(outPath + '/blast_dir/' + specName):
+            shutil.rmtree(outPath + '/blast_dir/' + specName)
 
     ### create file in genome_dir
     print('Parsing FASTA file...')
