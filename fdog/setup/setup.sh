@@ -114,14 +114,20 @@ echo "Downloading and installing annotation tools/databases:"
 fasta36="yes"
 if [ -z "$(which fasta36)" ]; then
   fasta36="no"
-  fasta36v="fasta-36.3.8h"
+  # fasta36v="fasta-36.3.8h"
+  fasta36v="36.3.8h_04-May-2020"
   if ! [ -f "bin/aligner/bin/fasta36" ]; then
-    echo "fasta-36"
-    wget "http://faculty.virginia.edu/wrpearson/fasta/fasta36/${fasta36v}.tar.gz"
-    tar xf $fasta36v.tar.gz
-    rm "${fasta36v}.tar.gz"
-    mv $fasta36v/* $CURRENT/bin/aligner/
-    rm -rf $fasta36v
+    echo "fasta36"
+    # wget "http://faculty.virginia.edu/wrpearson/fasta/fasta36/${fasta36v}.tar.gz"
+    # tar xf $fasta36v.tar.gz
+    # rm "${fasta36v}.tar.gz"
+    # mv $fasta36v/* $CURRENT/bin/aligner/
+    # rm -rf $fasta36v
+    wget "https://github.com/wrpearson/fasta36/archive/refs/tags/v${fasta36v}.tar.gz"
+    tar xf "v${fasta36v}.tar.gz"
+    rm "v${fasta36v}.tar.gz"
+    mv fasta36-${fasta36v}/* $CURRENT/bin/aligner/
+    rm -rf "fasta36-${fasta36v}"
     cd "$CURRENT/bin/aligner/src"
     if [ $sys=="Linux" ]; then
       make -f ../make/Makefile.linux64_sse2 all
