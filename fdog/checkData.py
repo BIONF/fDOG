@@ -180,7 +180,7 @@ def checkCompleteAnno(weightDir, genomeDir):
         cmd = 'fas.checkAnno -s %s -a %s -o %s' % (gf, jf, weightDir)
         try:
             subprocess.call([cmd], shell = True)
-        except:
+        except subprocess.CalledProcessError as e:
             print('*** ERROR: Problem while checking annotation file using fas.checkAnno!')
             print(e.output.decode(sys.stdout.encoding))
             sys.exit()
@@ -209,7 +209,7 @@ def checkMissingNcbiID(namesDmp, taxaList):
     return(missingTaxa.keys(), dupTaxa)
 
 def main():
-    version = '0.0.5'
+    version = '0.0.6'
     parser = argparse.ArgumentParser(description='You are running fdog.checkData version ' + str(version) + '.')
     parser.add_argument('-g', '--genomeDir', help='Path to search taxa directory (e.g. fdog_dataPath/genome_dir)', action='store', default='')
     parser.add_argument('-b', '--blastDir', help='Path to blastDB directory (e.g. fdog_dataPath/blast_dir)', action='store', default='')
