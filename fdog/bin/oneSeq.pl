@@ -129,9 +129,10 @@ my $startTime = gettime();
 ##                                        - solved problem with long input path for fasta36 tools
 ## Modified 23. April 2021 v2.3.0 (Vinh)	- parse fasta36 output for long IDs (longer than 60 chars)
 ## Modified 31. May 2021 v2.3.1 (Vinh)	- added auto annotation for fdogFas
+## Modified 11. June 2021 v2.3.2 (Vinh)	- fixed --append option
 
 ############ General settings
-my $version = 'oneSeq v.2.3.1';
+my $version = 'oneSeq v.2.3.2';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -679,6 +680,10 @@ if (!$coreOnly) {
 		$pm->finish;
 	}
 	$pm->wait_all_children;
+}
+### remove duplicated seq in extended.fa
+if (-e $finalOutput) {
+	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 }
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
@@ -1311,22 +1316,24 @@ sub checkOptions {
 			mkdir $outputPath or die "could not re-create the output directory $outputPath\n";
 		}
 		elsif ($append) {
-			printOut("Appending output to $finalOutput\n", 1);
-			if (-e "$outputPath/$seqName.extended.profile") {
+			if (-e "$outputPath/$seqName.extended.fa") {
 				## read in the content for latter appending
-				printOut("Appending output to $outputPath/$seqName.extended.profile", 1);
-				open (IN, "<$outputPath/$seqName.extended.profile") or die "failed to open $outputPath/$seqName.extended.profile after selection of option -append\n";
+				printOut("Appending output to $outputPath/$seqName.extended.fa", 1);
+				open (IN, "<$outputPath/$seqName.extended.fa") or die "failed to open $outputPath/$seqName.extended.fa after selection of option -append\n";
 				while (<IN>) {
-					chomp $_;
-					my @keys = split '\|', $_;
-					$profile{$keys[1]} = 1;
+					my $line = $_;
+					if ($line =~ /\|/) {
+						chomp $line;
+						my @keys = split '\|', $line;
+						$profile{$keys[1]} = 1;
+					}
 				}
 			}
 			elsif ($fasoff) {
 				## no extended.profile file exists but not necessary, because user switched off FAS support -> do nothing
 			}
 			else {
-				printOut("Option -append was selected, but the existing output was incomplete. Please restart with the -force option to overwrite the output");
+				printOut("Option -append was selected, but the existing output was incomplete. Please restart with the -force option to overwrite the output", 1);
 				exit;
 			}
 		}
@@ -2059,7 +2066,7 @@ sub addSeedSeq {
 	# get seed sequence and add it to the beginning of the fasta output
 	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
 	my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
-	my %idTmp; # used to check which seq has already been written to output
+	my %idTmp = (); # used to check which seq has already been written to output
 	while(my $seq = $seqio->next_seq) {
 		my $id = $seq->id;
 		if ($id =~ /$refSpec/) {
@@ -2075,6 +2082,7 @@ sub addSeedSeq {
 		unless ($id =~ /$refSpec\|$seqId/) { # /$refSpec/) {
 			unless ($idTmp{$id}) {
 				print TEMP ">$id\n", $seq->seq, "\n";
+				$idTmp{$id} = 1;
 			}
 		}
 	}
