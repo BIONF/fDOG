@@ -130,9 +130,10 @@ my $startTime = gettime();
 ## Modified 23. April 2021 v2.3.0 (Vinh)	- parse fasta36 output for long IDs (longer than 60 chars)
 ## Modified 31. May 2021 v2.3.1 (Vinh)	- added auto annotation for fdogFas
 ## Modified 11. June 2021 v2.3.2 (Vinh)	- fixed --append option
+## Modified 16. June 2021 v2.4.0 (Vinh)	- add checkOff option
 
 ############ General settings
-my $version = 'oneSeq v.2.3.2';
+my $version = 'oneSeq v.2.4.0';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -262,6 +263,7 @@ my $batch;
 my $blastNode;
 my $representative;
 my $core_rep;
+my $checkOff;
 my $debug;
 my $corestrict;
 my $inputSeq = "";
@@ -358,6 +360,7 @@ GetOptions (
 	"blastpath=s"         => \$blastPath,
 	"searchpath=s"         => \$genome_dir,
 	"weightpath=s"         => \$weightPath,
+	"checkOff"             => \$checkOff,
 	"debug"             => \$debug,
 	"coreHitlimit=s"   => \$core_hitlimit,
 	"hitlimit=s"        => \$hitlimit,
@@ -387,8 +390,9 @@ $taxaPath = $genome_dir;
 if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 	print "Validity checking....\n";
 	my $checkStTime = gettime();
-	initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
-	print "Check finished in " . roundtime(gettime() - $checkStTime). " sec!\n";
+	unless($checkOff) {
+		initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
+	}
 
 	if (!defined $coreex) {
 		if (!grep(/$minDist/, @defaultRanks)) {
@@ -403,6 +407,7 @@ if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 			die "ERROR: coreOrth not defined (must be integer)!";
 		}
 	}
+	print "Check finished in " . roundtime(gettime() - $checkStTime). " sec!\n";
 }
 
 ############# show version

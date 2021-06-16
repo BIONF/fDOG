@@ -20,14 +20,15 @@ import sys
 import os
 from os import listdir as ldir
 import argparse
-from pathlib import Path
+
 
 def main():
     version = '0.0.1'
     parser = argparse.ArgumentParser(description='You are running fdog.mergeOutput version ' + str(version) + '.')
-    parser.add_argument('-i','--input', help='Input directory, where all single output (.extended.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
+    parser.add_argument('-i', '--input',
+                        help='Input directory, where all single output (.extended.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
                         action='store', default='', required=True)
-    parser.add_argument('-o','--output', help='Output name', action='store', default='', required=True)
+    parser.add_argument('-o', '--output', help='Output name', action='store', default='', required=True)
     args = parser.parse_args()
 
     directory = args.input
