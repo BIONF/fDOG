@@ -517,7 +517,7 @@ def main():
 
     #################### handle user input ########################################
 
-    start = time.clock()
+    start = time.time()
 
     version = '0.0.1'
 
@@ -795,7 +795,7 @@ def main():
     ############### make Annotation with FAS ###################################
         # if we want to search in only one Taxon
         if searchTaxon != '' and fasoff == False:
-            fas = time.clock()
+            fas = time.time()
             print("Calculating FAS scores")
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
@@ -816,7 +816,7 @@ def main():
         return 1
     #if we searched in more than one taxon
     if fasoff == False and searchTaxon == '':
-        fas = time.clock()
+        fas = time.time()
         print("Calculating FAS scores")
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
@@ -834,7 +834,7 @@ def main():
 
     f.close()
 
-    end = time.clock()
+    end = time.time()
 
     print("Time w/o FAS: " + str(end-fas))
     print("Time complete: " + str(end-start))
