@@ -8,6 +8,7 @@ from Bio import AlignIO
 import argparse
 import yaml
 import subprocess
+import time
 ########################### functions ##########################################
 def load_config(config_file):
     with open(config_file, 'r') as stream:
@@ -428,10 +429,6 @@ def cleanup(tmp, tmp_path):
     if tmp == False:
         os.system('rm -r ' + tmp_path)
 
-def checkOptions():
-    pass
-    #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
-
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     if len(candidate_names) == 1:
         return candidate_names
@@ -519,6 +516,8 @@ class Logger(object):
 def main():
 
     #################### handle user input ########################################
+
+    start = time.clock()
 
     version = '0.0.1'
 
@@ -796,6 +795,7 @@ def main():
     ############### make Annotation with FAS ###################################
         # if we want to search in only one Taxon
         if searchTaxon != '' and fasoff == False:
+            fas = time.clock()
             print("Calculating FAS scores")
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
@@ -816,6 +816,7 @@ def main():
         return 1
     #if we searched in more than one taxon
     if fasoff == False and searchTaxon == '':
+        fas = time.clock()
         print("Calculating FAS scores")
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
@@ -832,6 +833,11 @@ def main():
         cleanup(tmp, out + "/tmp/")
 
     f.close()
+
+    end = time.clock()
+
+    print("Time w/o FAS: " + str(end-fas))
+    print("Time complete: " + str(end-start))
 
 if __name__ == '__main__':
     main()
