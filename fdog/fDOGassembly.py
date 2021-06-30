@@ -832,12 +832,14 @@ def main():
     else:
         cleanup(tmp, out + "/tmp/")
 
-    f.close()
+
 
     end = time.time()
 
     print("Time w/o FAS: " + str(end-fas))
     print("Time complete: " + str(end-start))
+
+    f.close()
 
 if __name__ == '__main__':
     main()
