@@ -837,8 +837,7 @@ def main():
     end = time.time()
 
     sys.stdout = sys.__stdout__
-    print("Time w/o FAS: " + str(end-fas))
-    print("Time complete: " + str(end-start))
+    print(group + "\t" + str(end-start) + "\t" + str(end-start))
 
     f.close()
 
