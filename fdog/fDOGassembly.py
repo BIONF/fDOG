@@ -837,7 +837,7 @@ def main():
     end = time.time()
 
     sys.stdout = sys.__stdout__
-    print(group + "\t" + str(end-start) + "\t" + str(end-start))
+    print(group + "\t" + str(end-fas) + "\t" + str(end-start))
 
     f.close()
 
