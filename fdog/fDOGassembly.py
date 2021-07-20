@@ -1,3 +1,21 @@
+# -*- coding: utf-8 -*-
+
+#######################################################################
+# Copyright (C) 2020 Hannah Muelbaier
+#
+#  This script is used to run fDOG-Assembly which performs targeted ortholog
+#  searches on genome assemblies
+#
+#  This script is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License <http://www.gnu.org/licenses/> for
+#  more details
+#
+#  Contact: hannah.muelbaier@gmail.com
+#
+#######################################################################
+
 ############################ imports ###########################################
 import os
 import os.path
@@ -519,7 +537,7 @@ def main():
 
     start = time.time()
 
-    version = '0.0.1'
+    version = '0.1.1'
 
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))

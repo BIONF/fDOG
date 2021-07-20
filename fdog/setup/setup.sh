@@ -309,6 +309,7 @@ mafft
 muscle
 clustalw
 blastp
+augustus
 )
 
 for i in "${dependencies[@]}"; do
