@@ -323,9 +323,10 @@ for i in "${dependencies[@]}"; do
   if [ $tool == "tblastn" ]; then
     requiredver="2.9.0"
     currentver="$(tblastn -version | head -n1 | cut -d" " -f2 | sed 's/+//g')"
-    # if ["$(printf '%s\n' "$requiredver" "$currentver" | sort -V | head -n1)" = "$currentver" ]; then
-    #   echo -e "\t\e[31mWARNING BLAST+ needs an update to at least version ${requiredver}!\e[0m"
-    # fi
+    t=$(printf '%s\n' $requiredver $currentver | sort -V | head -n1)
+    if [ $t == $currentver ]; then
+      echo -e "\t\e[31mWARNING BLAST+ needs an update to at least version ${requiredver}!\e[0m"
+    fi
   fi
   if [ -z "$(which $tool)" ]; then
     echo -e "\t\e[31mWARNING $tool not found!\e[0m"
