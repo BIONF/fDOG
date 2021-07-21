@@ -320,10 +320,10 @@ for i in "${dependencies[@]}"; do
       tool="clustalw2"
     fi
   fi
-  if [ $tool == tblastn]; then
+  if [ $tool == "tblastn"]; then
     requiredver="2.9.0"
     currentver="$(tblastn -version | head -n1 | cut -d" " -f2 | sed 's/+//g')"
-    if [ "$(printf '%s\n' "$requiredver" "$currentver" | sort -V | head -n1)" = "$currentver" ]; then
+    if ["$(printf '%s\n' "$requiredver" "$currentver" | sort -V | head -n1)" = "$currentver" ]; then
       echo -e "\t\e[31mWARNING BLAST+ needs an update to at least version ${requiredver}!\e[0m"
     fi
   fi
