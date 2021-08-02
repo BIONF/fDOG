@@ -27,6 +27,7 @@ import argparse
 import yaml
 import subprocess
 import time
+=======
 ########################### functions ##########################################
 def load_config(config_file):
     with open(config_file, 'r') as stream:
@@ -539,6 +540,7 @@ def main():
 
     version = '0.1.1'
 
+
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
 
@@ -850,13 +852,9 @@ def main():
     else:
         cleanup(tmp, out + "/tmp/")
 
-
-
     end = time.time()
-
     sys.stdout = sys.__stdout__
-    print(group + "\t" + str(end-fas) + "\t" + str(end-start))
-
+    #print(group + "\t" + str(end-fas) + "\t" + str(end-start))
     f.close()
 
 if __name__ == '__main__':
