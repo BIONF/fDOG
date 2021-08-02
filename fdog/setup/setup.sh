@@ -309,6 +309,8 @@ mafft
 muscle
 clustalw
 blastp
+augustus
+tblastn
 )
 
 for i in "${dependencies[@]}"; do
@@ -316,6 +318,14 @@ for i in "${dependencies[@]}"; do
   if [ $tool == "clustalw" ]; then
     if [ "$sys" == "Darwin" ]; then
       tool="clustalw2"
+    fi
+  fi
+  if [ $tool == "tblastn" ]; then
+    requiredver="2.9.0"
+    currentver="$(tblastn -version | head -n1 | cut -d" " -f2 | sed 's/+//g')"
+    t=$(printf '%s\n' $requiredver $currentver | sort -V | head -n1)
+    if [ $t == $currentver ]; then
+      echo -e "\t\e[31mWARNING BLAST+ needs an update to at least version ${requiredver}!\e[0m"
     fi
   fi
   if [ -z "$(which $tool)" ]; then

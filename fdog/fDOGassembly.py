@@ -1,3 +1,21 @@
+# -*- coding: utf-8 -*-
+
+#######################################################################
+# Copyright (C) 2020 Hannah Muelbaier
+#
+#  This script is used to run fDOG-Assembly which performs targeted ortholog
+#  searches on genome assemblies
+#
+#  This script is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License <http://www.gnu.org/licenses/> for
+#  more details
+#
+#  Contact: hannah.muelbaier@gmail.com
+#
+#######################################################################
+
 ############################ imports ###########################################
 import os
 import os.path
@@ -8,6 +26,8 @@ from Bio import AlignIO
 import argparse
 import yaml
 import subprocess
+import time
+=======
 ########################### functions ##########################################
 def load_config(config_file):
     with open(config_file, 'r') as stream:
@@ -428,10 +448,6 @@ def cleanup(tmp, tmp_path):
     if tmp == False:
         os.system('rm -r ' + tmp_path)
 
-def checkOptions():
-    pass
-    #muss ich unbedingt noch ergänzen wenn ich alle möglichen input Optionen implementiert habe!!!
-
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     if len(candidate_names) == 1:
         return candidate_names
@@ -520,7 +536,10 @@ def main():
 
     #################### handle user input ########################################
 
-    version = '0.0.1'
+    start = time.time()
+
+    version = '0.1.1'
+
 
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
@@ -796,6 +815,7 @@ def main():
     ############### make Annotation with FAS ###################################
         # if we want to search in only one Taxon
         if searchTaxon != '' and fasoff == False:
+            fas = time.time()
             print("Calculating FAS scores")
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
@@ -816,6 +836,7 @@ def main():
         return 1
     #if we searched in more than one taxon
     if fasoff == False and searchTaxon == '':
+        fas = time.time()
         print("Calculating FAS scores")
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
@@ -831,6 +852,9 @@ def main():
     else:
         cleanup(tmp, out + "/tmp/")
 
+    end = time.time()
+    sys.stdout = sys.__stdout__
+    #print(group + "\t" + str(end-fas) + "\t" + str(end-start))
     f.close()
 
 if __name__ == '__main__':
