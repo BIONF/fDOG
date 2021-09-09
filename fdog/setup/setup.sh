@@ -206,6 +206,7 @@ data_fdog_file="data_HaMStR-2019c.tar.gz"
 checkSumData="1748371655 621731824 $data_fdog_file"
 cd $outDir
 if [ ! -d "$outDir/genome_dir" ]; then mkdir "$outDir/genome_dir"; fi
+if [ ! -d "$outDir/assembly_dir" ]; then mkdir "$outDir/assembly_dir"; fi
 
 if ! [ "$(ls -A $outDir/genome_dir)" ]; then
   echo "-------------------------------------"
@@ -314,6 +315,8 @@ mafft
 muscle
 clustalw
 blastp
+augustus
+tblastn
 )
 
 for i in "${dependencies[@]}"; do
@@ -321,6 +324,14 @@ for i in "${dependencies[@]}"; do
   if [ $tool == "clustalw" ]; then
     if [ "$sys" == "Darwin" ]; then
       tool="clustalw2"
+    fi
+  fi
+  if [ $tool == "tblastn" ]; then
+    requiredver="2.9.0"
+    currentver="$(tblastn -version | head -n1 | cut -d" " -f2 | sed 's/+//g')"
+    t=$(printf '%s\n' $requiredver $currentver | sort -V | head -n1)
+    if [ $t == $currentver ]; then
+      echo -e "\t\e[31mWARNING BLAST+ needs an update to at least version ${requiredver}!\e[0m"
     fi
   fi
   if [ -z "$(which $tool)" ]; then
