@@ -154,9 +154,6 @@ perlModules=(
   List::Util
   Parallel::ForkManager
   POSIX
-  XML::SAX
-  XML::NamespaceSupport
-  XML::Parser
   Getopt::Long
   IO::Handle
   IPC::Run

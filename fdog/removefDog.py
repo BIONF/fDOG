@@ -19,8 +19,8 @@ import sys
 import os
 import argparse
 import subprocess
-from pathlib import Path
 import shutil
+
 
 def query_yes_no(question, default='yes'):
     valid = {'yes': True, 'y': True, 'ye': True,
@@ -43,6 +43,7 @@ def query_yes_no(question, default='yes'):
         else:
             sys.stdout.write('Please respond with "yes" or "no" '
                              '(or "y" or "n").\n')
+
 
 def main():
     version = '0.0.1'
@@ -80,6 +81,7 @@ def main():
                 shutil.rmtree(fdogPath)
 
     print('NOTE: fdog genome data are still available at %s.' % dataPath)
+
 
 if __name__ == '__main__':
     main()

@@ -127,13 +127,17 @@ my $startTime = gettime();
 ## Modified 24. March 2021 v2.2.8 (Vinh)	- skip fa.mapping while checking genome_dir
 ## Modified 29. March 2021 v2.2.9 (Vinh)	- check for zero $maxAlnScore
 ##                                        - solved problem with long input path for fasta36 tools
+## Modified 23. April 2021 v2.3.0 (Vinh)	- parse fasta36 output for long IDs (longer than 60 chars)
+## Modified 31. May 2021 v2.3.1 (Vinh)	- added auto annotation for fdogFas
+## Modified 11. June 2021 v2.3.2 (Vinh)	- fixed --append option
+## Modified 16. June 2021 v2.4.0 (Vinh)	- add checkOff option
 
 ############ General settings
-my $version = 'oneSeq v.2.2.9';
+my $version = 'oneSeq v.2.4.0';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
-	die "\n\n$version\n\nPLEASE RUN fdog.setup BEFORE USING fdog\n\n";
+	die "\n\nPLEASE RUN fdog.setup BEFORE USING fdog\n\n";
 }
 ##### hostname
 my $hostname = `hostname`;
@@ -173,9 +177,9 @@ my $blast_prog = 'blastp';
 my $outputfmt = 'blastxml';
 my $eval_blast_query = 0.0001;
 my $filter = 'F'; # default for blastp
-my $annotation_prog = "annoFAS";
-my $fas_prog = "calcFAS";
-my $fdogFAS_prog = "fdogFAS";
+my $annotation_prog = "fas.doAnno";
+my $fas_prog = "fas.run";
+my $fdogFAS_prog = "fas.runFdogFas";
 
 ##### ublast Baustelle: not implemented yet
 my $runublast = 0;
@@ -260,6 +264,7 @@ my $batch;
 my $blastNode;
 my $representative;
 my $core_rep;
+my $checkOff;
 my $debug;
 my $corestrict;
 my $inputSeq = "";
@@ -365,6 +370,7 @@ GetOptions (
 	"blastpath=s"         => \$blastPath,
 	"searchpath=s"         => \$genome_dir,
 	"weightpath=s"         => \$weightPath,
+	"checkOff"             => \$checkOff,
 	"debug"             => \$debug,
 	"coreHitlimit=s"   => \$core_hitlimit,
 	"hitlimit=s"        => \$hitlimit,
@@ -404,8 +410,9 @@ $assembly_dir = abs_path($assemblyPath)."/";
 if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 	print "Validity checking....\n";
 	my $checkStTime = gettime();
-	initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
-	print "Check finished in " . roundtime(gettime() - $checkStTime). " sec!\n";
+	unless($checkOff) {
+		initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
+	}
 
 	if (!defined $coreex && !defined $assembly) {
 		if (!grep(/$minDist/, @defaultRanks)) {
@@ -420,6 +427,7 @@ if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 			die "ERROR: coreOrth not defined (must be integer)!";
 		}
 	}
+	print "Check finished in " . roundtime(gettime() - $checkStTime). " sec!\n";
 }
 
 ############# show version
@@ -759,6 +767,10 @@ if (!$coreOnly) {
 	}
 	$pm->wait_all_children;
 }
+### remove duplicated seq in extended.fa
+if (-e $finalOutput) {
+	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
+}
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
 
@@ -777,7 +789,7 @@ if(!$coreOnly && !$assembly){
 	# calculate FAS scores for final extended.fa
 	if ($fas_support && !$assembly) {
 		print "Starting the feature architecture similarity score computation...\n";
-		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu";
+		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu --redo_anno";
 		unless ($countercheck) {
 			$fdogFAScmd .= " --bidirectional"
 		}
@@ -814,7 +826,10 @@ print "==> fdog finished after " . roundtime(gettime() - $startTime) . " sec!\n"
 push @logOUT, "fdog finished after " . roundtime(gettime() - $startTime) . " sec!\n";
 
 #### writing the log
-open (LOGOUT, ">$outputPath/fdog.log") or warn "Failed to open fdog.log for writing";
+open (LOGOUT, ">>$outputPath/fdog.log") or die "Could not open $outputPath/fdog.log for writing\n";
+print LOGOUT "\n\n";
+my $fdogVersion = `fdog.run --version`;
+print LOGOUT "fDOG v$fdogVersion\n";
 print LOGOUT join "\n", @logOUT;
 close LOGOUT;
 exit;
@@ -1318,9 +1333,9 @@ sub checkOptions {
 		$refSpec = $besthit->{species};
 		my $details = "Evalue: " . $besthit->{evalue};
 		printOut("Seq id has been determined as $seqId in $refSpec with $details", 2);
-		if(length("$seqName|$refSpec|$seqId") > 60) {
-			die "Output file will have header longer than 60 characters ($seqName|$refSpec|$seqId). Please consider shorten the sequence IDs! More at https://github.com/BIONF/fDOG/wiki/Check-data-validity\n";
-		}
+		# if(length("$seqName|$refSpec|$seqId") > 60) {
+		# 	die "Output file will have header longer than 60 characters ($seqName|$refSpec|$seqId). Please consider shorten the sequence IDs! More at https://github.com/BIONF/fDOG/wiki/Check-data-validity\n";
+		# }
 		if($seqId eq '') {
 			print "There was no significant hit for your sequence in " . $refSpec . ".\nPlease specify a sequence id on your own.\n";
 			exit;
@@ -1398,22 +1413,24 @@ sub checkOptions {
 			mkdir $outputPath or die "could not re-create the output directory $outputPath\n";
 		}
 		elsif ($append) {
-			printOut("Appending output to $finalOutput\n", 1);
-			if (-e "$outputPath/$seqName.extended.profile") {
+			if (-e "$outputPath/$seqName.extended.fa") {
 				## read in the content for latter appending
-				printOut("Appending output to $outputPath/$seqName.extended.profile", 1);
-				open (IN, "<$outputPath/$seqName.extended.profile") or die "failed to open $outputPath/$seqName.extended.profile after selection of option -append\n";
+				printOut("Appending output to $outputPath/$seqName.extended.fa", 1);
+				open (IN, "<$outputPath/$seqName.extended.fa") or die "failed to open $outputPath/$seqName.extended.fa after selection of option -append\n";
 				while (<IN>) {
-					chomp $_;
-					my @keys = split '\|', $_;
-					$profile{$keys[1]} = 1;
+					my $line = $_;
+					if ($line =~ /\|/) {
+						chomp $line;
+						my @keys = split '\|', $line;
+						$profile{$keys[1]} = 1;
+					}
 				}
 			}
 			elsif ($fasoff) {
 				## no extended.profile file exists but not necessary, because user switched off FAS support -> do nothing
 			}
 			else {
-				printOut("Option -append was selected, but the existing output was incomplete. Please restart with the -force option to overwrite the output");
+				printOut("Option -append was selected, but the existing output was incomplete. Please restart with the -force option to overwrite the output", 1);
 				exit;
 			}
 		}
@@ -1790,8 +1807,9 @@ sub cumulativeAlnScore{
 			my $line = $_;
 			$line =~ s/[\(\)]//g;
 			my @line = split('\s+',$line);
-
-			if($line[0] && ($line[0] eq $key)){
+			my $shortedId = substr($key, 0, 60);
+			# if($line[0] && ($line[0] eq $key)){
+			if($line[0] && ($line[0] eq $shortedId)){
 				if(exists $cumscores{$key}) {
 					$gotScore = 1;
 					$cumscores{$key} = $cumscores{$key} + $line[2];
@@ -2146,7 +2164,7 @@ sub addSeedSeq {
 	# get seed sequence and add it to the beginning of the fasta output
 	open(TEMP, ">$outputFa.temp") or die "Cannot create $outputFa.temp!\n";
 	my $seqio = Bio::SeqIO->new(-file => "$coreOrthologsPath/$seqName/$seqName.fa", '-format' => 'Fasta');
-	my %idTmp; # used to check which seq has already been written to output
+	my %idTmp = (); # used to check which seq has already been written to output
 	while(my $seq = $seqio->next_seq) {
 		my $id = $seq->id;
 		if ($id =~ /$refSpec/) {
@@ -2162,6 +2180,7 @@ sub addSeedSeq {
 		unless ($id =~ /$refSpec\|$seqId/) { # /$refSpec/) {
 			unless ($idTmp{$id}) {
 				print TEMP ">$id\n", $seq->seq, "\n";
+				$idTmp{$id} = 1;
 			}
 		}
 	}
@@ -2643,9 +2662,9 @@ sub initialCheck {
 	}
 
 	# check executable FAS
-	my $fasCheckMsg = `setupFAS -t ./ -c 2>&1`;
+	my $fasCheckMsg = `fas.setup -t ./ -c 2>&1`;
 	if ($fasoff != 1 && $fasCheckMsg =~ /ERROR/) {
-		die "ERROR: greedyFAS not ready to use! Please check https://github.com/BIONF/FAS/wiki/prepareFAS\n";
+		die "ERROR: FAS not ready to use! Please check https://github.com/BIONF/FAS/wiki/setup\n";
 	}
 
 	# check seed fasta file
@@ -2693,6 +2712,16 @@ sub initialCheck {
 	if ($fasoff != 1 && !$assembly) {
 		my %seen;
 		my @allTaxa = grep( !$seen{$_}++, @genomeDir, @blastDir);
+		my @notFolder;
+		for (my $i = 0;$i < scalar(@allTaxa); $i++){
+			if (-f "$blastDir/$allTaxa[$i]" || -f "$genomeDir/$allTaxa[$i]") {
+				push(@notFolder, $allTaxa[$i]);
+				splice(@allTaxa, $i, 1);
+			}
+		}
+		if (scalar(@notFolder) > 0) {
+			print "*** WARNING: Found files in $genomeDir or $blastDir:\t@notFolder\n";
+		}
 		chomp(my $allAnno = `ls $weightDir | $sedprog \'s/\\.json//\'`);
 		my @allAnno = split(/\n/, $allAnno);
 		my @missingAnno = array_minus(@allTaxa, @allAnno);

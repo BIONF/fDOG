@@ -37,6 +37,7 @@ from io import StringIO
 import re
 import shutil
 from tqdm import tqdm
+from datetime import datetime
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
@@ -68,20 +69,18 @@ def parseMapFile(mappingFile):
             try:
                 ver = tmp[3].strip()
             except:
-                ver = 1
+                ver = datetime.today().strftime('%y%m%d') #1
             # print(taxName+"@"+str(taxId)+"@"+str(ver))
             nameDict[fileName] = (taxName, str(taxId), str(ver))
     return(nameDict)
 
 def runAddTaxon(args):
-    (f,n,i,o,c,v,a,cpus,replace,delete,oldFAS) = args
+    (f,n,i,o,c,v,a,cpus,replace,delete) = args
     cmd = 'fdog.addTaxon -f %s -n %s -i %s -o %s -v %s --cpus %s' % (f,n,i,o,v,cpus)
     if c == True:
         cmd = cmd + ' -c'
     if a == True:
         cmd = cmd + ' -a'
-    if oldFAS == True:
-        cmd = cmd + ' --oldFAS'
     if replace == True:
         cmd = cmd + ' --replace'
     if delete == True:
@@ -95,7 +94,7 @@ def runAddTaxon(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.5'
+    version = '0.0.9'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxa version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -105,8 +104,7 @@ def main():
                             action='store', default='', required=True)
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
     optional.add_argument('-c', '--coreTaxa', help='Include these taxa to core taxa (i.e. taxa in blast_dir folder)', action='store_true', default=False)
-    optional.add_argument('-a', '--noAnno', help='Do NOT annotate these taxa using annoFAS', action='store_true', default=False)
-    optional.add_argument('--oldFAS', help='Use old verion of FAS (annoFAS ≤ 1.2.0)', action='store_true', default=False)
+    optional.add_argument('-a', '--noAnno', help='Do NOT annotate these taxa using fas.doAnno', action='store_true', default=False)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = available cores - 1', action='store', default=0, type=int)
     optional.add_argument('--replace', help='Replace special characters in sequences by "X"', action='store_true', default=False)
     optional.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
@@ -128,7 +126,6 @@ def main():
     outPath = os.path.abspath(outPath)
     noAnno = args.noAnno
     coreTaxa = args.coreTaxa
-    oldFAS = args.oldFAS
     cpus = args.cpus
     if cpus == 0:
         cpus = mp.cpu_count()-2
@@ -171,7 +168,7 @@ def main():
                 verProt = nameDict[f][2]
                 jobs.append([
                     folIn + '/' + f, nameDict[f][0], nameDict[f][1],
-                    outPath, coreTaxa, nameDict[f][2], noAnno, cpus, replace, delete, oldFAS
+                    outPath, coreTaxa, nameDict[f][2], noAnno, cpus, replace, delete
                 ])
 
     if len(dupList) > 0:
