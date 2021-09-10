@@ -48,7 +48,7 @@ def prepare(args, step):
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
     strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-    cpu, hyperthread, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix) = args
+    cpu, hyperthread, checkOff, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix) = args
 
 
     mute = False
@@ -70,7 +70,7 @@ def prepare(args, step):
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
-    otherArgs = [cpu, hyperthread, debug, True]
+    otherArgs = [cpu, hyperthread, checkOff, debug, True]
     assemblyArgs = [assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
     return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute)
 
@@ -378,7 +378,7 @@ def main():
         silent = False
     else:
         silent = True
-       
+
     #fdog_goes_assembly arguments
     assembly = args.assembly
     assemblyFile = args.assemblyFile
@@ -472,7 +472,7 @@ def main():
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,
                 strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-                cpu, hyperthread, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
+                cpu, hyperthread, checkOff, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
 
     ### START
     Path(outpath).mkdir(parents=True, exist_ok=True)

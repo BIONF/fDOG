@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-# Copyright (C) 2020 Hannah Muelbaier
+# Copyright (C) 2021 Hannah Muelbaier
 #
 #  This script is used to run fDOG-Assembly which performs targeted ortholog
 #  searches on genome assemblies
@@ -538,7 +538,7 @@ def main():
 
     start = time.time()
 
-    version = '0.1.1'
+    version = '0.1.2'
 
 
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
@@ -668,7 +668,6 @@ def main():
     else:
         sys.stdout = Logger(f)
 
-    # user input has to be checked here before fDOGassembly continues
     assembly_names = os.listdir(assemblyDir)
 
     ########################## some variables ##################################
@@ -682,6 +681,9 @@ def main():
     fasta_path = core_path + "/" + group +"/"+ group + ".fa"
     consensus_path = out + "/tmp/" + group + ".con"
     profile_path = out + "/tmp/" + group + ".prfl"
+
+    ##################### need a check to see if reference species is part of the core group !##########
+
 
     ###################### create tmp folder ###################################
 
