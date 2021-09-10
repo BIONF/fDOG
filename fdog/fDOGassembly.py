@@ -838,6 +838,8 @@ def main():
         return 1
     #if we searched in more than one taxon
     if fasoff == False and searchTaxon == '' and len(assembly_names) > 1:
+        print(len(assembly_names))
+        print(assembly_names)
         fas = time.time()
         print("Calculating FAS scores")
         tmp_path = out + '/tmp/'
