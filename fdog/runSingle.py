@@ -153,10 +153,12 @@ def runSingle(args):
             if minScore > 0:
                 cmd = cmd + ' -coreFilter=%s -minScore=%s' % (coreFilter, minScore)
     # add other options
-    (cpu, hyperthread, debug, silent) = otherArgs
+    (cpu, hyperthread, checkOff, debug, silent) = otherArgs
     cmd = cmd + ' -cpu=%s' % cpu
     if hyperthread == True:
         cmd = cmd + ' -hyperthread'
+    if checkOff == True:
+        cmd = cmd + ' -checkOff'
     if debug == True:
         cmd = cmd + ' -debug'
     if silent == True:
@@ -191,7 +193,7 @@ def runSingle(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.33'
+    version = '0.0.45'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -289,6 +291,7 @@ def main():
         choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
     optional.add_argument('--cpu', help='Determine the number of threads to be run in parallel. Default: 4', action='store', default=4, type=int)
     optional.add_argument('--hyperthread', help='Set this flag to use hyper threading. Default: False', action='store_true', default=False)
+    optional.add_argument('--checkOff', help='Set this flag to turn of the initial checks. Default: False', action='store_true', default=False)
     optional.add_argument('--debug', help='Set this flag to obtain more detailed information about the programs actions', action='store_true', default=False)
     optional.add_argument('--silentOff', help='Show more output to terminal', action='store_true', default=False)
 
@@ -367,6 +370,7 @@ def main():
     # others
     cpu = args.cpu
     hyperthread = args.hyperthread
+    checkOff = args.checkOff
     debug = args.debug
     silentOff = args.silentOff
     if silentOff == True:
@@ -449,8 +453,7 @@ def main():
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
-    otherArgs = [cpu, hyperthread, debug, silent]
-    assemblyArgs = [assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix, dataPath]
+    otherArgs = [cpu, hyperthread, checkOff, debug, silent]
 
     ### run fdog
     runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, False])

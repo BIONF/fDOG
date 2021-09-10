@@ -48,7 +48,7 @@ def prepare(args, step):
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
     strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-    cpu, hyperthread, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix) = args
+    cpu, hyperthread, checkOff, debug, silent) = args
 
     mute = False
     if step == 'core':
@@ -69,9 +69,8 @@ def prepare(args, step):
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
-    otherArgs = [cpu, hyperthread, debug, True]
-    assemblyArgs = [assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
-    return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute)
+    otherArgs = [cpu, hyperthread, checkOff, debug, True]
+    return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute)
 
 def getSeedName(seedFile):
     seqName = seedFile.split('.')[0]
@@ -178,7 +177,7 @@ def joinOutputs(outpath, jobName, seeds, keep, silent):
 def calcFAS (outpath, extendedFa, weightpath, cpu):
     print('Starting calculating FAS scores...')
     start = time.time()
-    fasCmd = 'fdogFAS -i %s -w %s --cores %s' % (extendedFa, weightpath, cpu)
+    fasCmd = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (extendedFa, weightpath, cpu)
     try:
         subprocess.call([fasCmd], shell = True)
         end = time.time()
@@ -191,7 +190,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.33'
+    version = '0.0.45'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -289,6 +288,7 @@ def main():
         choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
     optional.add_argument('--cpu', help='Determine the number of threads to be run in parallel. Default: 4', action='store', default=4, type=int)
     optional.add_argument('--hyperthread', help='Set this flag to use hyper threading. Default: False', action='store_true', default=False)
+    optional.add_argument('--checkOff', help='Set this flag to turn of the initial checks. Default: False', action='store_true', default=False)
     optional.add_argument('--debug', help='Set this flag to obtain more detailed information about the programs actions', action='store_true', default=False)
     optional.add_argument('--silentOff', help='Show more output to terminal', action='store_true', default=False)
 
@@ -368,6 +368,7 @@ def main():
     # others
     cpu = args.cpu
     hyperthread = args.hyperthread
+    checkOff = args.checkOff
     debug = args.debug
     silentOff = args.silentOff
     if silentOff == True:
@@ -387,9 +388,9 @@ def main():
     ### check fas
     if not fasoff:
         try:
-            fasVersion = subprocess.run(['calcFAS --version'], shell = True, capture_output = True, check = True)
+            fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
         except:
-            sys.exit('Problem with calcFAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
+            sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
 
     ### delete output folder and files if needed
     if forceComplete:
@@ -403,7 +404,10 @@ def main():
             outfiles = os.listdir(outpath)
             for item in outfiles:
                 if item.startswith(jobName):
-                    os.remove(os.path.join(outpath, item))
+                    try:
+                        os.remove(os.path.join(outpath, item))
+                    except:
+                        shutil.rmtree(outpath+'/'+item)
                 if item.startswith("runtime"):
                     os.remove(os.path.join(outpath, item))
             if os.path.exists(outpath + '/missing.txt'):
@@ -465,7 +469,7 @@ def main():
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,
                 strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-                cpu, hyperthread, debug, silent, assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix]
+                cpu, hyperthread, checkOff, debug, silent]
 
     ### START
     Path(outpath).mkdir(parents=True, exist_ok=True)

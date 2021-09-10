@@ -32,6 +32,7 @@ import subprocess
 import multiprocessing as mp
 from ete3 import NCBITaxa
 import re
+import shutil
 from datetime import datetime
 
 def checkFileExist(file):
@@ -83,7 +84,7 @@ def runBlast(args):
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.5'
+    version = '0.0.10'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -91,10 +92,9 @@ def main():
     required.add_argument('-i', '--taxid', help='Taxonomy ID of input taxon', action='store', default='', required=True, type=int)
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
     optional.add_argument('-n', '--name', help='Acronym name of input taxon', action='store', default='', type=str)
-    optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default=1, type=str)
+    optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default='', type=str)
     optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in blast_dir folder)', action='store_true', default=False)
-    optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using annoFAS', action='store_true', default=False)
-    optional.add_argument('--oldFAS', help='Use old verion of FAS (annoFAS ≤ 1.2.0)', action='store_true', default=False)
+    optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using fas.doAnno', action='store_true', default=False)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = available cores - 1', action='store', default=0, type=int)
     optional.add_argument('--replace', help='Replace special characters in sequences by "X"', action='store_true', default=False)
     optional.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
@@ -119,7 +119,8 @@ def main():
     noAnno = args.noAnno
     coreTaxa = args.coreTaxa
     ver = str(args.verProt)
-    oldFAS = args.oldFAS
+    if ver == '':
+        ver = datetime.today().strftime('%y%m%d')
     cpus = args.cpus
     if cpus == 0:
         cpus = mp.cpu_count()-2
@@ -135,6 +136,13 @@ def main():
     specName = name+'@'+taxId+'@'+ver
     print('Species name\t%s' % specName)
 
+    ### remove old folder if force is set
+    if force:
+        if os.path.exists(outPath + '/genome_dir/' + specName):
+            shutil.rmtree(outPath + '/genome_dir/' + specName)
+        if os.path.exists(outPath + '/blast_dir/' + specName):
+            shutil.rmtree(outPath + '/blast_dir/' + specName)
+
     ### create file in genome_dir
     print('Parsing FASTA file...')
     Path(outPath + '/genome_dir').mkdir(parents = True, exist_ok = True)
@@ -147,25 +155,30 @@ def main():
         f = open(specFile, 'w')
         index = 0
         modIdIndex = 0
-        longId = 'no'
+        # longId = 'no'
         tmpDict = {}
+        # with open(specFile + '.mapping', 'a') as mappingFile:
         for id in inSeq:
             seq = str(inSeq[id].seq)
             # check ID
-            id = re.sub('\|', '_', id)
-            oriId = id
-            if len(id) > 30:
-                modIdIndex = modIdIndex + 1
-                id = specName + "_" + str(modIdIndex)
-                longId = 'yes'
-                with open(specFile + '.mapping', 'a') as mappingFile:
-                    mappingFile.write('%s\t%s\n' % (id, oriId))
-            if not id in tmpDict:
-                tmpDict[id] = 1
+            # oriId = id
+            if ' ' in id:
+                sys.exit('\033[91mERROR: Sequence IDs (e.g. %s) must not contain space(s)!\033[0m' % id)
             else:
-                index = index + 1
-                id = str(id) + '_' + str(index)
-                tmpDict[id] = 1
+                if '\|' in id:
+                    print('\033[91mWARNING: Sequence IDs contain pipe(s). They will be replaced by "_"!\033[0m')
+                    id = re.sub('\|', '_', id)
+            # if len(id) > 20:
+            #     modIdIndex = modIdIndex + 1
+            #     id = modIdIndex
+            #     longId = 'yes'
+            # if not id in tmpDict:
+            #     tmpDict[id] = 1
+            # else:
+            #     index = index + 1
+            #     id = str(index)
+            #     tmpDict[id] = 1
+            # mappingFile.write('%s\t%s\n' % (id, oriId))
             # check seq
             if seq[-1] == '*':
                 seq = seq[:-1]
@@ -187,8 +200,8 @@ def main():
         cf.write(str(datetime.now()))
         cf.close()
         # warning about long header
-        if longId == 'yes':
-            print('\033[91mWARNING: Some headers longer than 80 characters have been automatically shortened. PLease check the %s.mapping file for details!\033[0m' % specFile)
+        # if longId == 'yes':
+        #     print('\033[91mWARNING: Some headers longer than 80 characters have been automatically shortened. PLease check the %s.mapping file for details!\033[0m' % specFile)
     else:
         print(genomePath + '/' + specName + '.fa already exists!')
 
@@ -207,16 +220,13 @@ def main():
     ### create annotation
     if not noAnno:
         Path(outPath + '/weight_dir').mkdir(parents = True, exist_ok = True)
-        annoCmd = 'annoFAS -i %s/%s.fa -o %s --cpus %s' % (genomePath, specName, outPath+'/weight_dir', cpus)
+        annoCmd = 'fas.doAnno -i %s/%s.fa -o %s --cpus %s' % (genomePath, specName, outPath+'/weight_dir', cpus)
         if force:
             annoCmd = annoCmd + " --force"
-        if oldFAS:
-            print("running old version of FAS...")
-            annoCmd = 'annoFAS -i %s/%s.fa -o %s -n %s --cores %s' % (genomePath, specName, outPath+'/weight_dir', specName, cpus)
         try:
             subprocess.call([annoCmd], shell = True)
         except:
-            print('\033[91mProblem with running annoFAS. You can check it with this command:\n%s\033[0m' % annoCmd)
+            print('\033[91mProblem with running fas.doAnno. You can check it with this command:\n%s\033[0m' % annoCmd)
 
     print('Output for %s can be found in %s within genome_dir [and blast_dir, weight_dir] folder[s]' % (specName, outPath))
 

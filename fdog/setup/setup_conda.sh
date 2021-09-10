@@ -160,9 +160,6 @@ perlModules=(
   List::Util
   Parallel::ForkManager
   POSIX
-  XML::SAX
-  XML::NamespaceSupport
-  XML::Parser
   Getopt::Long
   IO::Handle
   IPC::Run
@@ -227,28 +224,28 @@ if ! [ -f "$CURRENT/taxonomy/nodes" ]; then
 fi
 
 cd "$CURRENT/bin"
-fasPrepare=0
-if [ -z "$(which annoFAS)" ]; then
+setupFAS=0
+if [ -z "$(which fas.doAnno)" ]; then
   echo "FAS"
   conda install -y -c BIONF fas
-  if [ -z "$(which annoFAS)" ]; then
+  if [ -z "$(which fas.doAnno)" ]; then
     echo -e "\e[31mInstallation of FAS failed! Please try again!\e[0m"
     exit
   fi
-  fasPrepare=1
+  setupFAS=1
 else
-  if ! [ -z "$(prepareFAS -t ./ --check 2>&1 | grep ERROR)" ]; then
-    fasPrepare=1
+  if ! [ -z "$(fas.setup -t ./ --check 2>&1 | grep ERROR)" ]; then
+    setupFAS=1
   fi
 fi
 
-if [ -z "$(which annoFAS)" ]; then
+if [ -z "$(which fas.doAnno)" ]; then
   echo -e "Installation of FAS failed! Please try again or install FAS by yourself using \e[91mconda install -c BIONF fas\e[0m or \e[91mpip install greedyFAS\e[0m"
   echo -e "For more info, please check FAS website at \e[91mhttps://github.com/BIONF/FAS\e[0m"
   exit
 else
-  if ! [ -z "$(prepareFAS -t ./ --check 2>&1 | grep ERROR)" ]; then
-    fasPrepare=1
+  if ! [ -z "$(fas.setup -t ./ --check 2>&1 | grep ERROR)" ]; then
+    setupFAS=1
   fi
 fi
 cd $CURRENT
@@ -423,9 +420,9 @@ else
   echo "-------------------------------------"
   $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/hamstr.pl
   $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/oneSeq.pl
-  if [ "$fasPrepare" == 1 ]; then
+  if [ "$setupFAS" == 1 ]; then
     echo "All tests succeeded."
-    echo -e "\e[91mPLEASE RUN\e[0m \e[96msetupFAS\e[0m \e[91mTO CONFIGURE FAS BEFORE USING fdog!\e[0m"
+    echo -e "\e[91mPLEASE RUN\e[0m \e[96mfas.setup\e[0m \e[91mTO CONFIGURE FAS BEFORE USING fdog!\e[0m"
     echo "Then you can test fdog with:"
   else
     echo "All tests succeeded, fdog should be ready to run. You can test it with:"
