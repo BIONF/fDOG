@@ -823,7 +823,7 @@ def main():
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
             cmd = 'mkdir ' + tmp_path + 'anno_dir'
             starting_subprocess(cmd, 'silent')
-            cmd = 'calcFAS --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
+            cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
             starting_subprocess(cmd, 'silent')
             clean_fas(fasOutFile + "_forward.domains", 'domains')
             clean_fas(fasOutFile + "_reverse.domains", 'domains')
@@ -831,12 +831,12 @@ def main():
 
 
     #if we searched in more than one Taxon and no ortholog was found
-    if refBool == False and searchTaxon == '' and len(assembly_names) > 1:
+    if refBool == False and searchTaxon == '':
         print("No orthologs found. Exciting ...")
         cleanup(tmp, tmp_path)
         return 1
     #if we searched in more than one taxon
-    if fasoff == False and searchTaxon == '' and len(assembly_names) > 1:
+    if fasoff == False and searchTaxon == '':
         fas = time.time()
         print("Calculating FAS scores")
         tmp_path = out + '/tmp/'
