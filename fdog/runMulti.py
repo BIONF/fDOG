@@ -105,9 +105,10 @@ def compileCore(options, seeds, inFol, cpu, outpath):
     for seed in seeds:
         seqFile = [inFol + '/' + seed]
         seqName = getSeedName(seed)
+
         if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)):
             (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'core')
-            coreCompilationJobs.append([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute])
+            coreCompilationJobs.append([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute])
     if len(coreCompilationJobs) > 0:
         pool = mp.Pool(cpu)
         coreOut = []
@@ -129,7 +130,7 @@ def searchOrtho(options, seeds, inFol, cpu, outpath):
     for seed in seeds:
         seqFile = [inFol + '/' + seed]
         seqName = getSeedName(seed)
-        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'ortholog')
+        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute) = prepare(seqFile + [seqName] + options, 'ortholog')
         if mute == True:
             print(seed)
         else:
@@ -291,6 +292,14 @@ def main():
     optional.add_argument('--debug', help='Set this flag to obtain more detailed information about the programs actions', action='store_true', default=False)
     optional.add_argument('--silentOff', help='Show more output to terminal', action='store_true', default=False)
 
+    assembly_options = parser.add_argument_group('Assembly options')
+    assembly_options.add_argument('--assembly', help='Turn on support of assembly input files',action='store_true', default=False)
+    assembly_options.add_argument('--assemblyFile', help='Input file containing the assembly seqeunce', action='store', default='')
+    assembly_options.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
+    assembly_options.add_argument('--avIntron', help='average Intron length of the assembly species', action='store', default=5000, type=int)
+    assembly_options.add_argument('--lengthExtension', help='length extension of the candidate region', action='store', default=5000, type=int)
+    assembly_options.add_argument('--searchTool', help='Choose between BLAST or Diamond as a alignemnt search tool. DEFAULT: BLAST', choices=['blast', 'diamond'], action='store', default='blast')
+    assembly_options.add_argument('--scoringmatrix', help ='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     ### get arguments
     args = parser.parse_args()
 
@@ -366,6 +375,15 @@ def main():
         silent = False
     else:
         silent = True
+       
+    #fdog_goes_assembly arguments
+    assembly = args.assembly
+    assemblyFile = args.assemblyFile
+    augustusRefSpec = args.augustusRefSpec
+    avIntron = args.avIntron
+    lengthExtension = args.lengthExtension
+    searchTool = args.searchTool
+    matrix = args.scoringmatrix
 
     ### check fas
     if not fasoff:

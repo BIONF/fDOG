@@ -207,6 +207,7 @@ my $blastPath = "$path/blast_dir/";
 my $idx_dir = "$path/taxonomy/";
 my $dataDir = $path . '/data';
 my $weightPath = "$path/weight_dir/";
+my $assembly_dir = "$path/assembly_dir/";
 
 my @defaultRanks = (
 	'superkingdom', 'kingdom',
@@ -311,6 +312,15 @@ my $breakAfter = 5; 		## Number of Significantly bad candidates after which the 
 my %hashTree;
 my $aln = 'muscle';
 my $searchTaxa;
+#variables for fdog_goes_assembly
+my $assembly;
+my $augustusRefSpec;
+my $avIntron;
+my $lengthExtension;
+my $assemblyPath;
+my $searchTool = 'blast';
+my $matrix = 'blosum62';
+my $dataPath = '';
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -373,7 +383,15 @@ GetOptions (
 	"distDeviation=s"	=> \$distDeviation,
 	"aligner=s"	=> \$aln,
 	"hyperthread" => \$hyperthread,
-	"searchTaxa=s" => \$searchTaxa
+	"searchTaxa=s" => \$searchTaxa,
+	"assembly" => \$assembly,
+	"assemblypath=s" => \$assemblyPath,
+	"augustusRefSpec=s" => \$augustusRefSpec,
+	"avIntron=s" => \$avIntron,
+	"lengthExtension=s" => \$lengthExtension,
+	"searchTool=s" => \$searchTool,
+	"scoringmatrix=s" => \$matrix,
+	"dataPath=s" => \$dataPath
 );
 
 $outputPath = abs_path($outputPath);
@@ -385,6 +403,8 @@ $blastPath = abs_path($blastPath)."/";
 $weightPath = abs_path($weightPath)."/";
 $genome_dir = abs_path($genome_dir)."/";
 $taxaPath = $genome_dir;
+$dataPath = abs_path($dataPath)."/";
+$assembly_dir = abs_path($assemblyPath)."/";
 
 ############# do initial check
 if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
@@ -394,7 +414,7 @@ if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 		initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
 	}
 
-	if (!defined $coreex) {
+	if (!defined $coreex && !defined $assembly) {
 		if (!grep(/$minDist/, @defaultRanks)) {
 			die "ERROR: minDist $minDist invalid!\n";
 		}
@@ -478,7 +498,7 @@ my $maxAlnScore = 0;
 
 # create weight_dir in oneseq's home dir (used for annotations,weighting,feature extraction)
 # get annotations for seed sequence if fas support is on
-if ($fas_support){
+if ($fas_support && !$assembly){
 	if (!$weightPath) {
 		createWeightFolder();
 	}
@@ -487,7 +507,7 @@ if ($fas_support){
 
 my $coreStTime = gettime(); #time;
 #core-ortholog search
-if (!$coreex) {
+if (!$coreex && !$assembly) {
 	print "\nCore compiling...\n";
 	$coremode = 1;
 	$taxaPath = $blastPath;
@@ -625,7 +645,12 @@ if (!$coreOnly) {
 	my $final_eval_blast = $eval_blast*$eval_relaxfac;
 	my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
 
-	$taxaPath = $genome_dir;
+	if (!$assembly){
+		$taxaPath = $genome_dir;
+	}
+	else{
+		$taxaPath = $assembly_dir;
+	}
 	my @searchTaxa;
 	unless ($searchTaxa) {
 		unless($groupNode) {
@@ -681,7 +706,63 @@ if (!$coreOnly) {
 				}
 			}
 		}
+		if ($assembly){
+			$eval_blast = sprintf("%f", $eval_blast);
+			if ($seqFile ne "") {
+				my @assembly_cmd = ("fdog.assembly", "--gene " . $seqName, "--augustusRefSpec ". $augustusRefSpec, "--refSpec " . $refSpec, "--dataPath " . $dataPath);
+
+				if (defined $assemblyPath){
+					push(@assembly_cmd, "--assemblyPath $assemblyPath")
+				}
+				if (defined $avIntron){
+					push(@assembly_cmd, "--avIntron $avIntron ");
+				}
+				if (defined $lengthExtension){
+					push(@assembly_cmd, "--lengthExtension $lengthExtension ");
+				}
+				if (!$autoclean){
+					push(@assembly_cmd, "--tmp ");
+				}
+				if ($outputPath){
+					push(@assembly_cmd, "--out $outputPath ");
+				}
+				if (defined $strict){
+					push(@assembly_cmd, "--strict");
+				}
+				if ($eval_blast){
+					push(@assembly_cmd, "--evalBlast $eval_blast ");
+				}
+				if ($searchTool){
+					push(@assembly_cmd, "--msaTool $aln ");
+				}
+				if (defined $checkcoorthologsref){
+					push(@assembly_cmd, "--checkCoorthologsRef");
+				}
+				if ($searchTool){
+					push(@assembly_cmd, "--searchTool $searchTool");
+				}
+				if ($matrix){
+					push(@assembly_cmd, "--scoringmatrix $matrix");
+				}
+				if ($coreOrthologsPath){
+					push(@assembly_cmd, "--coregroupPath $coreOrthologsPath");
+				}
+				if ($fasoff){
+					push(@assembly_cmd, "--fasoff");
+				}
+				if ($searchTaxon){
+					push(@assembly_cmd, "--searchTaxon $searchTaxon");
+				}
+				if ($filter){
+					push(@assembly_cmd, "--filter $filter");
+				}
+				printDebug(@assembly_cmd);
+				system(join(' ', @assembly_cmd)) == 0 or die "Error: fDOGassembly failed \n";
+			}
+		}
+		else{
 		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
+		}
 		$pm->finish;
 	}
 	$pm->wait_all_children;
@@ -693,8 +774,8 @@ if (-e $finalOutput) {
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
 
-## Evaluation of all orthologs that are predicted by the final run
-if(!$coreOnly){
+
+if(!$coreOnly && !$assembly){
 	my $fasStTime = gettime();
 	my $processID = $$;
 
@@ -706,7 +787,7 @@ if(!$coreOnly){
 	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 
 	# calculate FAS scores for final extended.fa
-	if ($fas_support) {
+	if ($fas_support && !$assembly) {
 		print "Starting the feature architecture similarity score computation...\n";
 		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu --redo_anno";
 		unless ($countercheck) {
@@ -719,12 +800,21 @@ if(!$coreOnly){
 	}
 	push @logOUT, "FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
 	print "==> FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
+
 	if($autoclean){
 		print "Cleaning up...\n";
 		runAutoCleanUp($processID);
 	}
 }
 
+if ($assembly){
+	my $file_assembly_out;
+	$file_assembly_out = $outputPath . '/' . $seqName;
+	my $cmd_merge;
+	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
+	printDebug($cmd_merge);
+	system($cmd_merge);
+}
 ## Delete tmp folder
 unless ($debug) {
 	my $delTmp = "rm -rf $tmpdir";
@@ -1134,10 +1224,10 @@ sub checkOptions {
 	if ($force == 1 and $append ==1) {
 		$force = 0;
 	}
-	### check the presence of the pre-computed core set
-	if ($coreex) {
+	### check the presence of the pre-computed core set if options reuseCore or assembly is used
+	if ($coreex || $assembly) {
 		if (! -e "$coreOrthologsPath/$seqName/$seqName.fa") {
-			print "You selected the option -reuseCore, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
+			print "You selected the option -reuseCore or -assembly, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
 			exit;
 		}
 	}
@@ -1208,7 +1298,7 @@ sub checkOptions {
 
 	### checking the number of core orthologs. Omit this check if the option -reuseCore has been selected
 	$optbreaker = 0;
-	while(!$minCoreOrthologs and !$coreex) {
+	while(!$minCoreOrthologs and (!$coreex and !$assembly)) {
 		if ($optbreaker >= 3){
 			print "No proper number given ... exiting.\n";
 			exit;
@@ -1223,10 +1313,12 @@ sub checkOptions {
 		$filter = 'no' if $filter eq 'F';
 	}
 
-	$inputSeq = fetchSequence($seqFile, $dataDir);
+	if (!$assembly){
+		$inputSeq = fetchSequence($seqFile, $dataDir);
+	}
 
 	## the user has not provided a sequence id, however, the refspec is determined.
-	if($seqId eq '') {
+	if($seqId eq '' && !$assembly) {
 		my $besthit;
 		if (!$blast){
 			## a refspec has been determined
@@ -1353,8 +1445,9 @@ sub checkOptions {
 	#### checking for the min and max distance for the core set compilation
 	#### omit this check, if the option reuseCore has been selected (added 2019-02-04)
 	$optbreaker = 0;
-	if (!$coreex) {
+	if (!$coreex and !$assembly) {
 		my $node;
+		#print "Testing coreex assembly\n";
 		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
 		$node->name('supplied', $refSpec);
 		if (lc($maxDist) eq "root"){
@@ -2616,7 +2709,7 @@ sub initialCheck {
 		}
 	}
 	# check weight_dir
-	if ($fasoff != 1) {
+	if ($fasoff != 1 && !$assembly) {
 		my %seen;
 		my @allTaxa = grep( !$seen{$_}++, @genomeDir, @blastDir);
 		my @notFolder;
