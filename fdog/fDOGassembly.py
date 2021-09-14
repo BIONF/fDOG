@@ -29,6 +29,26 @@ import subprocess
 import time
 
 ########################### functions ##########################################
+def check_path(path):
+    if not os.path.exists(path):
+        print(path + " does not exist. Exciting ...")
+        sys.exit()
+
+def check_ref_sepc(species_list, fasta_file):
+    file = open(fasta_file, "r")
+    lines = file.readlines()
+    species_file = []
+
+    for line in lines:
+        if line[0] == ">":
+            species = line.split("|")[1]
+            species_file.append(species)
+    for species in species_list:
+        if species in species_file:
+            return species
+    print("Reference species is not part of the ortholog group. Exciting ...")
+    sys.exit()
+
 def load_config(config_file):
     with open(config_file, 'r') as stream:
         try:
@@ -298,40 +318,40 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
             id, gene, evalue = (line.replace("\n", "")).split("\t")
             gene_name = gene.split("|")[2]
             if gene_name != old_name:
-                print("candidate:%s"%(gene_name))
-                print("blast-hit:%s"%(id))
+                print("candidate:%s"%(gene_name)) if mode == "debug" else ""
+                print("blast-hit:%s"%(id)) if mode == "debug" else ""
                 min = float(evalue)
                 if id in id_ref:
                     orthologs.append(gene)
-                    print("\thitting\n")
+                    print("\thitting\n") if mode == "debug" else ""
                 else:
                     if checkCo == True:
                         for i in id_ref:
-                            print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
+                            print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i)) if mode == "debug" else ""
                             co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath, tmp_path)
                             if co_orthologs_result == 1:
-                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
+                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit)) if mode == "debug" else ""
                                 orthologs.append(gene)
                             elif co_orthologs_result == 0:
-                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit))
+                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit)) if mode == "debug" else ""
                     else:
-                        print("\tnothitting\n")
+                        print("\tnothitting\n") if mode == "debug" else ""
             elif (gene_name == old_name) and float(evalue) == min and gene_name not in orthologs:
                 if id in id_ref:
                     orthologs.append(gene)
-                    print("\thitting\n")
+                    print("\thitting\n") if mode == "debug" else ""
                 else:
                     if checkCo == True:
                         for i in id_ref:
-                            print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i))
+                            print("Best hit %s differs from reference sequence %s! Doing further checks\n"%(id, i)) if mode == "debug" else ""
                             co_orthologs_result, distance_ref_hit, distance_hit_query = checkCoOrthologs(gene_name, id, i, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath, tmp_path)
                             if co_orthologs_result == 1:
-                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit))
+                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit)) if mode == "debug" else ""
                                 orthologs.append(gene)
                             elif co_orthologs_result == 0:
-                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit))
+                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit)) if mode == "debug" else ""
                     else:
-                        print("\tnot hitting\n")
+                        print("\tnot hitting\n") if mode == "debug" else ""
             old_name = gene_name
 
 
@@ -548,7 +568,7 @@ def main():
     required.add_argument('--gene', help='Core_ortholog group name. Folder inlcuding the fasta file, hmm file and aln file has to be located in core_orthologs/',
                             action='store', default='', required=True)
     required.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='', required=True)
-    required.add_argument('--refSpec', help='Reference taxon for fDOG.', action='store', default='', required=True)
+    required.add_argument('--refSpec', help='Reference taxon for fDOG.', action='store', nargs="+", default='', required=True)
 
     optional = parser.add_argument_group('Optional arguments')
     optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 5000)',action='store', default=5000, type=int)
@@ -611,6 +631,7 @@ def main():
     silent = args.silent
     debug = args.debug
 
+    # output modes
     if debug == True and silent == True:
         print("It's not possible to use booth modes, please restart and use --debug or --silent")
         return 1
@@ -637,22 +658,27 @@ def main():
                 dataPath = cfg['dataPath']
             except:
                 dataPath = 'config'
-    if core_path == '':
-        core_path = out + '/core_orthologs/'
-    else:
-        if not core_path.endswith('/'):
-            core_path = core_path + '/'
 
-    if assemblyDir == '':
-        assemblyDir = dataPath + '/assembly_dir/'
+
     if out == '':
-        #print('test out \n')
         out = os.getcwd()
         os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
         out = out + '/' + group + '/'
     else:
         if out[-1] != "/":
             out = out + "/"
+        check_path(out)
+
+    if core_path == '':
+        core_path = out + '/core_orthologs/'
+    else:
+        if not core_path.endswith('/'):
+            core_path = core_path + '/'
+        check_path(core_path)
+
+    if assemblyDir == '':
+        assemblyDir = dataPath + '/assembly_dir/'
+    check_path(assemblyDir)
 
 
     try:
@@ -674,16 +700,20 @@ def main():
 
     refBool = False # checks if sequences of reference species were already part of the extended.fa file
 
-    ########### paths ###########
+    ################################# paths ####################################
 
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
+    check_path(msa_path)
     hmm_path = core_path + "/" + group +"/hmm_dir/"+ group + ".hmm"
+    check_path(hmm_path)
     fasta_path = core_path + "/" + group +"/"+ group + ".fa"
+    check_path(fasta_path)
     consensus_path = out + "/tmp/" + group + ".con"
     profile_path = out + "/tmp/" + group + ".prfl"
 
-    ##################### need a check to see if reference species is part of the core group !##########
+    ############## is fDOG reference species part of ortholog group? ###########
 
+    fdog_ref_species = check_ref_sepc(fdog_ref_species, fasta_path)
 
     ###################### create tmp folder ###################################
 
@@ -842,7 +872,7 @@ def main():
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
-        cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
+        cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
         starting_subprocess(cmd, 'silent')
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
