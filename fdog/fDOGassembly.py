@@ -554,22 +554,21 @@ class Logger(object):
 
 def main():
 
-    #################### handle user input ########################################
+    #################### handle user input #####################################
 
     start = time.time()
 
     version = '0.1.2'
-
-
+    ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
-
+    ################## required arguments ######################################
     required = parser.add_argument_group('Required arguments')
     required.add_argument('--gene', help='Core_ortholog group name. Folder inlcuding the fasta file, hmm file and aln file has to be located in core_orthologs/',
                             action='store', default='', required=True)
     required.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='', required=True)
     required.add_argument('--refSpec', help='Reference taxon for fDOG.', action='store', nargs="+", default='', required=True)
-
+    ################## optional arguments ######################################
     optional = parser.add_argument_group('Optional arguments')
     optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 5000)',action='store', default=5000, type=int)
     optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:5000)', action='store', default=5000, type=int)
@@ -591,7 +590,6 @@ def main():
     optional.add_argument('--searchTaxon', help='Search Taxon name', action='store', default='')
     optional.add_argument('--silent', help='Output will only be written into the log file', action='store_true', default=False)
     optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed', action='store_true', default=False)
-
 
     args = parser.parse_args()
 
@@ -711,7 +709,7 @@ def main():
     consensus_path = out + "/tmp/" + group + ".con"
     profile_path = out + "/tmp/" + group + ".prfl"
 
-    ############## is fDOG reference species part of ortholog group? ###########
+    ########### is/are fDOG reference species part of ortholog group? ##########
 
     fdog_ref_species = check_ref_sepc(fdog_ref_species, fasta_path)
 
@@ -720,32 +718,33 @@ def main():
     cmd = 'mkdir ' + out + '/tmp'
     starting_subprocess(cmd, 'silent')
 
+    print("Gene: " + group)
+    print("fDOG reference species: " + fdog_ref_species + " \n")
+
     ######################## consensus sequence ################################
 
     #make a majority-rule consensus sequence with the tool hmmemit from hmmer
-    print("Building a consensus sequence for gene " + group + " \n")
+    print("Building a consensus sequence")
     cmd = 'hmmemit -c -o' + consensus_path + ' ' + hmm_path
     starting_subprocess(cmd, mode)
-    print("consensus sequence is finished\n")
+    print("\t ...finished\n")
 
     ######################## block profile #####################################
 
-    print("Building a block profile for gene " + group + " \n")
+    print("Building a block profile ...")
     cmd = 'msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path
     starting_subprocess(cmd, 'silent')
 
     if int(os.path.getsize(profile_path)) > 0:
-        print("block profile is finished \n")
+        print("\t ...finished \n")
     else:
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
-        #print(cmd)
         cmd = 'prepareAlign < ' + msa_path + ' > ' + new_path
         starting_subprocess(cmd, mode)
         cmd = 'msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path
-        #print(cmd)
         starting_subprocess(cmd, 'silent')
-        print("block profile is finished \n")
+        print(" \t ...finished \n")
 
     searchBool = False
 
@@ -780,19 +779,17 @@ def main():
         #checks if data base exists already
         db_check = searching_for_db(db_path)
         if db_check == 0:
-            print("creating a blast data base \n")
+            print("Creating a blast data base...")
             cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
             starting_subprocess(cmd, mode)
-            print("database is finished \n")
-        else:
-            print('blast data base exists already, continuing...')
+            print("\t ...finished \n")
 
-        #makes a tBLASTn search against the new database
+        #makes a tBLASTn search against database
         #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
-        print("tBLASTn search against data base")
+        print("Starting tBLASTn search...")
         cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
         starting_subprocess(cmd, mode)
-        print("tBLASTn search is finished")
+        print("\t ...finished")
 
     ################### search for candidate regions and extract seq ###########
     # parse blast and filter for candiate regions
@@ -800,25 +797,25 @@ def main():
 
         if regions == 0:
             #no candidat region are available, no ortholog can be found
-            print("No candidate region found")
+            print("No candidate region found!\n")
             if refBool == True:
                 continue
             else:
                 taxa = [fdog_ref_species]
                 reciprocal_sequences = 0
         else:
-            print(str(number_regions) + " candiate regions were found. Extracting sequences...")
+            print(str(number_regions) + " candiate regions were found.\n")
             extract_seq(regions, db_path, tmp_path, mode)
 
     ############### make Augustus PPX search ###################################
 
-            print("starting augustus ppx \n")
+            print("Starting augustus ppx ...")
             augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
-            print("augustus is finished \n")
+            print("\t ...finished \n")
 
     ################# backward search to filter for orthologs###################
             if int(os.path.getsize(candidatesOutFile)) <= 0:
-                print("No genes found at candidate regions\n")
+                print("No genes found at candidate region\n")
                 if searchTaxon == '' and refBool == True:
                     continue
                 else:
@@ -831,7 +828,7 @@ def main():
     ################## checking accepted genes for co-orthologs ################
         if reciprocal_sequences == 0:
             if regions != 0:
-                print("No ortholog fulfilled the reciprocity criteria")
+                print("No ortholog fulfilled the reciprocity criteria \n")
             if searchTaxon == '' and refBool == True:
                 continue
             else:
@@ -848,7 +845,7 @@ def main():
         # if we want to search in only one Taxon
         if searchTaxon != '' and fasoff == False:
             fas = time.time()
-            print("Calculating FAS scores")
+            print("Calculating FAS scores ...")
             fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
             # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
             cmd = 'mkdir ' + tmp_path + 'anno_dir'
@@ -858,6 +855,7 @@ def main():
             clean_fas(fasOutFile + "_forward.domains", 'domains')
             clean_fas(fasOutFile + "_reverse.domains", 'domains')
             clean_fas(fasOutFile + ".phyloprofile", 'phyloprofile')
+            print("\t ...finished \n")
 
 
     #if we searched in more than one Taxon and no ortholog was found
@@ -868,7 +866,7 @@ def main():
     #if we searched in more than one taxon
     if fasoff == False and searchTaxon == '':
         fas = time.time()
-        print("Calculating FAS scores")
+        print("Calculating FAS scores ...")
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
@@ -877,6 +875,7 @@ def main():
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
+        print("\t ...finished \n")
     ################# remove tmp folder ########################################
     if searchTaxon != '':
         cleanup(tmp, tmp_path)
@@ -886,7 +885,9 @@ def main():
     end = time.time()
     sys.stdout = sys.__stdout__
     #print(group + "\t" + str(end-fas) + "\t" + str(end-start))
+    print("fDOG-Assembly finished complete in " + str(end-start) + "seconds.")
     f.close()
+
 
 if __name__ == '__main__':
     main()
