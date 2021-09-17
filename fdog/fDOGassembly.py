@@ -27,6 +27,7 @@ import argparse
 import yaml
 import subprocess
 import time
+import shutil
 
 ########################### functions ##########################################
 def check_path(path):
@@ -56,13 +57,17 @@ def load_config(config_file):
         except yaml.YAMLError as exc:
             print(exc)
 
-def starting_subprocess(cmd, mode):
-    if mode == 'debug':
-        result = subprocess.run(cmd, shell=True)
-    elif mode == 'silent':
-        result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True)
-    elif mode == 'normal':
-        result = subprocess.run(cmd, stdout = subprocess.PIPE, shell=True)
+def starting_subprocess(cmd, mode, time_out = None):
+
+    try:
+        if mode == 'debug':
+            result = subprocess.run(cmd, shell=True, timeout = time_out)
+        elif mode == 'silent':
+            result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True, timeout = time_out)
+        elif mode == 'normal':
+            result = subprocess.run(cmd, stdout = subprocess.PIPE, shell=True, timeout = time_out)
+    except subprocess.TimeoutExpired:
+        return 1
 
 def merge(blast_results, insert_length):
     #merging overlapping and contigous candidate regions
@@ -162,10 +167,11 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
         blast_results, evalue = parse_blast(line, blast_results, cutoff_evalue)
 
     if blast_results == {}:
+        blast_file.close()
         return 0,0
     else:
         candidate_regions, number_regions = merge(blast_results, intron_length)
-
+        blast_file.close()
         return candidate_regions, number_regions
 
 def extract_seq(region_dic, path, tmp_path, mode):
@@ -270,6 +276,10 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     if msaTool == "muscle":
         os.system("muscle -quiet -in " + output_file + " -out " + aln_file)
         #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+        if not os.path.exists(aln_file):
+            print("Muscle failed for " + candidate_name + ". Making MSA with Mafft-linsi.")
+            os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
+
     elif msaTool == "mafft-linsi":
         #print("mafft-linsi")
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
@@ -461,12 +471,13 @@ def createFasInput(orthologsOutFile, mappingFile):
         ncbi_id = (seq.id.split("@"))[1]
         mappingFile.write(seq.id + "\t" + "ncbi" + ncbi_id + "\n")
 
-
+    mappingFile.close()
     return fas_seed_id
 
 def cleanup(tmp, tmp_path):
     if tmp == False:
-        os.system('rm -r ' + tmp_path)
+        while os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path, ignore_errors=True)
 
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     if len(candidate_names) == 1:
@@ -537,6 +548,7 @@ def clean_fas(path, file_type):
             new_line = id + "\t" + remain
 
         file.write(new_line)
+    file.close()
 
 class Logger(object):
     def __init__(self, file):
@@ -708,6 +720,7 @@ def main():
     check_path(fasta_path)
     consensus_path = out + "/tmp/" + group + ".con"
     profile_path = out + "/tmp/" + group + ".prfl"
+    tmp_folder = out + "/tmp"
 
     ########### is/are fDOG reference species part of ortholog group? ##########
 
@@ -760,7 +773,7 @@ def main():
 
         cmd = 'mkdir ' + out + '/tmp/' + asName
         starting_subprocess(cmd, 'silent')
-        tmp_path = out + "/tmp/" + asName + "/"
+        tmp_path = out + "tmp/" + asName + "/"
         candidatesOutFile = tmp_path + group + ".candidates.fa"
         if searchTaxon != '':
             orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
@@ -788,8 +801,14 @@ def main():
         #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
         print("Starting tBLASTn search...")
         cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
-        starting_subprocess(cmd, mode)
-        print("\t ...finished")
+        exit_code = starting_subprocess(cmd, mode, 3600)
+        if exit_code == 1:
+            print("The tblastn search takes too long. Exciting ...")
+            f.close()
+            cleanup(tmp, tmp_folder)
+            sys.exit()
+        else:
+            print("\t ...finished")
 
     ################### search for candidate regions and extract seq ###########
     # parse blast and filter for candiate regions
@@ -861,7 +880,8 @@ def main():
     #if we searched in more than one Taxon and no ortholog was found
     if refBool == False and searchTaxon == '':
         print("No orthologs found. Exciting ...")
-        cleanup(tmp, tmp_path)
+        f.close()
+        cleanup(tmp, tmp_folder)
         return 1
     #if we searched in more than one taxon
     if fasoff == False and searchTaxon == '':
@@ -878,14 +898,16 @@ def main():
         print("\t ...finished \n")
     ################# remove tmp folder ########################################
     if searchTaxon != '':
-        cleanup(tmp, tmp_path)
+        f.close()
+        cleanup(tmp, tmp_folder)
     else:
-        cleanup(tmp, out + "/tmp/")
+        f.close()
+        cleanup(tmp, tmp_folder)
 
     end = time.time()
     sys.stdout = sys.__stdout__
     #print(group + "\t" + str(end-fas) + "\t" + str(end-start))
-    print("fDOG-Assembly finished complete in " + str(end-start) + "seconds.")
+    print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
     f.close()
 
 
