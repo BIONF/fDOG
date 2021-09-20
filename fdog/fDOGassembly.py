@@ -28,6 +28,7 @@ import yaml
 import subprocess
 import time
 import shutil
+import multiprocessing as mp
 
 ########################### functions ##########################################
 def check_path(path):
@@ -602,6 +603,8 @@ def main():
     optional.add_argument('--searchTaxon', help='Search Taxon name', action='store', default='')
     optional.add_argument('--silent', help='Output will only be written into the log file', action='store_true', default=False)
     optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed', action='store_true', default=False)
+    optional.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
+    optional.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -640,6 +643,8 @@ def main():
     searchTaxon = args.searchTaxon
     silent = args.silent
     debug = args.debug
+    force = args.force
+    append = args.append
 
     # output modes
     if debug == True and silent == True:
@@ -672,12 +677,24 @@ def main():
 
     if out == '':
         out = os.getcwd()
-        os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
-        out = out + '/' + group + '/'
     else:
         if out[-1] != "/":
             out = out + "/"
         check_path(out)
+
+    if os.path.exists(out + '/' + group):
+        if append != True and force != True:
+            print("Output folder for group " + group + " exists already. Please choose --force or --append.")
+            sys.exit()
+        elif force == True:
+            shutil.rmtree(out + '/' + group, ignore_errors=True)
+        elif append == True:
+            refBool = True # checks if sequences of reference species were already part of the extended.fa file
+        else:
+            refBool = False # checks if sequences of reference species were already part of the extended.fa file
+    else:
+        os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
+        out = out + '/' + group + '/'
 
     if core_path == '':
         core_path = out + '/core_orthologs/'
@@ -704,11 +721,9 @@ def main():
     else:
         sys.stdout = Logger(f)
 
+    ########################### other variables ################################
+
     assembly_names = os.listdir(assemblyDir)
-
-    ########################## some variables ##################################
-
-    refBool = False # checks if sequences of reference species were already part of the extended.fa file
 
     ################################# paths ####################################
 
