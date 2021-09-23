@@ -72,13 +72,13 @@ def starting_subprocess(cmd, mode, time_out = None):
 
 def merge(blast_results, insert_length):
     #merging overlapping and contigous candidate regions
+    #format dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>, <score>)]}
     number_regions = 0
     insert_length = int(insert_length)
+    score_list = []
     for key in blast_results:
         locations = blast_results[key]
         locations = sorted(locations, key = lambda x: int(x[3]))
-        #print("test")
-        #print(locations)
         size_list = len(locations)
         j = 0
         while j < size_list-1:
@@ -88,6 +88,8 @@ def merge(blast_results, insert_length):
                     #merge overlapping regions plus strand
                     locations[j][1] = max(locations[j][1], locations[i][1])
                     locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations[j][4] = max(locations[j][4], locations[i][4])
+                    locations[j][6] = max(locations[j][6], locations[i][6])
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
@@ -95,6 +97,8 @@ def merge(blast_results, insert_length):
                     #merge overlapping regions minus strand
                     locations[j][0] = min(locations[j][0], locations[i][0])
                     locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations[j][4] = max(locations[j][4], locations[i][4])
+                    locations[j][6] = max(locations[j][6], locations[i][6])
                     locations.pop(i)
                     size_list -= 1
                     i -= 1
@@ -102,6 +106,8 @@ def merge(blast_results, insert_length):
                     #merging consecutive regions, the distance between booth is not longer than a cutoff, plus strand
                     locations[j][1] = max(locations[j][1], locations[i][1])
                     locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations[j][4] = max(locations[j][4], locations[i][4])
+                    locations[j][6] = max(locations[j][6], locations[i][6])
                     locations.pop(i)
                     size_list -= 1
                     i -=1
@@ -109,20 +115,24 @@ def merge(blast_results, insert_length):
                     #merging consecutive regions, the distance between booth is not longer than a cutoff, minus strand
                     locations[j][0] = min(locations[j][0], locations[i][0])
                     locations[j][2] = min(locations[j][2], locations[i][2])
+                    locations[j][4] = max(locations[j][4], locations[i][4])
+                    locations[j][6] = max(locations[j][6], locations[i][6])
                     locations.pop(i)
                     size_list -= 1
                     i -=1
                 i += 1
             j += 1
 
+        for entry in locations:
+            score_list.append(entry[6])
         number_regions += len(locations)
         blast_results[key] = locations
 
-    return blast_results, number_regions
+    return blast_results, number_regions, score_list
 
 def parse_blast(line, blast_results, cutoff):
-    # format blast line:  <contig> <sstart> <send> <evalue> <qstart> <qend>
-    # format dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>)]}
+    # format blast line:  <contig> <sstart> <send> <evalue> <qstart> <qend> <score>
+    # format dictionary: {node_name: [(<start>,<send>,evalue, <qstart>,<qend>,<strand>, <score>)]}
     line = line.replace("\n", "")
     line_info = line.split("\t")
     evalue = float(line_info[3])
@@ -131,7 +141,7 @@ def parse_blast(line, blast_results, cutoff):
         return blast_results, evalue
     #add region to dictionary
     else:
-        node_name, sstart, send, qstart, qend = line_info[0], int(line_info[1]), int(line_info[2]), int(line_info[4]), int(line_info[5])
+        node_name, sstart, send, qstart, qend, score = line_info[0], int(line_info[1]), int(line_info[2]), int(line_info[4]), int(line_info[5]), int(line_info[6])
         split = node_name.split("|")
         # finding out on which strand tBLASTn found a hit
         if sstart < send:
@@ -145,14 +155,32 @@ def parse_blast(line, blast_results, cutoff):
             node_name = split[1]
         if node_name in blast_results:
             list = blast_results[node_name]
-            list.append([int(sstart),int(send), evalue, int(qstart), int(qend), strand])
+            list.append([int(sstart),int(send), evalue, int(qstart), int(qend), strand, score])
             blast_results[node_name] = list
         else:
-            blast_results[node_name] = [[int(sstart),int(send), evalue, int(qstart), int(qend), strand]]
+            blast_results[node_name] = [[int(sstart),int(send), evalue, int(qstart), int(qend), strand, score]]
 
     return blast_results, evalue
 
-def candidate_regions(intron_length, cutoff_evalue, tmp_path):
+def get_x_results(blast_dic, x, score_list):
+
+    new_dic = {}
+    score_list.sort(reverse=True)
+    min = score_list[x - 1]
+    number_regions = 0
+
+    for key in blast_dic:
+        key_list = []
+        entries = blast_dic[key]
+        for i in entries:
+            if i[6] >= min:
+                key_list.append(i)
+        if key_list != []:
+            new_dic[key] = key_list
+            number_regions += len(key_list)
+    return new_dic, number_regions
+
+def candidate_regions(intron_length, cutoff_evalue, tmp_path, x = 10):
     ###################### extracting candidate regions ########################
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
     blast_file = open(tmp_path + "/blast_results.out", "r")
@@ -171,8 +199,10 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path):
         blast_file.close()
         return 0,0
     else:
-        candidate_regions, number_regions = merge(blast_results, intron_length)
+        candidate_regions, number_regions, score_list = merge(blast_results, intron_length)
         blast_file.close()
+        if number_regions > x:
+            candidate_regions, number_regions = get_x_results(candidate_regions, x, score_list)
         return candidate_regions, number_regions
 
 def extract_seq(region_dic, path, tmp_path, mode):
@@ -551,6 +581,10 @@ def clean_fas(path, file_type):
         file.write(new_line)
     file.close()
 
+def ortholog_search():
+    
+    pass
+
 class Logger(object):
     def __init__(self, file):
         self.file = file
@@ -583,7 +617,7 @@ def main():
     required.add_argument('--refSpec', help='Reference taxon for fDOG.', action='store', nargs="+", default='', required=True)
     ################## optional arguments ######################################
     optional = parser.add_argument_group('Optional arguments')
-    optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 5000)',action='store', default=5000, type=int)
+    optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 50000)',action='store', default=50000, type=int)
     optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:5000)', action='store', default=5000, type=int)
     optional.add_argument('--assemblyPath', help='Path for the assembly directory', action='store', default='')
     optional.add_argument('--tmp', help='tmp files will not be deleted', action='store_true', default = False)
@@ -688,13 +722,18 @@ def main():
             sys.exit()
         elif force == True:
             shutil.rmtree(out + '/' + group, ignore_errors=True)
+            refBool = False
+            os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
+            out = out + '/' + group + '/'
         elif append == True:
-            refBool = True # checks if sequences of reference species were already part of the extended.fa file
+            out = out + '/' + group + '/'
+            refBool = True
         else:
             refBool = False # checks if sequences of reference species were already part of the extended.fa file
     else:
         os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
         out = out + '/' + group + '/'
+        refBool = False
 
     if core_path == '':
         core_path = out + '/core_orthologs/'
@@ -815,7 +854,7 @@ def main():
         #makes a tBLASTn search against database
         #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
         print("Starting tBLASTn search...")
-        cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
+        cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
         exit_code = starting_subprocess(cmd, mode, 3600)
         if exit_code == 1:
             print("The tblastn search takes too long. Exciting ...")
