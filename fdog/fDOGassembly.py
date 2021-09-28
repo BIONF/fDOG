@@ -464,6 +464,38 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     orthologs = set(orthologs)
     return list(orthologs), seed
 
+def addRef(output, core_fasta, species_list):
+    print(species_list)
+    output_file = open(output, "a+")
+    seq_records_core = readFasta(core_fasta)
+    seq_records_core = list(seq_records_core)
+    for species in species_list:
+        for entry_core in seq_records_core:
+            if species in entry_core.id:
+                output_file.write(">" + entry_core.id + "\n")
+                output_file.write(str(entry_core.seq) + "\n")
+    output_file.close()
+
+def addSeq(output, seq_list):
+    output_file = open(output, "a+")
+
+    for item in seq_list:
+        candidate_fasta = item[0]
+        sequenceIds = item[1]
+        if sequenceIds == 0 or sequenceIds == []:
+            pass
+        seq_records_candidate = readFasta(candidate_fasta)
+        seq_records_candidate = list(seq_records_candidate)
+        for entry_candidate in seq_records_candidate:
+            if entry_candidate.id in sequenceIds:
+                if entry_candidate.id == sequenceIds[0]:
+                    output_file.write(">" + entry_candidate.id + "|1" + "\n")
+                    output_file.write(str(entry_candidate.seq) + "\n")
+                else:
+                    output_file.write(">" + entry_candidate.id + "|0" + "\n")
+                    output_file.write(str(entry_candidate.seq) + "\n")
+    output_file.close()
+
 def addSequences(sequenceIds, candidate_fasta, core_fasta, output, name, species_list, refBool, tmp_path):
 
     output_file = open(output, "a+")
@@ -581,9 +613,69 @@ def clean_fas(path, file_type):
         file.write(new_line)
     file.close()
 
-def ortholog_search():
-    
-    pass
+def ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs):
+    cmd = 'mkdir ' + out + '/tmp/' + asName
+    starting_subprocess(cmd, 'silent')
+    tmp_path = out + "tmp/" + asName + "/"
+    candidatesOutFile = tmp_path + group + ".candidates.fa"
+    #orthologsOutFile = out + "/" + group + ".extended.fa"
+    fasOutFile = out + "/" + group
+    #mappingFile = out + "/tmp/" + group + ".mapping.txt"
+
+    print("Searching in species " + asName + "\n")
+    assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
+    db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
+    db_check = searching_for_db(db_path)
+
+    if db_check == 0:
+        print("Creating a blast data base...")
+        cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
+        starting_subprocess(cmd, mode)
+        print("\t ...finished \n")
+
+    #makes a tBLASTn search against database
+    #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
+    print("Starting tBLASTn search...")
+    cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
+    exit_code = starting_subprocess(cmd, mode, 3600)
+    if exit_code == 1:
+        print("The tblastn search takes too long. Exciting ...")
+        f.close()
+        cleanup(tmp, tmp_folder)
+        sys.exit()
+    else:
+        print("\t ...finished")
+
+    regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
+    if regions == 0:
+        #no candidat region are available, no ortholog can be found
+        print("No candidate region found for species %s!\n" % asName)
+        return [], candidatesOutFile
+
+    else:
+        print(str(number_regions) + " candiate regions were found for species %s.\n" % asName)
+        extract_seq(regions, db_path, tmp_path, mode)
+
+    ############### make Augustus PPX search ###################################
+    print("Starting augustus ppx ...")
+    augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
+    print("\t ...finished \n")
+
+    ################# backward search to filter for orthologs###################
+    if int(os.path.getsize(candidatesOutFile)) <= 0:
+        print("No genes found at candidate regions\n")
+        return [], candidatesOutFile
+
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
+
+    if reciprocal_sequences == 0:
+        if regions != 0:
+            print("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
+        return [], candidatesOutFile
+    else:
+        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
+
+    return reciprocal_sequences, candidatesOutFile
 
 class Logger(object):
     def __init__(self, file):
@@ -639,7 +731,7 @@ def main():
     optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed', action='store_true', default=False)
     optional.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
     optional.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
-
+    optional.add_argument('--parallel', help= 'The ortholog search of multiple species will be done in parallel', action='store_true', default=False)
     args = parser.parse_args()
 
     # required
@@ -679,6 +771,7 @@ def main():
     debug = args.debug
     force = args.force
     append = args.append
+    parallel = args.parallel
 
     # output modes
     if debug == True and silent == True:
@@ -815,120 +908,140 @@ def main():
 
     searchBool = False
 
+    if searchTaxon == '':
+        ortholog_sequences = []
+        cpus = mp.cpu_count()
+        print(cpus)
+        #pool = mp.Pool(cpus)
+        for asName in assembly_names:
+            reciprocal_sequences, candidatesOutFile = ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs)
+            ortholog_sequences.append([candidatesOutFile, reciprocal_sequences])
+
+        orthologsOutFile = out + "/" + group + ".extended.fa"
+
+        if taxa == []:
+            taxa = [fdog_ref_species]
+        addRef(orthologsOutFile, fasta_path, taxa)
+        addSeq(orthologsOutFile, ortholog_sequences)
+        refBool = True
+        mappingFile = out + "/tmp/" + group + ".mapping.txt"
+
+
+    else:
     #################### fDOG assembly computation for all species #############
-    for asName in assembly_names:
-        if searchBool == True:
-            break
-        if searchTaxon != '' and searchBool == False:
-            asName = searchTaxon
-            searchBool = True
+        for asName in assembly_names:
+            if searchBool == True:
+                break
+            if searchTaxon != '' and searchBool == False:
+                asName = searchTaxon
+                searchBool = True
 
-        ################### path definitions ###################################
+            ################### path definitions ###################################
 
-        cmd = 'mkdir ' + out + '/tmp/' + asName
-        starting_subprocess(cmd, 'silent')
-        tmp_path = out + "tmp/" + asName + "/"
-        candidatesOutFile = tmp_path + group + ".candidates.fa"
-        if searchTaxon != '':
-            orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
-            fasOutFile = out + "/" + group + "_" + asName
-            mappingFile = tmp_path + group + "_" + asName + ".mapping.txt"
-        else:
-            orthologsOutFile = out + "/" + group + ".extended.fa"
-            fasOutFile = out + "/" + group
-            mappingFile = out + "/tmp/" + group + ".mapping.txt"
-
-        print("Searching in species " + asName + "\n")
-        assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
-        db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
-
-    ######################## tBLASTn ###########################################
-        #checks if data base exists already
-        db_check = searching_for_db(db_path)
-        if db_check == 0:
-            print("Creating a blast data base...")
-            cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
-            starting_subprocess(cmd, mode)
-            print("\t ...finished \n")
-
-        #makes a tBLASTn search against database
-        #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
-        print("Starting tBLASTn search...")
-        cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
-        exit_code = starting_subprocess(cmd, mode, 3600)
-        if exit_code == 1:
-            print("The tblastn search takes too long. Exciting ...")
-            f.close()
-            cleanup(tmp, tmp_folder)
-            sys.exit()
-        else:
-            print("\t ...finished")
-
-    ################### search for candidate regions and extract seq ###########
-    # parse blast and filter for candiate regions
-        regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
-
-        if regions == 0:
-            #no candidat region are available, no ortholog can be found
-            print("No candidate region found!\n")
-            if refBool == True:
-                continue
+            cmd = 'mkdir ' + out + '/tmp/' + asName
+            starting_subprocess(cmd, 'silent')
+            tmp_path = out + "tmp/" + asName + "/"
+            candidatesOutFile = tmp_path + group + ".candidates.fa"
+            if searchTaxon != '':
+                orthologsOutFile = out + "/" + group + "_" + asName + ".extended.fa"
+                fasOutFile = out + "/" + group + "_" + asName
+                mappingFile = tmp_path + group + "_" + asName + ".mapping.txt"
             else:
-                taxa = [fdog_ref_species]
-                reciprocal_sequences = 0
-        else:
-            print(str(number_regions) + " candiate regions were found.\n")
-            extract_seq(regions, db_path, tmp_path, mode)
+                orthologsOutFile = out + "/" + group + ".extended.fa"
+                fasOutFile = out + "/" + group
+                mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
-    ############### make Augustus PPX search ###################################
+            print("Searching in species " + asName + "\n")
+            assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
+            db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
 
-            print("Starting augustus ppx ...")
-            augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
-            print("\t ...finished \n")
+        ######################## tBLASTn ###########################################
+            #checks if data base exists already
+            db_check = searching_for_db(db_path)
+            if db_check == 0:
+                print("Creating a blast data base...")
+                cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
+                starting_subprocess(cmd, mode)
+                print("\t ...finished \n")
 
-    ################# backward search to filter for orthologs###################
-            if int(os.path.getsize(candidatesOutFile)) <= 0:
-                print("No genes found at candidate region\n")
+            #makes a tBLASTn search against database
+            #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
+            print("Starting tBLASTn search...")
+            cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
+            exit_code = starting_subprocess(cmd, mode, 3600)
+            if exit_code == 1:
+                print("The tblastn search takes too long. Exciting ...")
+                f.close()
+                cleanup(tmp, tmp_folder)
+                sys.exit()
+            else:
+                print("\t ...finished")
+
+        ################### search for candidate regions and extract seq ###########
+        # parse blast and filter for candiate regions
+            regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
+
+            if regions == 0:
+                #no candidat region are available, no ortholog can be found
+                print("No candidate region found!\n")
+                if refBool == True:
+                    continue
+                else:
+                    taxa = [fdog_ref_species]
+                    reciprocal_sequences = 0
+            else:
+                print(str(number_regions) + " candiate regions were found.\n")
+                extract_seq(regions, db_path, tmp_path, mode)
+
+        ############### make Augustus PPX search ###################################
+
+                print("Starting augustus ppx ...")
+                augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
+                print("\t ...finished \n")
+
+        ################# backward search to filter for orthologs###################
+                if int(os.path.getsize(candidatesOutFile)) <= 0:
+                    print("No genes found at candidate region\n")
+                    if searchTaxon == '' and refBool == True:
+                        continue
+                    else:
+                        reciprocal_sequences = 0
+                        taxa = [fdog_ref_species]
+                else:
+                    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
+
+
+        ################## checking accepted genes for co-orthologs ################
+            if reciprocal_sequences == 0:
+                if regions != 0:
+                    print("No ortholog fulfilled the reciprocity criteria \n")
                 if searchTaxon == '' and refBool == True:
                     continue
                 else:
                     reciprocal_sequences = 0
-                    taxa = [fdog_ref_species]
             else:
-                reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
+                reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
+        ################ add sequences to extended.fa in the output folder##########
 
-    ################## checking accepted genes for co-orthologs ################
-        if reciprocal_sequences == 0:
-            if regions != 0:
-                print("No ortholog fulfilled the reciprocity criteria \n")
-            if searchTaxon == '' and refBool == True:
-                continue
-            else:
-                reciprocal_sequences = 0
-        else:
-            reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
+            addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
+            refBool = True
 
-    ################ add sequences to extended.fa in the output folder##########
-
-        addSequences(reciprocal_sequences, candidatesOutFile, fasta_path, orthologsOutFile, group, taxa, refBool, tmp_path)
-        refBool = True
-
-    ############### make Annotation with FAS ###################################
-        # if we want to search in only one Taxon
-        if searchTaxon != '' and fasoff == False:
-            fas = time.time()
-            print("Calculating FAS scores ...")
-            fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-            # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
-            cmd = 'mkdir ' + tmp_path + 'anno_dir'
-            starting_subprocess(cmd, 'silent')
-            cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
-            starting_subprocess(cmd, 'silent')
-            clean_fas(fasOutFile + "_forward.domains", 'domains')
-            clean_fas(fasOutFile + "_reverse.domains", 'domains')
-            clean_fas(fasOutFile + ".phyloprofile", 'phyloprofile')
-            print("\t ...finished \n")
+        ############### make Annotation with FAS ###################################
+            # if we want to search in only one Taxon
+            if searchTaxon != '' and fasoff == False:
+                fas = time.time()
+                print("Calculating FAS scores ...")
+                fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
+                # bug in calcFAS when using --tsv, have to wait till it's fixed before I can use the option
+                cmd = 'mkdir ' + tmp_path + 'anno_dir'
+                starting_subprocess(cmd, 'silent')
+                cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group + '_' + asName
+                starting_subprocess(cmd, 'silent')
+                clean_fas(fasOutFile + "_forward.domains", 'domains')
+                clean_fas(fasOutFile + "_reverse.domains", 'domains')
+                clean_fas(fasOutFile + ".phyloprofile", 'phyloprofile')
+                print("\t ...finished \n")
 
 
     #if we searched in more than one Taxon and no ortholog was found
