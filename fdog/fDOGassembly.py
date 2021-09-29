@@ -480,8 +480,9 @@ def addSeq(output, seq_list):
     output_file = open(output, "a+")
 
     for item in seq_list:
-        candidate_fasta = item[0]
-        sequenceIds = item[1]
+        print(item)
+        candidate_fasta = item[1]
+        sequenceIds = item[0]
         if sequenceIds == 0 or sequenceIds == []:
             pass
         seq_records_candidate = readFasta(candidate_fasta)
@@ -613,7 +614,8 @@ def clean_fas(path, file_type):
         file.write(new_line)
     file.close()
 
-def ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs):
+def ortholog_search(args):
+    (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs) = args
     cmd = 'mkdir ' + out + '/tmp/' + asName
     starting_subprocess(cmd, 'silent')
     tmp_path = out + "tmp/" + asName + "/"
@@ -628,23 +630,23 @@ def ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_speci
     db_check = searching_for_db(db_path)
 
     if db_check == 0:
-        print("Creating a blast data base...")
+        #print("Creating a blast data base...")
         cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
         starting_subprocess(cmd, mode)
-        print("\t ...finished \n")
+        #print("\t ...finished \n")
 
     #makes a tBLASTn search against database
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
-    print("Starting tBLASTn search...")
+    #print("Starting tBLASTn search...")
     cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
     exit_code = starting_subprocess(cmd, mode, 3600)
     if exit_code == 1:
-        print("The tblastn search takes too long. Exciting ...")
+        print("The tblastn search takes too long for species %s. Exciting ..." % asName)
         f.close()
         cleanup(tmp, tmp_folder)
         sys.exit()
-    else:
-        print("\t ...finished")
+    #else:
+        #print("\t ...finished")
 
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
     if regions == 0:
@@ -657,13 +659,13 @@ def ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_speci
         extract_seq(regions, db_path, tmp_path, mode)
 
     ############### make Augustus PPX search ###################################
-    print("Starting augustus ppx ...")
+    #print("Starting augustus ppx ...")
     augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
-    print("\t ...finished \n")
+    #print("\t ...finished \n")
 
     ################# backward search to filter for orthologs###################
     if int(os.path.getsize(candidatesOutFile)) <= 0:
-        print("No genes found at candidate regions\n")
+        #print("No genes found at candidate regions\n")
         return [], candidatesOutFile
 
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
@@ -910,15 +912,20 @@ def main():
 
     if searchTaxon == '':
         ortholog_sequences = []
+        calls = []
         cpus = mp.cpu_count()
-        print(cpus)
-        #pool = mp.Pool(cpus)
+        pool = mp.Pool(cpus)
         for asName in assembly_names:
-            reciprocal_sequences, candidatesOutFile = ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs)
-            ortholog_sequences.append([candidatesOutFile, reciprocal_sequences])
-
+            calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs])
+        #for asName in assembly_names:
+            #reciprocal_sequences, candidatesOutFile = ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs)
+            #ortholog_sequences.append([candidatesOutFile, reciprocal_sequences])
+        results = (pool.imap_unordered(ortholog_search, calls))
+        pool.close()
+        pool.join()
         orthologsOutFile = out + "/" + group + ".extended.fa"
-
+        for i in results:
+            ortholog_sequences.append(i)
         if taxa == []:
             taxa = [fdog_ref_species]
         addRef(orthologsOutFile, fasta_path, taxa)
