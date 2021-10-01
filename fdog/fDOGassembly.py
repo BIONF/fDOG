@@ -341,7 +341,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         try:
             id_ref = seedDic[fdog_ref_species]
         except KeyError:
-            print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
+            #print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
             return 0, seed
         if searchTool == "blast":
             cmd = "blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
@@ -397,7 +397,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
 
         if orthologs == []:
-            print("No hit in the backward search, ...exciting")
+            #print("No hit in the backward search, ...exciting")
             return 0, seed
 
     else:
@@ -422,12 +422,12 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         orthologs = set({})
 
         for species in seed:
-            print("backward search in species " + species + "\n")
+            print("backward search in species %s\n" %species)
             orthologs_new = set({})
             try:
                 id_ref = seedDic[species]
             except KeyError:
-                print("The species " + species + " isn't part of the core ortholog group, ... exciting")
+                #print("The species " + species + " isn't part of the core ortholog group, ... exciting")
                 return 0, seed
 
             cmd = "blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -seg " + filter + " -out " + tmp_path + "/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
@@ -450,12 +450,13 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
 
             #print(species)
             #print(orthologs_new)
+            #print(orthologs)
             if species == fdog_ref_species:
                 orthologs = orthologs_new
             else:
                 orthologs = orthologs & orthologs_new
-                if orthologs == {}:
-                    print("No ortholog was found with option --strict")
+                if len(orthologs) == 0:
+                    #print("No ortholog was found with option --strict")
                     return 0, seed
 
 
@@ -465,7 +466,7 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     return list(orthologs), seed
 
 def addRef(output, core_fasta, species_list):
-    print(species_list)
+    #print(species_list)
     output_file = open(output, "a+")
     seq_records_core = readFasta(core_fasta)
     seq_records_core = list(seq_records_core)
@@ -480,7 +481,7 @@ def addSeq(output, seq_list):
     output_file = open(output, "a+")
 
     for item in seq_list:
-        print(item)
+        #print(item)
         candidate_fasta = item[1]
         sequenceIds = item[0]
         if sequenceIds == 0 or sequenceIds == []:
@@ -540,8 +541,12 @@ def createFasInput(orthologsOutFile, mappingFile):
 
 def cleanup(tmp, tmp_path):
     if tmp == False:
+        timeout = time.time() + 60*1
         while os.path.exists(tmp_path):
             shutil.rmtree(tmp_path, ignore_errors=True)
+            if time.time() > timeout:
+                print("tmp folder could not be removed!")
+                break
 
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     if len(candidate_names) == 1:
@@ -639,7 +644,10 @@ def ortholog_search(args):
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
     #print("Starting tBLASTn search...")
     cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
+    time_tblastn_start = time.time()
     exit_code = starting_subprocess(cmd, mode, 3600)
+    time_tblastn_end = time.time()
+    time_tblastn = time_tblastn_end - time_tblastn_start
     if exit_code == 1:
         print("The tblastn search takes too long for species %s. Exciting ..." % asName)
         f.close()
@@ -647,6 +655,7 @@ def ortholog_search(args):
         sys.exit()
     #else:
         #print("\t ...finished")
+    print("Time tblastn %s in species %s" % (str(time_tblastn), asName))
 
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
     if regions == 0:
@@ -655,13 +664,17 @@ def ortholog_search(args):
         return [], candidatesOutFile
 
     else:
-        print(str(number_regions) + " candiate regions were found for species %s.\n" % asName)
+        print(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
         extract_seq(regions, db_path, tmp_path, mode)
 
     ############### make Augustus PPX search ###################################
     #print("Starting augustus ppx ...")
+    time_augustus_start = time.time()
     augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
     #print("\t ...finished \n")
+    time_augustus_end = time.time()
+    time_augustus = time_augustus_end - time_augustus_start
+    print("Time augustus: %s species %s \n" % (str(time_augustus), asName))
 
     ################# backward search to filter for orthologs###################
     if int(os.path.getsize(candidatesOutFile)) <= 0:
@@ -884,7 +897,7 @@ def main():
     print("fDOG reference species: " + fdog_ref_species + " \n")
 
     ######################## consensus sequence ################################
-
+    group_computation_time_start = time.time()
     #make a majority-rule consensus sequence with the tool hmmemit from hmmer
     print("Building a consensus sequence")
     cmd = 'hmmemit -c -o' + consensus_path + ' ' + hmm_path
@@ -908,24 +921,35 @@ def main():
         starting_subprocess(cmd, 'silent')
         print(" \t ...finished \n")
 
+    group_computation_time_end = time.time()
+    time_group = group_computation_time_end - group_computation_time_start
+
     searchBool = False
 
     if searchTaxon == '':
         ortholog_sequences = []
-        calls = []
-        cpus = mp.cpu_count()
-        pool = mp.Pool(cpus)
-        for asName in assembly_names:
-            calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs])
-        #for asName in assembly_names:
-            #reciprocal_sequences, candidatesOutFile = ortholog_search(asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs)
-            #ortholog_sequences.append([candidatesOutFile, reciprocal_sequences])
-        results = (pool.imap_unordered(ortholog_search, calls))
-        pool.close()
-        pool.join()
+        time_ortholog_start = time.time()
+        if parallel == True:
+            calls = []
+            cpus = mp.cpu_count()
+            pool = mp.Pool(cpus)
+            for asName in assembly_names:
+                calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs])
+
+            results = (pool.imap_unordered(ortholog_search, calls))
+            pool.close()
+            pool.join()
+            for i in results:
+                ortholog_sequences.append(i)
+        else:
+            for asName in assembly_names:
+                args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs]
+                reciprocal_sequences, candidatesOutFile = ortholog_search(args)
+                ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
+
         orthologsOutFile = out + "/" + group + ".extended.fa"
-        for i in results:
-            ortholog_sequences.append(i)
+        time_ortholog_end = time.time()
+        time_ortholog = time_ortholog_end - time_ortholog_start
         if taxa == []:
             taxa = [fdog_ref_species]
         addRef(orthologsOutFile, fasta_path, taxa)
@@ -1071,6 +1095,11 @@ def main():
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
         print("\t ...finished \n")
     ################# remove tmp folder ########################################
+    end = time.time()
+    time_fas = end - fas
+    print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
+    print("Group preparation: %s \t Ortholog search: %s \t Fas: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
+    sys.stdout = sys.__stdout__
     if searchTaxon != '':
         f.close()
         cleanup(tmp, tmp_folder)
@@ -1078,11 +1107,9 @@ def main():
         f.close()
         cleanup(tmp, tmp_folder)
 
-    end = time.time()
-    sys.stdout = sys.__stdout__
+
     #print(group + "\t" + str(end-fas) + "\t" + str(end-start))
-    print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
-    f.close()
+
 
 
 if __name__ == '__main__':
