@@ -484,10 +484,8 @@ def addSeq(output, seq_list):
         #print(item)
         candidate_fasta = item[1]
         sequenceIds = item[0]
-        print(sequenceIds)
-        print(type(sequenceIds))
         if sequenceIds == 0 or sequenceIds == []:
-            pass
+            continue
         seq_records_candidate = readFasta(candidate_fasta)
         seq_records_candidate = list(seq_records_candidate)
         for entry_candidate in seq_records_candidate:
