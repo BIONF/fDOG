@@ -650,8 +650,7 @@ def ortholog_search(args):
     time_tblastn = time_tblastn_end - time_tblastn_start
     if exit_code == 1:
         print("The tblastn search takes too long for species %s. Exciting ..." % asName)
-        f.close()
-        cleanup(tmp, tmp_folder)
+        #cleanup(tmp, tmp_folder)
         sys.exit()
     #else:
         #print("\t ...finished")
