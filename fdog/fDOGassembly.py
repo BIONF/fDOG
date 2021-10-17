@@ -244,7 +244,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                         output.write(line)
                 sequence_file.close()
             except FileNotFoundError:
-                print("No gene found in region with ID:" + name + " , continuing with next region")
+                print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
     output.close()
 
 def searching_for_db(assembly_path):
@@ -315,7 +315,12 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #print("mafft-linsi")
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
 
-    distances = get_distance_biopython(aln_file, matrix)
+    try:
+        distances = get_distance_biopython(aln_file, matrix)
+    except ValueError:
+        print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
+        return 0, "NaN", "NaN"
+
 
     distance_hit_query = distances[best_hit, candidate_name]
     distance_ref_hit = distances[best_hit, ref]
@@ -374,7 +379,8 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                                 print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tAccepting\n"%(distance_hit_query, distance_ref_hit)) if mode == "debug" else ""
                                 orthologs.append(gene)
                             elif co_orthologs_result == 0:
-                                print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit)) if mode == "debug" else ""
+                                if distance_ref_hit != "NaN":
+                                    print("\t Distance query - blast hit: %6.4f, Distance blast hit - reference: %6.4f\tRejecting\n"%(distance_hit_query, distance_ref_hit)) if mode == "debug" else ""
                     else:
                         print("\tnothitting\n") if mode == "debug" else ""
             elif (gene_name == old_name) and float(evalue) == min and gene_name not in orthologs:
@@ -629,7 +635,7 @@ def ortholog_search(args):
     fasOutFile = out + "/" + group
     #mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
-    print("Searching in species " + asName + "\n")
+    sys.stdout.write("Searching in species " + asName + "\n")
     assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
     db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
     db_check = searching_for_db(db_path)
@@ -649,9 +655,10 @@ def ortholog_search(args):
     time_tblastn_end = time.time()
     time_tblastn = time_tblastn_end - time_tblastn_start
     if exit_code == 1:
-        print("The tblastn search takes too long for species %s. Exciting ..." % asName)
+        sys.stdout.write("The tblastn search takes too long for species %s. Exciting ..." % asName)
         #cleanup(tmp, tmp_folder)
-        sys.exit()
+        #sys.exit()
+        return [], candidatesOutFile
     #else:
         #print("\t ...finished")
     print("Time tblastn %s in species %s" % (str(time_tblastn), asName))
@@ -659,7 +666,7 @@ def ortholog_search(args):
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
     if regions == 0:
         #no candidat region are available, no ortholog can be found
-        print("No candidate region found for species %s!\n" % asName)
+        sys.stdout.write("No candidate region found for species %s!\n" % asName)
         return [], candidatesOutFile
 
     else:
@@ -684,7 +691,7 @@ def ortholog_search(args):
 
     if reciprocal_sequences == 0:
         if regions != 0:
-            print("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
+            sys.stdout.write("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
         return [], candidatesOutFile
     else:
         reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
@@ -976,7 +983,7 @@ def main():
     end = time.time()
     time_fas = end - fas
     print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
-    print("Group preparation: %s \t Ortholog search: %s \t Fas: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
+    print("Group preparation: %s \t Ortholog search: %s \t FAS: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
     sys.stdout = sys.__stdout__
 
     f.close()
