@@ -727,7 +727,7 @@ def main():
     required.add_argument('--gene', help='Core_ortholog group name. Folder inlcuding the fasta file, hmm file and aln file has to be located in core_orthologs/',
                             action='store', default='', required=True)
     required.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='', required=True)
-    required.add_argument('--refSpec', help='Reference taxon for fDOG.', action='store', nargs="+", default='', required=True)
+    required.add_argument('--refSpec', help='Reference taxon/taxa for fDOG.', action='store', nargs="+", default='', required=True)
     ################## optional arguments ######################################
     optional = parser.add_argument_group('Optional arguments')
     optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 50000)',action='store', default=50000, type=int)
@@ -744,10 +744,10 @@ def main():
     optional.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_true', default=False)
     optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     optional.add_argument('--coreTaxa', help='List of core taxa used during --strict', action='store', nargs="+", default=[])
-    optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on.', action='store', default='no')
+    #optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on.', action='store', default='no')
     optional.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
-    optional.add_argument('--searchTaxa', help='Search Taxon name', action='store', nargs="+", default=[])
+    optional.add_argument('--searchTaxa', help='List of Taxa to search in', action='store', nargs="+", default=[])
     optional.add_argument('--silent', help='Output will only be written into the log file', action='store_true', default=False)
     optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed', action='store_true', default=False)
     optional.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
