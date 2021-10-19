@@ -317,7 +317,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     try:
         distances = get_distance_biopython(aln_file, matrix)
-    except ValueError:
+    except get_distance_biopython.ValueError:
         print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
         return 0, "NaN", "NaN"
 
