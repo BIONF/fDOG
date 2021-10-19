@@ -770,11 +770,11 @@ def main():
     tmp = args.tmp
     strict = args.strict
     checkCoorthologs = args.checkCoorthologsRef
-    filter = args.filter
-    if filter == True or filter == 'yes':
-        filter = 'yes'
-    else:
-        filter = 'no'
+    #filter = args.filter
+    #if filter == True or filter == 'yes':
+        #filter = 'yes'
+    #else:
+        #filter = 'no'
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
