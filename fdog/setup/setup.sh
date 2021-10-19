@@ -114,14 +114,20 @@ echo "Downloading and installing annotation tools/databases:"
 fasta36="yes"
 if [ -z "$(which fasta36)" ]; then
   fasta36="no"
-  fasta36v="fasta-36.3.8h"
+  # fasta36v="fasta-36.3.8h"
+  fasta36v="36.3.8h_04-May-2020"
   if ! [ -f "bin/aligner/bin/fasta36" ]; then
-    echo "fasta-36"
-    wget "http://faculty.virginia.edu/wrpearson/fasta/fasta36/${fasta36v}.tar.gz"
-    tar xf $fasta36v.tar.gz
-    rm "${fasta36v}.tar.gz"
-    mv $fasta36v/* $CURRENT/bin/aligner/
-    rm -rf $fasta36v
+    echo "fasta36"
+    # wget "http://faculty.virginia.edu/wrpearson/fasta/fasta36/${fasta36v}.tar.gz"
+    # tar xf $fasta36v.tar.gz
+    # rm "${fasta36v}.tar.gz"
+    # mv $fasta36v/* $CURRENT/bin/aligner/
+    # rm -rf $fasta36v
+    wget "https://github.com/wrpearson/fasta36/archive/refs/tags/v${fasta36v}.tar.gz"
+    tar xf "v${fasta36v}.tar.gz"
+    rm "v${fasta36v}.tar.gz"
+    mv fasta36-${fasta36v}/* $CURRENT/bin/aligner/
+    rm -rf "fasta36-${fasta36v}"
     cd "$CURRENT/bin/aligner/src"
     if [ $sys=="Linux" ]; then
       make -f ../make/Makefile.linux64_sse2 all
@@ -162,10 +168,10 @@ if ! [ -f "$CURRENT/taxonomy/nodes" ]; then
   exit
 fi
 
-fasPrepare=0
+setupFAS=0
 if [ $fas == 1 ]; then
   cd "$CURRENT/bin"
-  if [ -z "$(which annoFAS)" ]; then
+  if [ -z "$(which fas.doAnno)" ]; then
     echo "FAS"
     pip install --user greedyFAS
     if [ -z "$($grepprog \$HOME/.local/bin:\$PATH ~/$bashFile)" ]; then
@@ -174,22 +180,22 @@ if [ $fas == 1 ]; then
     if [ -z "$($grepprog $homedir/.local/bin ~/$rprofile)" ]; then
       echo "Sys.setenv(PATH = paste(\"$homedir/.local/bin\", Sys.getenv(\"PATH\"), sep=\":\"))" >> ~/$rprofile
     fi
-    fasPrepare=1
+    setupFAS=1
   else
-    if ! [ -z "$(prepareFAS -t ./ --check 2>&1 | grep ERROR)" ]; then
-      fasPrepare=1
+    if ! [ -z "$(fas.setup -t ./ --check 2>&1 | grep ERROR)" ]; then
+      setupFAS=1
     fi
   fi
 
   cd $CURRENT
   source ~/$bashFile
-  if [ -z "$(which annoFAS)" ]; then
+  if [ -z "$(which fas.doAnno)" ]; then
     echo -e "Installation of FAS failed! Please try again or install FAS by yourself using \e[91mpip install greedyFAS\e[0m!"
     echo -e "For more info, please check FAS website at \e[91mhttps://github.com/BIONF/FAS\e[0m"
     exit
   else
-    if ! [ -z "$(prepareFAS -t ./ --check 2>&1 | grep ERROR)" ]; then
-      fasPrepare=1
+    if ! [ -z "$(fas.setup -t ./ --check 2>&1 | grep ERROR)" ]; then
+      setupFAS=1
     fi
   fi
   echo "done!"
@@ -346,9 +352,6 @@ perlModules=(
   List::Util
   Parallel::ForkManager
   POSIX
-  XML::SAX
-  XML::NamespaceSupport
-  XML::Parser
   Getopt::Long
   IO::Handle
   IPC::Run
@@ -409,9 +412,9 @@ else
   echo "-------------------------------------"
   $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/hamstr.pl
   $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/oneSeq.pl
-  if [ "$fasPrepare" == 1 ]; then
+  if [ "$setupFAS" == 1 ]; then
     echo "All tests succeeded."
-    echo -e "\e[91mPLEASE RUN\e[0m \e[96mprepareFAS\e[0m \e[91mTO CONFIGURE FAS BEFORE USING fdog!\e[0m"
+    echo -e "\e[91mPLEASE RUN\e[0m \e[96mfas.setup\e[0m \e[91mTO CONFIGURE FAS BEFORE USING fdog!\e[0m"
     echo "Then you can test fdog with:"
   else
     echo "All tests succeeded, fdog should be ready to run. You can test it with:"
