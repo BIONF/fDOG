@@ -317,6 +317,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     try:
         distances = get_distance_biopython(aln_file, matrix)
+        print(distances)
     except get_distance_biopython.ValueError:
         print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
         return 0, "NaN", "NaN"
@@ -658,6 +659,7 @@ def ortholog_search(args):
         sys.stdout.write("The tblastn search takes too long for species %s. Exciting ..." % asName)
         #cleanup(tmp, tmp_folder)
         #sys.exit()
+        sys.stdout.flush()
         return [], candidatesOutFile
     #else:
         #print("\t ...finished")
@@ -667,6 +669,7 @@ def ortholog_search(args):
     if regions == 0:
         #no candidat region are available, no ortholog can be found
         sys.stdout.write("No candidate region found for species %s!\n" % asName)
+        sys.stdout.flush()
         return [], candidatesOutFile
 
     else:
@@ -685,6 +688,7 @@ def ortholog_search(args):
     ################# backward search to filter for orthologs###################
     if int(os.path.getsize(candidatesOutFile)) <= 0:
         #print("No genes found at candidate regions\n")
+        sys.stdout.flush()
         return [], candidatesOutFile
 
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
@@ -692,10 +696,12 @@ def ortholog_search(args):
     if reciprocal_sequences == 0:
         if regions != 0:
             sys.stdout.write("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
+        sys.stdout.flush()
         return [], candidatesOutFile
     else:
         reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
+    sys.stdout.flush()
     return reciprocal_sequences, candidatesOutFile
 
 class Logger(object):
