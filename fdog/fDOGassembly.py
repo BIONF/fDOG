@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
+
 # Copyright (C) 2021 Hannah Muelbaier
 #
 #  This script is used to run fDOG-Assembly which performs targeted ortholog
@@ -554,6 +555,7 @@ def cleanup(tmp, tmp_path):
                 print("tmp folder could not be removed!")
                 break
 
+
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     if len(candidate_names) == 1:
         return candidate_names
@@ -717,7 +719,6 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-
     version = '0.1.2'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
@@ -971,6 +972,7 @@ def main():
     if fasoff == False:
         fas = time.time()
         print("Calculating FAS scores ...")
+
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
@@ -986,6 +988,9 @@ def main():
     print("Group preparation: %s \t Ortholog search: %s \t FAS: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
     sys.stdout = sys.__stdout__
 
+    end = time.time()
+    sys.stdout = sys.__stdout__
+    #print(group + "\t" + str(end-fas) + "\t" + str(end-start))
     f.close()
     cleanup(tmp, tmp_folder)
 
