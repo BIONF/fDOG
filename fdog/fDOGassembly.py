@@ -317,6 +317,9 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     try:
         distances = get_distance_biopython(aln_file, matrix)
+        print(distances)
+        print(best_hit)
+        print(candidate_name)
         distance_hit_query = distances[best_hit, candidate_name]
         distance_ref_hit = distances[best_hit, ref]
         #print(distances)
