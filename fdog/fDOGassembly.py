@@ -769,7 +769,7 @@ def main():
     tmp = args.tmp
     strict = args.strict
     checkCoorthologs = args.checkCoorthologsRef
-    filter = args.filter
+    #
     if filter == True or filter == 'yes':
         filter = 'yes'
     else:
