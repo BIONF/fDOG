@@ -2,6 +2,7 @@
 
 #######################################################################
 
+
 # Copyright (C) 2021 Hannah Muelbaier
 #
 #  This script is used to run fDOG-Assembly which performs targeted ortholog
@@ -245,7 +246,9 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                         output.write(line)
                 sequence_file.close()
             except FileNotFoundError:
-                print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
+                pass
+                #print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
+
     output.close()
 
 def searching_for_db(assembly_path):
@@ -318,13 +321,16 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     try:
         distances = get_distance_biopython(aln_file, matrix)
+        distance_hit_query = distances[best_hit, candidate_name]
+        distance_ref_hit = distances[best_hit, ref]
+        #print(distances)
     except ValueError:
-        print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
-        return 0, "NaN", "NaN"
+        #print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
 
 
-    distance_hit_query = distances[best_hit, candidate_name]
-    distance_ref_hit = distances[best_hit, ref]
+
+    #distance_hit_query = distances[best_hit, candidate_name]
+    #distance_ref_hit = distances[best_hit, ref]
 
     if distance_ref_hit < distance_hit_query:
         #accepted
@@ -660,6 +666,8 @@ def ortholog_search(args):
         sys.stdout.write("The tblastn search takes too long for species %s. Exciting ..." % asName)
         #cleanup(tmp, tmp_folder)
         #sys.exit()
+        sys.stdout.flush()
+
         return [], candidatesOutFile
     #else:
         #print("\t ...finished")
@@ -669,6 +677,8 @@ def ortholog_search(args):
     if regions == 0:
         #no candidat region are available, no ortholog can be found
         sys.stdout.write("No candidate region found for species %s!\n" % asName)
+        sys.stdout.flush()
+
         return [], candidatesOutFile
 
     else:
@@ -687,6 +697,7 @@ def ortholog_search(args):
     ################# backward search to filter for orthologs###################
     if int(os.path.getsize(candidatesOutFile)) <= 0:
         #print("No genes found at candidate regions\n")
+        sys.stdout.flush()
         return [], candidatesOutFile
 
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
@@ -694,10 +705,12 @@ def ortholog_search(args):
     if reciprocal_sequences == 0:
         if regions != 0:
             sys.stdout.write("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
+        sys.stdout.flush()
         return [], candidatesOutFile
     else:
         reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
+    sys.stdout.flush()
     return reciprocal_sequences, candidatesOutFile
 
 class Logger(object):
@@ -988,9 +1001,6 @@ def main():
     print("Group preparation: %s \t Ortholog search: %s \t FAS: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
     sys.stdout = sys.__stdout__
 
-    end = time.time()
-    sys.stdout = sys.__stdout__
-    #print(group + "\t" + str(end-fas) + "\t" + str(end-start))
     f.close()
     cleanup(tmp, tmp_folder)
 
