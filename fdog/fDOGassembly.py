@@ -244,7 +244,8 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                         output.write(line)
                 sequence_file.close()
             except FileNotFoundError:
-                print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
+                pass
+                #print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
     output.close()
 
 def searching_for_db(assembly_path):
@@ -321,7 +322,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         distance_ref_hit = distances[best_hit, ref]
         #print(distances)
     except ValueError:
-        print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
+        #print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
         return 0, "NaN", "NaN"
 
 
