@@ -327,6 +327,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     except ValueError:
         pass
         #print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
+        return 0, "NaN", "NaN"
 
 
 
