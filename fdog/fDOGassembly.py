@@ -955,15 +955,17 @@ def main():
         pool.close()
         pool.join()
         for i in results:
-            print(i[2])
             ortholog_sequences.append(i[0], i[1])
+            for k in i[2]:
+                print(k)
     else:
         ###################### computation species per species ################
         for asName in assembly_names:
             args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs]
             reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search(args)
-            print(output_ortholog_search)
             ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
+            for k in output_ortholog_search:
+                print(k)
 
     ################## preparing output ########################################
     orthologsOutFile = out + "/" + group + ".extended.fa"
