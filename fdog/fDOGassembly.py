@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
+
+
 # Copyright (C) 2021 Hannah Muelbaier
 #
 #  This script is used to run fDOG-Assembly which performs targeted ortholog
@@ -246,6 +248,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             except FileNotFoundError:
                 pass
                 #print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
+
     output.close()
 
 def searching_for_db(assembly_path):
@@ -323,7 +326,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #print(distances)
     except ValueError:
         #print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
-        return 0, "NaN", "NaN"
+
 
 
     #distance_hit_query = distances[best_hit, candidate_name]
@@ -558,6 +561,7 @@ def cleanup(tmp, tmp_path):
                 print("tmp folder could not be removed!")
                 break
 
+
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     if len(candidate_names) == 1:
         return candidate_names
@@ -660,8 +664,17 @@ def ortholog_search(args):
     time_tblastn_end = time.time()
     time_tblastn = time_tblastn_end - time_tblastn_start
     if exit_code == 1:
+<<<<<<< HEAD
         output.append("The tblastn search takes too long for species %s. Skipping species ..." % asName)
         return [], candidatesOutFile, output
+=======
+        sys.stdout.write("The tblastn search takes too long for species %s. Exciting ..." % asName)
+        #cleanup(tmp, tmp_folder)
+        #sys.exit()
+        sys.stdout.flush()
+
+        return [], candidatesOutFile
+>>>>>>> 0016fa5fd0081814b3d2457b7f6b3d5ac4b987a1
     #else:
         #print("\t ...finished")
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
@@ -669,8 +682,15 @@ def ortholog_search(args):
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
     if regions == 0:
         #no candidat region are available, no ortholog can be found
+<<<<<<< HEAD
         output.append("No candidate region found for species %s!\n" % asName)
         return [], candidatesOutFile, output
+=======
+        sys.stdout.write("No candidate region found for species %s!\n" % asName)
+        sys.stdout.flush()
+
+        return [], candidatesOutFile
+>>>>>>> 0016fa5fd0081814b3d2457b7f6b3d5ac4b987a1
 
     else:
         output.append(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
@@ -720,7 +740,6 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-
     version = '0.1.2'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
@@ -976,6 +995,7 @@ def main():
     if fasoff == False:
         fas = time.time()
         print("Calculating FAS scores ...")
+
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
