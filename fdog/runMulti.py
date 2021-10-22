@@ -43,7 +43,7 @@ def getSortedFiles(directory):
 
 def prepare(args, step):
     (seqFile, seqName, fdogPath, refspec, minDist, maxDist, coreOrth,
-    append, force, cleanup, group, blast, db,
+    append, force, noCleanup, group, blast, db,
     outpath, hmmpath, blastpath, searchpath, weightpath,
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
@@ -64,7 +64,7 @@ def prepare(args, step):
     seqFile, hmmpath, blastpath, searchpath, weightpath = fdogFn.checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])
     # group arguments
     basicArgs = [fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth]
-    ioArgs = [append, force, cleanup, group, blast, db]
+    ioArgs = [append, force, noCleanup, group, blast, db]
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
@@ -189,7 +189,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.45'
+    version = '0.0.46'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -212,7 +212,7 @@ def main():
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--forceComplete', help='Overwrite existing core orthologs and all output files', action='store_true', default=False)
-    addtionalIO.add_argument('--cleanup', help='Temporary output will be deleted. Default: True', action='store_true', default=True)
+    addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--group', help='Allows to limit the search to a certain systematic group', action='store', default='')
     addtionalIO.add_argument('--blast', help='Determine sequence id and refspec automatically. Note, the chosen sequence id and reference species does not necessarily reflect the species the sequence was derived from.',
@@ -259,9 +259,9 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00005',
+    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
-    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00005',
+    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
     ortho_options.add_argument('--evalRelaxfac', help='The factor to relax the e-value cut-off (Blast search and HMM search). Default: 10',
                                 action='store', default=10, type=int)
@@ -315,7 +315,7 @@ def main():
     append = args.append
     force = args.force
     forceComplete = args.forceComplete
-    cleanup = args.cleanup
+    noCleanup = args.noCleanup
     keep = args.keep
     group = args.group
     blast = args.blast
@@ -446,7 +446,7 @@ def main():
 
     ### join options
     options = [fdogPath, refspec, minDist, maxDist, coreOrth,
-                append, force, cleanup, group, blast, db,
+                append, force, noCleanup, group, blast, db,
                 outpath, hmmpath, blastpath, searchpath, weightpath,
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,

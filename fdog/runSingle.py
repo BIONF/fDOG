@@ -172,7 +172,7 @@ def runSingle(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.45'
+    version = '0.0.46'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -240,9 +240,9 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00005',
+    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
-    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00005',
+    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
     ortho_options.add_argument('--evalRelaxfac', help='The factor to relax the e-value cut-off (Blast search and HMM search). Default: 10',
                                 action='store', default=10, type=int)
