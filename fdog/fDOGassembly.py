@@ -955,7 +955,7 @@ def main():
         pool.close()
         pool.join()
         for i in results:
-            ortholog_sequences.append(i[0], i[1])
+            ortholog_sequences.append([i[0], i[1]])
             for k in i[2]:
                 print(k)
     else:
