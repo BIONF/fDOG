@@ -664,17 +664,8 @@ def ortholog_search(args):
     time_tblastn_end = time.time()
     time_tblastn = time_tblastn_end - time_tblastn_start
     if exit_code == 1:
-<<<<<<< HEAD
         output.append("The tblastn search takes too long for species %s. Skipping species ..." % asName)
         return [], candidatesOutFile, output
-=======
-        sys.stdout.write("The tblastn search takes too long for species %s. Exciting ..." % asName)
-        #cleanup(tmp, tmp_folder)
-        #sys.exit()
-        sys.stdout.flush()
-
-        return [], candidatesOutFile
->>>>>>> 0016fa5fd0081814b3d2457b7f6b3d5ac4b987a1
     #else:
         #print("\t ...finished")
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
@@ -682,15 +673,8 @@ def ortholog_search(args):
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
     if regions == 0:
         #no candidat region are available, no ortholog can be found
-<<<<<<< HEAD
         output.append("No candidate region found for species %s!\n" % asName)
         return [], candidatesOutFile, output
-=======
-        sys.stdout.write("No candidate region found for species %s!\n" % asName)
-        sys.stdout.flush()
-
-        return [], candidatesOutFile
->>>>>>> 0016fa5fd0081814b3d2457b7f6b3d5ac4b987a1
 
     else:
         output.append(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
