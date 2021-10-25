@@ -889,7 +889,7 @@ def main():
                     sys.exit()
             assembly_names = searchTaxa
         else:
-            if searchTaxa[0] in assembly_names:
+            if searchTaxa[0] in os.listdir(assemblyDir):
                 assembly_names = searchTaxa
             elif os.path.isfile(searchTaxa[0]):
                 with open(searchTaxa[0]) as file:
