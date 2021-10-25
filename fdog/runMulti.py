@@ -189,7 +189,7 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
         sys.exit('Problem running\n%s' % (fasCmd))
 
 def main():
-    version = '0.0.46'
+    version = '0.0.47'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -233,6 +233,8 @@ def main():
     core_options.add_argument('--coreStrict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     core_options.add_argument('--CorecheckCoorthologsRef', help='During the core compilation, an ortholog also be accepted when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
+                                action='store_true', default=True)
+    core_options.add_argument('--CorecheckCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the core compilation',
                                 action='store_true', default=False)
     core_options.add_argument('--coreRep', help='Obtain only the sequence being most similar to the corresponding sequence in the core set rather than all putative co-orthologs',
                                 action='store_true', default=False)
@@ -252,6 +254,8 @@ def main():
     ortho_options.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     ortho_options.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
+                                action='store_true', default=True)
+    ortho_options.add_argument('--checkCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the final ortholog search',
                                 action='store_true', default=False)
     ortho_options.add_argument('--rbh', help='Requires a reciprocal best hit during the ortholog search to accept a new ortholog',
                                 action='store_true', default=False)
@@ -327,6 +331,9 @@ def main():
     coreTaxa = args.coreTaxa
     coreStrict = args.coreStrict
     CorecheckCoorthologsRef = args.CorecheckCoorthologsRef
+    CorecheckCoorthologsOff = args.CorecheckCoorthologsOff
+    if CorecheckCoorthologsOff == True:
+        CorecheckCoorthologsRef = False
     coreRep = args.coreRep
     coreHitLimit = args.coreHitLimit
     distDeviation = args.distDeviation
@@ -334,6 +341,9 @@ def main():
     # ortholog search arguments
     strict = args.strict
     checkCoorthologsRef = args.checkCoorthologsRef
+    checkCoorthologsOff = args.checkCoorthologsOff
+    if checkCoorthologsOff == True:
+        checkCoorthologsRef = False
     rbh = args.rbh
     rep = args.rep
     ignoreDistance = args.ignoreDistance
