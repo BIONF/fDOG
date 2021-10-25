@@ -880,12 +880,24 @@ def main():
     if searchTaxa == []:
         assembly_names = os.listdir(assemblyDir)
     else:
-        assembly_names = os.listdir(assemblyDir)
-        for Taxon in searchTaxa:
-            if Taxon not in assembly_names:
-                print("Taxon %s is not in the assembly_dir" % Taxon)
-                sys.exit()
-        assembly_names = searchTaxa
+        if len(searchTaxa) > 1:
+            assembly_names = os.listdir(assemblyDir)
+            for Taxon in searchTaxa:
+                if Taxon not in assembly_names:
+                    print("Taxon %s is not in the assembly_dir" % Taxon)
+                    sys.exit()
+            assembly_names = searchTaxa
+        else:
+            if searchTaxa[0] in assembly_names:
+                assembly_names = searchTaxa
+            elif os.path.isfile(searchTaxa[0]):
+                with open(searchTaxa[0]) as file:
+                    lines = file.readlines()
+                    assembly_names = [line.rstrip() for line in lines]
+            else:
+                print("Input %s for search Taxa is not in the assembly_dir or an existing file" % searchTaxa[0])
+
+
 
     ################################# paths ####################################
 
