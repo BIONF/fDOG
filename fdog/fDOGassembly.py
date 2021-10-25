@@ -637,6 +637,7 @@ def clean_fas(path, file_type):
 
 def ortholog_search(args):
     (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs) = args
+    output = []
     cmd = 'mkdir ' + out + '/tmp/' + asName
     starting_subprocess(cmd, 'silent')
     tmp_path = out + "tmp/" + asName + "/"
@@ -645,7 +646,7 @@ def ortholog_search(args):
     fasOutFile = out + "/" + group
     #mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
-    sys.stdout.write("Searching in species " + asName + "\n")
+    output.append("Searching in species " + asName + "\n")
     assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
     db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
     db_check = searching_for_db(db_path)
@@ -665,26 +666,21 @@ def ortholog_search(args):
     time_tblastn_end = time.time()
     time_tblastn = time_tblastn_end - time_tblastn_start
     if exit_code == 1:
-        sys.stdout.write("The tblastn search takes too long for species %s. Exciting ..." % asName)
-        #cleanup(tmp, tmp_folder)
-        #sys.exit()
-        sys.stdout.flush()
+        output.append("The tblastn search takes too long for species %s. Skipping species ..." % asName)
+        return [], candidatesOutFile, output
 
-        return [], candidatesOutFile
     #else:
         #print("\t ...finished")
-    print("Time tblastn %s in species %s" % (str(time_tblastn), asName))
+    output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
 
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
     if regions == 0:
         #no candidat region are available, no ortholog can be found
-        sys.stdout.write("No candidate region found for species %s!\n" % asName)
-        sys.stdout.flush()
-
-        return [], candidatesOutFile
+        output.append("No candidate region found for species %s!\n" % asName)
+        return [], candidatesOutFile, output
 
     else:
-        print(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
+        output.append(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
         extract_seq(regions, db_path, tmp_path, mode)
 
     ############### make Augustus PPX search ###################################
@@ -694,26 +690,23 @@ def ortholog_search(args):
     #print("\t ...finished \n")
     time_augustus_end = time.time()
     time_augustus = time_augustus_end - time_augustus_start
-    print("Time augustus: %s species %s \n" % (str(time_augustus), asName))
+    output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
 
     ################# backward search to filter for orthologs###################
     if int(os.path.getsize(candidatesOutFile)) <= 0:
         #print("No genes found at candidate regions\n")
-        sys.stdout.flush()
-        return [], candidatesOutFile
+        return [], candidatesOutFile, output
 
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
 
     if reciprocal_sequences == 0:
         if regions != 0:
-            sys.stdout.write("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
-        sys.stdout.flush()
-        return [], candidatesOutFile
+            output.append("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
+        return [], candidatesOutFile, output
     else:
         reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
 
-    sys.stdout.flush()
-    return reciprocal_sequences, candidatesOutFile
+    return reciprocal_sequences, candidatesOutFile, output
 
 class Logger(object):
     def __init__(self, file):
@@ -963,13 +956,17 @@ def main():
         pool.close()
         pool.join()
         for i in results:
-            ortholog_sequences.append(i)
+            ortholog_sequences.append([i[0], i[1]])
+            for k in i[2]:
+                print(k)
     else:
         ###################### computation species per species ################
         for asName in assembly_names:
             args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs]
-            reciprocal_sequences, candidatesOutFile = ortholog_search(args)
+            reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search(args)
             ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
+            for k in output_ortholog_search:
+                print(k)
 
     ################## preparing output ########################################
     orthologsOutFile = out + "/" + group + ".extended.fa"
