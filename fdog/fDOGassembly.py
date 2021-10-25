@@ -668,6 +668,7 @@ def ortholog_search(args):
     if exit_code == 1:
         output.append("The tblastn search takes too long for species %s. Skipping species ..." % asName)
         return [], candidatesOutFile, output
+
     #else:
         #print("\t ...finished")
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
