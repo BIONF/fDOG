@@ -649,7 +649,8 @@ def ortholog_search(args):
     output.append("Searching in species " + asName + "\n")
     assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
     db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
-    db_check = searching_for_db(db_path)
+    blast_dir_path = assemblyDir + "/" + asName + "/blast_dir/" + asName
+    db_check = searching_for_db(blast_dir_path)
 
     if db_check == 0:
         #print("Creating a blast data base...")
