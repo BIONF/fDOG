@@ -649,7 +649,7 @@ def ortholog_search(args):
     output.append("Searching in species " + asName + "\n")
     assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
     db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
-    blast_dir_path = assemblyDir + "/" + asName + "/blast_dir/" + asName
+    blast_dir_path = assemblyDir + "/" + asName + "/blast_dir/"
     db_check = searching_for_db(blast_dir_path)
 
     if db_check == 0:
