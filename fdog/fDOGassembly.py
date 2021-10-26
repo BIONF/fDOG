@@ -261,7 +261,7 @@ def searching_for_db(assembly_path):
     if check == False:
         check = True
         for end in db_endings:
-            check = check and os.path.exists(assembly_path + '.00.' + end)
+            check = check and os.path.exists(assembly_path + '.00' + end)
     return check
 
 def get_distance_biopython(file, matrix):
