@@ -257,6 +257,11 @@ def searching_for_db(assembly_path):
     check = True
     for end in db_endings:
         check = check and os.path.exists(assembly_path + end)
+
+    if check == False:
+        check = True
+        for end in db_endings:
+            check = check and os.path.exists(assembly_path + '.00.' + end)
     return check
 
 def get_distance_biopython(file, matrix):
@@ -562,7 +567,6 @@ def cleanup(tmp, tmp_path):
             if time.time() > timeout:
                 print("tmp folder could not be removed!")
                 break
-
 
 def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
     if len(candidate_names) == 1:
