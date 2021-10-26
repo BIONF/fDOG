@@ -256,12 +256,8 @@ def searching_for_db(assembly_path):
     db_endings = ['.ndb', '.nhr', '.nin', '.nog', '.nos', '.not', '.nsq', '.ntf', '.nto']
     check = True
     for end in db_endings:
-        check = check and os.path.exists(assembly_path + end)
-
-    if check == False:
-        check = True
-        for end in db_endings:
-            check = check and os.path.exists(assembly_path + '.00' + end)
+        if not any(File.endswith(end) for File in os.listdir(assembly_path)):
+            check = False
     return check
 
 def get_distance_biopython(file, matrix):
