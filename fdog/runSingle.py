@@ -21,6 +21,8 @@ import argparse
 import subprocess
 from pathlib import Path
 import yaml
+from ete3 import NCBITaxa
+
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
@@ -171,8 +173,33 @@ def runSingle(args):
     except:
         sys.exit('Problem running\n%s' % (cmd))
 
+def createConfigPP(outpath, seqName, refspec):
+    settings = dict(
+        mainInput = '%s/%s/%s.phyloprofile' % (outpath, seqName, seqName),
+        fastaInput = '%s/%s/%s.extended.fa' % (outpath, seqName, seqName),
+    )
+    domainFile = '%s/%s/%s_forward.domains' % (outpath, seqName, seqName)
+    if os.path.exists(os.path.abspath(domainFile)):
+        settings['domainInput'] = domainFile
+    taxId = refspec.split('@')[1]
+    refspec = getTaxName(taxId)
+    if not refspec == 'UNK':
+        settings['rank'] = 'species'
+        settings['refspec'] = refspec
+    settings['clusterProfile'] = 'FALSE'
+    with open('%s/%s/%s.config.yml' % (outpath, seqName, seqName), 'w') as outfile:
+        yaml.dump(settings, outfile, default_flow_style = False)
+
+def getTaxName(taxId):
+    ncbi = NCBITaxa()
+    try:
+        name = ncbi.get_taxid_translator([taxId])[int(taxId)]
+    except:
+        name = 'UNK'
+    return(name)
+
 def main():
-    version = '0.0.47'
+    version = '0.0.48'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -416,6 +443,9 @@ def main():
 
     ### run fdog
     runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, False])
+
+    ### create PhyloProfile config file
+    createConfigPP(outpath, seqName, refspec)
 
 if __name__ == '__main__':
     main()

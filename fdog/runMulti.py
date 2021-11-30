@@ -29,6 +29,8 @@ from tqdm import tqdm
 import fdog.runSingle as fdogFn
 import shutil
 import yaml
+from ete3 import NCBITaxa
+
 
 def getSortedFiles(directory):
     list = os.listdir(directory)
@@ -145,16 +147,20 @@ def searchOrtho(options, seeds, inFol, cpu, outpath):
 def joinOutputs(outpath, jobName, seeds, keep, silent):
     print('Joining single outputs...')
     finalFa = '%s/%s.extended.fa' % (outpath, jobName)
+    finalPP = open('%s/%s.phyloprofile' % (outpath, jobName), 'wb')
     Path(outpath+'/singleOutput').mkdir(parents=True, exist_ok=True)
     with open(finalFa,'wb') as wfd:
         for seed in seeds:
             seqName = getSeedName(seed)
             resultFile = '%s/%s/%s.extended.fa'  % (outpath, seqName, seqName)
+            resultPP ='%s/%s/%s.phyloprofile'  % (outpath, seqName, seqName)
             if silent == False:
                 print(resultFile)
             if os.path.exists(resultFile):
                 with open(resultFile,'rb') as fd:
                     shutil.copyfileobj(fd, wfd)
+                with open(resultPP,'rb') as pp:
+                    shutil.copyfileobj(pp, finalPP)
                 shutil.move(outpath + '/' + seqName, outpath + '/singleOutput')
             else:
                 Path(outpath+'/missingOutput').mkdir(parents=True, exist_ok=True)
@@ -173,6 +179,15 @@ def joinOutputs(outpath, jobName, seeds, keep, silent):
     shutil.rmtree(outpath + '/singleOutput')
     return(finalFa)
 
+def removeDupLines (infilename, outfilename):
+    lines_seen = set() # holds lines already seen
+    outfile = open(outfilename, "w")
+    for line in open(infilename, "r"):
+        if line not in lines_seen: # not a duplicate
+            outfile.write(line)
+            lines_seen.add(line)
+    outfile.close()
+
 def calcFAS (outpath, extendedFa, weightpath, cpu):
     print('Starting calculating FAS scores...')
     start = time.time()
@@ -188,8 +203,28 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
     except:
         sys.exit('Problem running\n%s' % (fasCmd))
 
+def createConfigPP(outpath, jobName, refspec):
+    settings = dict(
+        mainInput = '%s/%s.phyloprofile' % (outpath, jobName),
+        fastaInput = '%s/%s.extended.fa' % (outpath, jobName),
+    )
+    domainFile = '%s/%s_forward.domains' % (outpath, jobName)
+    if os.path.exists(os.path.abspath(domainFile)):
+        settings['domainInput'] = domainFile
+    taxId = refspec.split('@')[1]
+    refspec = fdogFn.getTaxName(taxId)
+    if not refspec == 'UNK':
+        settings['rank'] = 'species'
+        settings['refspec'] = refspec
+    settings['clusterProfile'] = 'TRUE'
+    print("HERER")
+    print(settings)
+    print('%s/%s.config.yml' % (outpath, jobName))
+    with open('%s/%s.config.yml' % (outpath, jobName), 'w') as configfile:
+        yaml.dump(settings, configfile, default_flow_style = False)
+
 def main():
-    version = '0.0.47'
+    version = '0.0.48'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -503,12 +538,21 @@ def main():
             print("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force option." % (jobName, outpath))
         ### calculate FAS scores
         if fasoff == False:
+            if os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
+                os.remove('%s/%s.phyloprofile' % (outpath, jobName))
             if not os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
                 if os.path.exists(finalFa) and os.path.getsize(finalFa) > 0:
                     fasTime = calcFAS(outpath, finalFa, weightpath, cpu)
                     multiLog.write('==> FAS calculation finished in %s sec\n' % fasTime)
                 else:
                     print("Final fasta file %s not exists or empty!" % finalFa)
+        else:
+            shutil.move('%s/%s.phyloprofile' % (outpath, jobName), '%s/%s.phyloprofile.tmp' % (outpath, jobName))
+            removeDupLines ('%s/%s.phyloprofile.tmp' % (outpath, jobName), '%s/%s.phyloprofile' % (outpath, jobName))
+            os.remove('%s/%s.phyloprofile.tmp' % (outpath, jobName))
+
+    ### create PhyloProfile config file
+    createConfigPP(outpath, jobName, refspec)
 
     fdogEnd = time.time()
     print('==> fdogs.run finished in ' + '{:5.3f}s'.format(fdogEnd-fdogStart))
