@@ -199,7 +199,7 @@ def getTaxName(taxId):
     return(name)
 
 def main():
-    version = '0.0.48'
+    version = '0.0.49'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -231,10 +231,10 @@ def main():
     core_options.add_argument('--coreOnly', help='Compile only the core orthologs', action='store_true', default=False)
     core_options.add_argument('--reuseCore', help='Reuse existing core set of your sequence', action='store_true', default=False)
     core_options.add_argument('--minDist', help='Minimum systematic distance of primer taxa for the core set compilation. Default: genus',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom'],
                             action='store', default='genus')
     core_options.add_argument('--maxDist', help='Maximum systematic distance of primer taxa for the core set compilation. Default: kingdom',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom'],
                             action='store', default='kingdom')
     core_options.add_argument('--coreOrth', help='Number of orthologs added to the core set. Default: 5', action='store', default=5, type=int)
     core_options.add_argument('--coreTaxa', help='List of primer taxa that should exclusively be used for the core set compilation', action='store', default='')
