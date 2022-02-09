@@ -212,6 +212,20 @@ def extract_seq(region_dic, path, tmp_path, mode):
         cmd = "blastdbcmd -db " + path + " -dbtype 'nucl' -entry " + key + " -out " + tmp_path + key + ".fasta -outfmt %f"
         starting_subprocess(cmd, mode)
 
+def extract_sequence_from_to(name, file, start, end):
+    out = name + ".fasta"
+    if start < 0:
+        start = 0
+    with open(out,"w") as f:
+        for seq_record in SeqIO.parse(file, "fasta"):
+                f.write(str(seq_record.id) + "\n")
+                sequence_length = len(seq_record.seq)
+                if end > sequence_length:
+                    end = sequence_length
+                f.write(str(seq_record.seq[start:end]) + "\n")
+
+    return out, start, end
+
 def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
     output = open(candidatesOutFile, "w")
 
@@ -246,8 +260,42 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             except FileNotFoundError:
                 pass
                 #print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
-
     output.close()
+
+def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, core_group):
+    output = open(candidatesOutFile, "w")
+
+    for key in regions:
+        locations = regions[key]
+        counter = 0
+        for i in locations:
+            #some variables
+            counter += 1
+            start = str(i[0] - length_extension)
+            end = str(i[1] + length_extension)
+            name = key + "_" + str(counter)
+            file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
+            #metaeuk call
+            cmd = "metaeuk easy-predict " + file + " " + core_group + " " + tmp_path + name + " " +  tmp_path + "/metaeuk"
+            print(cmd)
+            starting_subprocess(cmd, mode)
+            # parsing header and sequences
+            try:
+                sequence_file = open(tmp_path + name + ".fas", "r")
+                lines = sequence_file.readlines()
+                id = 0
+                for line in lines:
+                    if line[0] == ">":
+                        id += 1
+                        header = ">" + group + "|" + ass_name + "|" + name + "_" + id
+                        output.write(header)
+                    else:
+                        output.write(line)
+                sequence_file.close()
+            except FileNotFoundError:
+                pass
+
+        output.close()
 
 def searching_for_db(assembly_path):
 
@@ -473,8 +521,6 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
                     #print("No ortholog was found with option --strict")
                     return 0, seed
 
-
-
     #print(orthologs)
     orthologs = set(orthologs)
     return list(orthologs), seed
@@ -651,14 +697,11 @@ def ortholog_search_tblastn(args):
     db_check = searching_for_db(blast_dir_path)
 
     if db_check == 0:
-        #print("Creating a blast data base...")
         cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
         starting_subprocess(cmd, mode)
-        #print("\t ...finished \n")
 
     #makes a tBLASTn search against database
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
-    #print("Starting tBLASTn search...")
     cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
     time_tblastn_start = time.time()
     exit_code = starting_subprocess(cmd, mode, 3600)
@@ -683,15 +726,17 @@ def ortholog_search_tblastn(args):
 
     if gene_prediction == "augustus":
         ############### make Augustus PPX search ###################################
-        #print("Starting augustus ppx ...")
         time_augustus_start = time.time()
         augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
-        #print("\t ...finished \n")
         time_augustus_end = time.time()
         time_augustus = time_augustus_end - time_augustus_start
         output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
     else:
-        print("test")
+        time_metaeuk_start = time.time()
+        metaeuk(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, fasta_path)
+        time_metaeuk_end = time.time()
+        time_metaeuk = time_metaeuk_end - time_metaeuk_start
+        output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))")
 
     ################# backward search to filter for orthologs###################
     if int(os.path.getsize(candidatesOutFile)) <= 0:
@@ -820,11 +865,6 @@ def main():
     tmp = args.tmp
     strict = args.strict
     checkCoorthologs = args.checkCoorthologsRef
-    #filter = args.filter
-    #if filter == True or filter == 'yes':
-        #filter = 'yes'
-    #else:
-        #filter = 'no'
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
@@ -851,7 +891,6 @@ def main():
         gene_prediction = "augustus"
     else:
         gene_prediction = "metaeuk"
-
 
     # output modes
     if debug == True and silent == True:
@@ -952,8 +991,6 @@ def main():
             else:
                 print("Input %s for search Taxa is not in the assembly_dir or an existing file" % searchTaxa[0])
 
-
-
     ################################# paths ####################################
 
     fasta_path = core_path + "/" + group +"/"+ group + ".fa"
@@ -980,6 +1017,9 @@ def main():
         profile_path = blockProfiles(core_path, group, mode)
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
+    else:
+        print("test")
+        #concatinade core_group sequences if metaeuk should be run without tblastn
 
 
     ###################### ortholog search #####################################
