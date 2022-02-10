@@ -299,7 +299,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             except FileNotFoundError:
                 pass
 
-        output.close()
+    output.close()
 
 def searching_for_db(assembly_path):
 
