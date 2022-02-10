@@ -754,7 +754,7 @@ def ortholog_search_tblastn(args):
 
     return reciprocal_sequences, candidatesOutFile, output
 
-def blockProfiles(core_path, group, mode):
+def blockProfiles(core_path, group, mode, out):
 
     ######################## paths ################################
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
@@ -780,7 +780,7 @@ def blockProfiles(core_path, group, mode):
 
     return profile_path
 
-def consensusSequence(core_path, group, mode):
+def consensusSequence(core_path, group, mode, out):
 
     ######################## paths ################################
     hmm_path = core_path + "/" + group +"/hmm_dir/"+ group + ".hmm"
@@ -1013,8 +1013,8 @@ def main():
 
     if augustus == True:
         group_computation_time_start = time.time()
-        consensus_path = consensusSequence(core_path, group, mode)
-        profile_path = blockProfiles(core_path, group, mode)
+        consensus_path = consensusSequence(core_path, group, mode, out)
+        profile_path = blockProfiles(core_path, group, mode, out)
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
     else:
