@@ -736,7 +736,7 @@ def ortholog_search_tblastn(args):
         metaeuk(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, fasta_path)
         time_metaeuk_end = time.time()
         time_metaeuk = time_metaeuk_end - time_metaeuk_start
-        output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))")
+        output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))
 
     ################# backward search to filter for orthologs###################
     if int(os.path.getsize(candidatesOutFile)) <= 0:
