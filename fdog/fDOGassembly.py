@@ -213,7 +213,7 @@ def extract_seq(region_dic, path, tmp_path, mode):
         starting_subprocess(cmd, mode)
 
 def extract_sequence_from_to(name, file, start, end):
-    print(name)
+    #print(name)
     out = name + ".fasta"
     if int(start) < 0:
         start = 0
@@ -223,8 +223,8 @@ def extract_sequence_from_to(name, file, start, end):
                 sequence_length = len(seq_record.seq)
                 if int(end) > sequence_length:
                     end = sequence_length
-                    print(start)
-                    print(end)
+                    #print(start)
+                    #print(end)
                 f.write(str(seq_record.seq[int(start):int(end)]) + "\n")
 
     return out, start, end
@@ -280,7 +280,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             #metaeuk call
             cmd = "metaeuk easy-predict " + file + " " + core_group + " " + tmp_path + name + " " +  tmp_path + "/metaeuk"
-            print(cmd)
+            #print(cmd)
             starting_subprocess(cmd, mode)
             # parsing header and sequences
             try:
@@ -290,7 +290,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                 for line in lines:
                     if line[0] == ">":
                         id += 1
-                        header = ">" + group + "|" + ass_name + "|" + name + "_" + id
+                        header = ">" + group + "|" + ass_name + "|" + name + "_" + str(id)
                         output.write(header)
                     else:
                         output.write(line)
