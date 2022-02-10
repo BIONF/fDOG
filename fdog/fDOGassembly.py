@@ -1020,6 +1020,7 @@ def main():
         time_group = group_computation_time_end - group_computation_time_start
     else:
         print("test")
+        profile_path = ""
         group_computation_time_start = time.time()
         consensus_path = consensusSequence(core_path, group, mode, out)
         #concatinade core_group sequences if metaeuk should be run without tblastn
