@@ -880,11 +880,12 @@ def main():
     force = args.force
     append = args.append
     parallel = args.parallel
+    augustus_ref_species = args.augustusRefSpec
 
     #gene prediction tool
     augustus = args.augustus
     if augustus == True:
-        augustus_ref_species = args.augustusRefSpec
+
         if augustus_ref_species == '':
             print("Augustus reference species is required when using Augustus as gene prediction tool")
             return 1
