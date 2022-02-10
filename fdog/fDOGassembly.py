@@ -291,7 +291,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                 for line in lines:
                     if line[0] == ">":
                         id += 1
-                        header = ">" + group + "|" + ass_name + "|" + name + "_" + str(id)
+                        header = ">" + group + "|" + ass_name + "|" + name + "_" + str(id) + "\n"
                         output.write(header)
                     else:
                         output.write(line)
