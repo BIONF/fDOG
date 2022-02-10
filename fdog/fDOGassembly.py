@@ -286,6 +286,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             try:
                 sequence_file = open(tmp_path + name + ".fas", "r")
                 lines = sequence_file.readlines()
+                print(lines)
                 id = 0
                 for line in lines:
                     if line[0] == ">":
