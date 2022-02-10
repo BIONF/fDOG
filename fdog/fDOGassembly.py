@@ -214,15 +214,15 @@ def extract_seq(region_dic, path, tmp_path, mode):
 
 def extract_sequence_from_to(name, file, start, end):
     out = name + ".fasta"
-    if start < 0:
+    if int(start) < 0:
         start = 0
     with open(out,"w") as f:
         for seq_record in SeqIO.parse(file, "fasta"):
                 f.write(str(seq_record.id) + "\n")
                 sequence_length = len(seq_record.seq)
-                if end > sequence_length:
+                if int(end) > sequence_length:
                     end = sequence_length
-                f.write(str(seq_record.seq[start:end]) + "\n")
+                f.write(str(seq_record.seq[int(start):int(end)]) + "\n")
 
     return out, start, end
 
