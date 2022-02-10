@@ -224,8 +224,8 @@ def extract_sequence_from_to(name, file, start, end):
                 if int(end) > sequence_length:
                     end = sequence_length
                 #for testing only
-                start = 0
-                end = len(seq_record.seq)
+                #start = 0
+                #end = len(seq_record.seq)
                 f.write(str(seq_record.seq[int(start):int(end)]) + "\n")
 
     return out, start, end
@@ -281,13 +281,13 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             #metaeuk call
             cmd = "metaeuk easy-predict " + file + " " + core_group + " " + tmp_path + name + " " +  tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
-            print(cmd)
+            #print(cmd)
             starting_subprocess(cmd, mode)
             # parsing header and sequences
             try:
                 sequence_file = open(tmp_path + name + ".fas", "r")
                 lines = sequence_file.readlines()
-                print(lines)
+                #print(lines)
                 id = 0
                 for line in lines:
                     if line[0] == ">":
