@@ -280,7 +280,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             name = key + "_" + str(counter)
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             #metaeuk call
-            cmd = "metaeuk easy-predict " + file + " " + core_group + " " + tmp_path + name + " " +  tmp_path + "/metaeuk"
+            cmd = "metaeuk easy-predict " + file + " " + core_group + " " + tmp_path + name + " " +  tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
             #print(cmd)
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
             starting_subprocess(cmd, mode)
