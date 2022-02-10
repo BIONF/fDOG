@@ -814,7 +814,7 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.2'
+    version = '0.1.3'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
@@ -883,7 +883,7 @@ def main():
 
     #gene prediction tool
     augustus = args.augustus
-    if augutus == True:
+    if augustus == True:
         augustus_ref_species = args.augustusRefSpec
         if augustus_ref_species == '':
             print("Augustus reference species is required when using Augustus as gene prediction tool")
