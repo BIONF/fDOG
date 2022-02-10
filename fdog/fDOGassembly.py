@@ -219,7 +219,7 @@ def extract_sequence_from_to(name, file, start, end):
         start = 0
     with open(out,"w") as f:
         for seq_record in SeqIO.parse(file, "fasta"):
-                f.write(str(seq_record.id) + "\n")
+                f.write(">" + str(seq_record.id) + "\n")
                 sequence_length = len(seq_record.seq)
                 if int(end) > sequence_length:
                     end = sequence_length
