@@ -223,8 +223,9 @@ def extract_sequence_from_to(name, file, start, end):
                 sequence_length = len(seq_record.seq)
                 if int(end) > sequence_length:
                     end = sequence_length
-                    #print(start)
-                    #print(end)
+                #for testing only
+                start = 0
+                end = len(seq_record.seq)
                 f.write(str(seq_record.seq[int(start):int(end)]) + "\n")
 
     return out, start, end
