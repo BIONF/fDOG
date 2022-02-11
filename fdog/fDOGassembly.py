@@ -266,7 +266,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                 #print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
     output.close()
 
-def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, core_group):
+def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, db):
     output = open(candidatesOutFile, "w")
 
     for key in regions:
@@ -280,7 +280,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             name = key + "_" + str(counter)
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             #metaeuk call
-            cmd = "metaeuk easy-predict " + file + " " + core_group + " " + tmp_path + name + " " +  tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
+            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " +  tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
             #print(cmd)
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
             starting_subprocess(cmd, mode)
@@ -686,7 +686,7 @@ def clean_fas(path, file_type):
     file.close()
 
 def ortholog_search_tblastn(args):
-    (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction) = args
+    (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db) = args
     output = []
     cmd = 'mkdir ' + out + '/tmp/' + asName
     starting_subprocess(cmd, 'silent')
@@ -739,7 +739,11 @@ def ortholog_search_tblastn(args):
         output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
     else:
         time_metaeuk_start = time.time()
-        metaeuk_single(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, fasta_path)
+        if metaeuk_db == '':
+            db = fasta_path
+        else:
+            db = metaeuk_db
+        metaeuk_single(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, db)
         time_metaeuk_end = time.time()
         time_metaeuk = time_metaeuk_end - time_metaeuk_start
         output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))
@@ -856,6 +860,7 @@ def main():
     optional.add_argument('--parallel', help= 'The ortholog search of multiple species will be done in parallel', action='store_true', default=False)
     optional.add_argument('--augustus', help= 'Gene prediction is done by using the tool Augustus PPX', action='store_true', default=False)
     optional.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
+    optional.add_argument('--metaeukDb', help='path to metaeuk reference database', action='store', default='')
     args = parser.parse_args()
 
     # required
@@ -887,6 +892,7 @@ def main():
     append = args.append
     parallel = args.parallel
     augustus_ref_species = args.augustusRefSpec
+    metaeuk_db = args.metaeukDb
 
     #gene prediction tool
     augustus = args.augustus
@@ -963,6 +969,12 @@ def main():
     if assemblyDir == '':
         assemblyDir = dataPath + '/assembly_dir/'
     check_path(assemblyDir)
+
+    if metaeuk_db != '':
+        if not metaeuk_db.endswith('/'):
+            metaeuk_db = metaeuk_db + '/'
+        check_path(metaeuk_db)
+
 
     try:
         f = open(out + "/fdog.log", "a+")
@@ -1045,7 +1057,7 @@ def main():
         cpus = mp.cpu_count()
         pool = mp.Pool(cpus)
         for asName in assembly_names:
-            calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction])
+            calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db])
 
         results = (pool.imap_unordered(ortholog_search_tblastn, calls))
         pool.close()
@@ -1057,7 +1069,7 @@ def main():
     else:
         ###################### computation species wise ################
         for asName in assembly_names:
-            args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction]
+            args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db]
             reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search_tblastn(args)
             ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
             for k in output_ortholog_search:
