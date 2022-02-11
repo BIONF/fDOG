@@ -971,8 +971,6 @@ def main():
     check_path(assemblyDir)
 
     if metaeuk_db != '':
-        if not metaeuk_db.endswith('/'):
-            metaeuk_db = metaeuk_db + '/'
         check_path(metaeuk_db)
 
 
