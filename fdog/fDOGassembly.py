@@ -313,7 +313,7 @@ def searching_for_db(assembly_path):
     return check
 
 def get_distance_biopython(file, matrix):
-    print(file)
+    #print(file)
     aln = AlignIO.read(open(file), 'fasta')
     calculator = DistanceCalculator(matrix)
     dm = calculator.get_distance(aln)
@@ -637,7 +637,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     for record in candidates:
         for name in candidate_names:
             if name in record.id:
-                f.write(">" + name + "\n")
+                f.write(">" + record.id + "\n")
                 f.write(str(record.seq) + "\n")
     f.close()
 
