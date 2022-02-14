@@ -313,6 +313,7 @@ def searching_for_db(assembly_path):
     return check
 
 def get_distance_biopython(file, matrix):
+    print(file)
     aln = AlignIO.read(open(file), 'fasta')
     calculator = DistanceCalculator(matrix)
     dm = calculator.get_distance(aln)
