@@ -636,7 +636,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     for record in candidates:
         for name in candidate_names:
-            if name in record.id:
+            if name == record.id:
                 f.write(">" + record.id + "\n")
                 f.write(str(record.seq) + "\n")
     f.close()
