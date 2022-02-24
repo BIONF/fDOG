@@ -634,11 +634,14 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
             f.write(str(record.seq) +  "\n")
             break
 
+    already_written = []
     for record in candidates:
         for name in candidate_names:
             if name == record.id:
-                f.write(">" + record.id + "\n")
-                f.write(str(record.seq) + "\n")
+                if name not in already_written:
+                    f.write(">" + record.id + "\n")
+                    f.write(str(record.seq) + "\n")
+                    already_written.append(name)
     f.close()
 
     if msaTool == "muscle":
