@@ -302,7 +302,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                         output.write(line)
                 sequence_file.close()
 
-                gff_file = open(tmp_path + name + ".gff", "r")
+                gff_file = open(tmp_path + name + ".gff", "r+")
                 lines = gff_file.readlines()
                 for line in lines:
                     values = line.split("\t")
