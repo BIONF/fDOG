@@ -268,6 +268,8 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
 
 def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, db):
     output = open(candidatesOutFile, "w")
+    region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
+    region.write("Conting/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
 
     for key in regions:
         locations = regions[key]
@@ -279,6 +281,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
+            region.write(file + "\t" + str(start) + "\t" + str(end))
             #metaeuk call
             cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " +  tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
             #print(cmd)
@@ -298,6 +301,15 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                     else:
                         output.write(line)
                 sequence_file.close()
+
+                gff_file = open(tmp_path + name + ".gff", "r")
+                    lines = gff_file.readlines()
+                    for line in lines:
+                        values = line.split("\t")
+                        values[3] = int(values[3]) + int(start)
+                        values[4] = int(values[4]) + int(start)
+                        gff_file.write("\t".join(values))
+                gff_file.close()
             except FileNotFoundError:
                 pass
 
