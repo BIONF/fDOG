@@ -306,8 +306,8 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                 lines = gff_file.readlines()
                 for line in lines:
                     values = line.split("\t")
-                    values[3] = int(values[3]) + int(start)
-                    values[4] = int(values[4]) + int(start)
+                    values[3] = str(int(values[3]) + int(start))
+                    values[4] = str(int(values[4]) + int(start))
                     gff_file.write("\t".join(values))
                 gff_file.close()
             except FileNotFoundError:
