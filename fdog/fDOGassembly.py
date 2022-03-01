@@ -302,15 +302,18 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                         output.write(line)
                 sequence_file.close()
 
-                gff_file = open(tmp_path + name + ".gff", "r+")
+                gff_file = open(tmp_path + name + ".gff", "r")
                 lines = gff_file.readlines()
+                new_lines = []
                 for line in lines:
                     values = line.split("\t")
-                    new_start = int(values[3]) + int(start)
-                    values[3] = str(new_start)
-                    new_end = int(values[4]) + int(start)
-                    values[4] = str(new_end)
-                    gff_file.write("\t".join(values))
+                    values[3] = str(int(values[3]) + int(start))
+                    values[4] = str(int(values[4]) + int(start))
+                    new_lines.append("\t".join(values))
+                gff_file.close()
+                gff_file = open(tmp_path + name + ".gff", "w")
+                for line in new_lines:
+                    gff_file.write(line)
                 gff_file.close()
             except FileNotFoundError:
                 pass
