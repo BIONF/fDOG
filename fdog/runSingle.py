@@ -67,13 +67,13 @@ def getfdogInfo(fdogPath, infoType):
         exit('%s not found' % (fdogPath + '/bin/oneSeq.pl'))
 
 def runSingle(args):
-    (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, mute) = args
+    (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = args
     # basic command
     (fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth) = basicArgs
     cmd = 'perl %s/bin/oneSeq.pl -seqFile=%s -seqName=%s -refspec=%s' % (fdogPath, seqFile, seqName, refspec)
     # add paths
-    (outpath, hmmpath, blastpath, searchpath, weightpath, assemblypath) = pathArgs
-    cmd = cmd + ' -outpath=%s -hmmpath=%s -blastpath=%s -searchpath=%s -weightpath=%s -assemblypath=%s' % (outpath, hmmpath, blastpath, searchpath, weightpath, assemblypath)
+    (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
+    cmd = cmd + ' -outpath=%s -hmmpath=%s -blastpath=%s -searchpath=%s -weightpath=%s' % (outpath, hmmpath, blastpath, searchpath, weightpath)
     # add other I/O options
     (append, force, noCleanup, group, blast, db) = ioArgs
     if append == True:
@@ -165,28 +165,7 @@ def runSingle(args):
         cmd = cmd + ' -debug'
     if silent == True:
         cmd = cmd + ' -silent'
-    # add assembly options
-    (assembly, assemblyFile, augustusRefSpec, avIntron, lengthExtension, searchTool, matrix, dataPath) = assemblyArgs
-    if assembly == True:
-        cmd = cmd + ' -assembly'
-        cmd = cmd + ' -reuseCore'
-        if not augustusRefSpec == '':
-            cmd = cmd + ' -augustusRefSpec=%s' % augustusRefSpec
-        else:
-            sys.exit('An augutus reference species is requiered by using the option --assembly')
-        if not avIntron == '':
-            cmd = cmd + ' -avIntron=%s' % avIntron
-        if not lengthExtension == '':
-            cmd = cmd + ' -lengthExtension=%s' % lengthExtension
-        if not assemblyFile == '':
-            cmd = cmd + ' -assemblyFile=%s' % assemblyFile
-        if not searchTool == '':
-            cmd = cmd + ' -searchTool=%s' % searchTool
-        if not matrix == '':
-            cmd = cmd + ' -scoringmatrix=%s' % matrix
-        if not dataPath == '':
-            cmd = cmd + ' -dataPath=%s' % dataPath
-    #print(cmd)
+    # print(cmd)
     if mute == True:
         cmd = cmd + ' > /dev/null 2>&1'
     try:
@@ -238,8 +217,6 @@ def main():
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
     optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
     optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
-    optional_paths.add_argument('--assemblypath', help='Path for the assembly directory', action='store', default='')
-
 
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
@@ -326,14 +303,6 @@ def main():
     optional.add_argument('--debug', help='Set this flag to obtain more detailed information about the programs actions', action='store_true', default=False)
     optional.add_argument('--silentOff', help='Show more output to terminal', action='store_true', default=False)
 
-    assembly_options = parser.add_argument_group('Assembly options')
-    assembly_options.add_argument('--assembly', help='Turn on support of assembly input files',action='store_true', default=False)
-    assembly_options.add_argument('--assemblyFile', help='Input file containing the assembly seqeunce', action='store', default='')
-    assembly_options.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
-    assembly_options.add_argument('--avIntron', help='average Intron length of the assembly species', action='store', default=5000, type=int)
-    assembly_options.add_argument('--lengthExtension', help='length extension of the candidate region', action='store', default=5000, type=int)
-    assembly_options.add_argument('--searchTool', help='Choose between BLAST or Diamond as a alignemnt search tool. DEFAULT: BLAST', choices=['blast', 'diamond'], action='store', default='blast')
-    assembly_options.add_argument('--scoringmatrix', help ='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     ### get arguments
     args = parser.parse_args()
 
@@ -353,7 +322,6 @@ def main():
     searchpath = args.searchpath
     weightpath = args.weightpath
     pathFile = args.pathFile
-    assemblypath = args.assemblypath
 
     # other I/O arguments
     append = args.append
@@ -415,15 +383,6 @@ def main():
     else:
         silent = True
 
-    #fdog_goes_assembly arguments
-    assembly = args.assembly
-    assemblyFile = args.assemblyFile
-    augustusRefSpec = args.augustusRefSpec
-    avIntron = args.avIntron
-    lengthExtension = args.lengthExtension
-    searchTool = args.searchTool
-    matrix = args.scoringmatrix
-
     ### get fdog and data path
     dataPath = ''
     fdogPath = os.path.realpath(__file__).replace('/runSingle.py','')
@@ -471,29 +430,19 @@ def main():
             except:
                 sys.exit('weightpath not found in %s' % pathFile)
 
-    if assemblypath == '':
-        assemblypath = dataPath + '/assembly_dir'
-        if dataPath == 'config':
-            try:
-                assemblypath = cfg['assemblypath']
-            except:
-                sys.exit('assemblypath not found in %s' % pathFile)
-        if assembly == True:
-            searchpath = assemblypath
-
     ### check input arguments
     seqFile, hmmpath, blastpath, searchpath, weightpath = checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])
     # group arguments
     basicArgs = [fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth]
     ioArgs = [append, force, noCleanup, group, blast, db]
-    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath, assemblypath]
+    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
     orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
     otherArgs = [cpu, hyperthread, checkOff, debug, silent]
 
     ### run fdog
-    runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, assemblyArgs, False])
+    runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, False])
 
     ### create PhyloProfile config file
     createConfigPP(outpath, seqName, refspec)
