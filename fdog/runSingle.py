@@ -220,7 +220,7 @@ def getTaxName(taxId):
     return(name)
 
 def main():
-    version = '0.0.50'
+    version = '0.0.51'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')

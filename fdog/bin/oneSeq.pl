@@ -131,9 +131,10 @@ my $startTime = gettime();
 ## Modified 31. May 2021 v2.3.1 (Vinh)	- added auto annotation for fdogFas
 ## Modified 11. June 2021 v2.3.2 (Vinh)	- fixed --append option
 ## Modified 16. June 2021 v2.4.0 (Vinh)	- add checkOff option
+## Modified 10. Mar 2022 v2.4.1 (Vinh)	- fixed bug missing results in multiprocessing
 
 ############ General settings
-my $version = 'oneSeq v.2.4.0';
+my $version = 'oneSeq v.2.4.1';
 ##### configure for checking if the setup.sh script already run
 my $configure = 0;
 if ($configure == 0){
@@ -207,7 +208,6 @@ my $blastPath = "$path/blast_dir/";
 my $idx_dir = "$path/taxonomy/";
 my $dataDir = $path . '/data';
 my $weightPath = "$path/weight_dir/";
-my $assembly_dir = "$path/assembly_dir/";
 
 my @defaultRanks = (
 	'superkingdom', 'kingdom',
@@ -312,15 +312,6 @@ my $breakAfter = 5; 		## Number of Significantly bad candidates after which the 
 my %hashTree;
 my $aln = 'muscle';
 my $searchTaxa;
-#variables for fdog_goes_assembly
-my $assembly;
-my $augustusRefSpec;
-my $avIntron;
-my $lengthExtension;
-my $assemblyPath;
-my $searchTool = 'blast';
-my $matrix = 'blosum62';
-my $dataPath = '';
 ################# Command line options
 GetOptions (
 	"h"                 => \$help,
@@ -383,15 +374,7 @@ GetOptions (
 	"distDeviation=s"	=> \$distDeviation,
 	"aligner=s"	=> \$aln,
 	"hyperthread" => \$hyperthread,
-	"searchTaxa=s" => \$searchTaxa,
-	"assembly" => \$assembly,
-	"assemblypath=s" => \$assemblyPath,
-	"augustusRefSpec=s" => \$augustusRefSpec,
-	"avIntron=s" => \$avIntron,
-	"lengthExtension=s" => \$lengthExtension,
-	"searchTool=s" => \$searchTool,
-	"scoringmatrix=s" => \$matrix,
-	"dataPath=s" => \$dataPath
+	"searchTaxa=s" => \$searchTaxa
 );
 
 $outputPath = abs_path($outputPath);
@@ -403,8 +386,6 @@ $blastPath = abs_path($blastPath)."/";
 $weightPath = abs_path($weightPath)."/";
 $genome_dir = abs_path($genome_dir)."/";
 $taxaPath = $genome_dir;
-$dataPath = abs_path($dataPath)."/";
-$assembly_dir = abs_path($assemblyPath)."/";
 
 ############# do initial check
 if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
@@ -414,7 +395,7 @@ if (!defined $help && !defined $getversion) { #} && !defined $showTaxa) {
 		initialCheck($seqFile, $seqName, $blastPath, $taxaPath, $weightPath, $fasoff);
 	}
 
-	if (!defined $coreex && !defined $assembly) {
+	if (!defined $coreex) {
 		if (!grep(/$minDist/, @defaultRanks)) {
 			die "ERROR: minDist $minDist invalid!\n";
 		}
@@ -498,7 +479,7 @@ my $maxAlnScore = 0;
 
 # create weight_dir in oneseq's home dir (used for annotations,weighting,feature extraction)
 # get annotations for seed sequence if fas support is on
-if ($fas_support && !$assembly){
+if ($fas_support){
 	if (!$weightPath) {
 		createWeightFolder();
 	}
@@ -507,7 +488,7 @@ if ($fas_support && !$assembly){
 
 my $coreStTime = gettime(); #time;
 #core-ortholog search
-if (!$coreex && !$assembly) {
+if (!$coreex) {
 	print "\nCore compiling...\n";
 	$coremode = 1;
 	$taxaPath = $blastPath;
@@ -645,12 +626,7 @@ if (!$coreOnly) {
 	my $final_eval_blast = $eval_blast*$eval_relaxfac;
 	my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
 
-	if (!$assembly){
-		$taxaPath = $genome_dir;
-	}
-	else{
-		$taxaPath = $assembly_dir;
-	}
+	$taxaPath = $genome_dir;
 	my @searchTaxa;
 	unless ($searchTaxa) {
 		unless($groupNode) {
@@ -706,10 +682,35 @@ if (!$coreOnly) {
 				}
 			}
 		}
-		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln);
+		runHamstr($searchTaxon, $seqName, $finalOutput, $refSpec, $hitlimit, $representative, $strict, $coremode, $final_eval_blast, $final_eval_hmmer, $aln, 0);
 		$pm->finish;
 	}
 	$pm->wait_all_children;
+
+	### join result files
+	unless (-e $finalOutput) {
+	    open(EXTENDEDFA, ">$finalOutput") or die "Cannot create $finalOutput\n";
+	} else {
+	    open(EXTENDEDFA, ">>$finalOutput") or die "Cannot create $finalOutput\n";
+	}
+	opendir(my $dh, $outputPath) || die "Cannot open $outputPath: $!";
+	while (readdir $dh) {
+	    if ($_ =~ /hamstrsearch_(.)+_$seqName(\.strict)*\.out$/) {
+	        open(RESULT, "<$outputPath/$_") or warn "Cannot open $outputPath/$_!";
+	        while (my $line = <RESULT>) {
+	            chomp $line;
+	            my @tmp = split(/\|/, $line);
+	            my $seq = pop(@tmp);
+	            splice(@tmp, 1, 1);
+	            my $id = join("|", @tmp);
+	            print EXTENDEDFA ">$id\n$seq\n";
+	        }
+	        close(RESULT);
+	        unlink("$outputPath/$_") or warn "Cannot delete $outputPath/$_!"
+	    }
+	}
+	closedir $dh;
+	close(EXTENDEDFA);
 }
 ### remove duplicated seq in extended.fa
 if (-e $finalOutput) {
@@ -718,8 +719,8 @@ if (-e $finalOutput) {
 push @logOUT, "Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!";
 print "==> Ortholog search completed in ". roundtime(gettime() - $orthoStTime) ." sec!\n";
 
-
-if(!$coreOnly && !$assembly){
+## Evaluation of all orthologs that are predicted by the final run
+if(!$coreOnly){
 	my $fasStTime = gettime();
 	my $processID = $$;
 
@@ -731,7 +732,7 @@ if(!$coreOnly && !$assembly){
 	addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $finalOutput);
 
 	# calculate FAS scores for final extended.fa
-	if ($fas_support && !$assembly) {
+	if ($fas_support) {
 		print "Starting the feature architecture similarity score computation...\n";
 		my $fdogFAScmd = "$fdogFAS_prog -i $finalOutput -w $weightPath -t $tmpdir -o $outputPath --cores $cpu --redo_anno";
 		unless ($countercheck) {
@@ -744,21 +745,12 @@ if(!$coreOnly && !$assembly){
 	}
 	push @logOUT, "FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
 	print "==> FAS calculation completed in " . roundtime(gettime() - $fasStTime). " sec!\n";
-
 	if($autoclean){
 		print "Cleaning up...\n";
 		runAutoCleanUp($processID);
 	}
 }
 
-if ($assembly){
-	my $file_assembly_out;
-	$file_assembly_out = $outputPath . '/' . $seqName;
-	my $cmd_merge;
-	$cmd_merge = "fdog.mergeAssembly --in  $outputPath --out  $file_assembly_out --cleanup";
-	printDebug($cmd_merge);
-	system($cmd_merge);
-}
 ## Delete tmp folder
 unless ($debug) {
 	my $delTmp = "rm -rf $tmpdir";
@@ -1168,10 +1160,10 @@ sub checkOptions {
 	if ($force == 1 and $append ==1) {
 		$force = 0;
 	}
-	### check the presence of the pre-computed core set if options reuseCore or assembly is used
-	if ($coreex || $assembly) {
+	### check the presence of the pre-computed core set
+	if ($coreex) {
 		if (! -e "$coreOrthologsPath/$seqName/$seqName.fa") {
-			print "You selected the option -reuseCore or -assembly, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
+			print "You selected the option -reuseCore, but the core ortholog group $coreOrthologsPath/$seqName/hmm_dir/$seqName.hmm does not exist\n";
 			exit;
 		}
 	}
@@ -1242,7 +1234,7 @@ sub checkOptions {
 
 	### checking the number of core orthologs. Omit this check if the option -reuseCore has been selected
 	$optbreaker = 0;
-	while(!$minCoreOrthologs and (!$coreex and !$assembly)) {
+	while(!$minCoreOrthologs and !$coreex) {
 		if ($optbreaker >= 3){
 			print "No proper number given ... exiting.\n";
 			exit;
@@ -1257,12 +1249,10 @@ sub checkOptions {
 		$filter = 'no' if $filter eq 'F';
 	}
 
-	if (!$assembly){
-		$inputSeq = fetchSequence($seqFile, $dataDir);
-	}
+	$inputSeq = fetchSequence($seqFile, $dataDir);
 
 	## the user has not provided a sequence id, however, the refspec is determined.
-	if($seqId eq '' && !$assembly) {
+	if($seqId eq '') {
 		my $besthit;
 		if (!$blast){
 			## a refspec has been determined
@@ -1330,25 +1320,8 @@ sub checkOptions {
 
 			while (($input !~ /^[aor]/i) and ($breaker < 4)) {
 				$breaker++;
-				die "\nAn outputfile $finalOutput already exists. Please consider option -force for overwriting it or option -append for appending to it.\n"
-				# $input = getInput("\nAn outputfile $finalOutput already exists. Shall I overwrite it [o], or rename it [r], or [a] append to it?", 1);
-				# if (($breaker > 3) and ($input !~ /[aor]/i)){
-				# 	print "Please consider option -force or option -append.\n";
-				# 	die "No proper answer is given: Quitting\n";
-				# }
+				die "\nAn outputfile $finalOutput already exists. Please consider option --force for overwriting it or option --append for appending to it.\n"
 			}
-			# if ($input =~ /[aA]/) {
-			# 	$append = 1;
-			# 	$force = 0;
-			# }
-			# elsif ($input =~ /[oO]/){
-			# 	$append = 0;
-			# 	$force = 1;
-			# }
-			# else {
-			# 	$append = 0;
-			# 	$force = 0;
-			# }
 		}
 		if ($force){
 			## the user wants to overwrite
@@ -1374,7 +1347,7 @@ sub checkOptions {
 				## no extended.profile file exists but not necessary, because user switched off FAS support -> do nothing
 			}
 			else {
-				printOut("Option -append was selected, but the existing output was incomplete. Please restart with the -force option to overwrite the output", 1);
+				printOut("Option --append was selected, but the existing output was incomplete. Please restart with the --force option to overwrite the output", 1);
 				exit;
 			}
 		}
@@ -1389,9 +1362,8 @@ sub checkOptions {
 	#### checking for the min and max distance for the core set compilation
 	#### omit this check, if the option reuseCore has been selected (added 2019-02-04)
 	$optbreaker = 0;
-	if (!$coreex and !$assembly) {
+	if (!$coreex) {
 		my $node;
-		#print "Testing coreex assembly\n";
 		$node = $db->get_taxon(-taxonid => $refTaxa{$refSpec});
 		$node->name('supplied', $refSpec);
 		if (lc($maxDist) eq "root"){
@@ -1630,7 +1602,7 @@ sub getBestOrtholog {
 					print $coreTaxonName, "\n";
 				}
 			}
-			runHamstr($coreTaxon, $seqName, $outputFa, $refSpec, $core_hitlimit, $core_rep, $corestrict, $coremode, $eval_blast, $eval_hmmer, $aln);
+			runHamstr($coreTaxon, $seqName, $outputFa, $refSpec, $core_hitlimit, $core_rep, $corestrict, $coremode, $eval_blast, $eval_hmmer, $aln, 1);
 			## check weather a candidate was found in the searched taxon
 			if(-e $candidatesFile) {
 
@@ -1969,7 +1941,7 @@ sub getTaxonName {
 ##################### perform the search for orthologs
 # using the core-orthologs found in the previous steps
 sub runHamstr {
-	my ($taxon, $seqName, $outputFa, $refSpec, $hitlimit, $rep, $sub_strict, $subcoremode, $ev_blst, $ev_hmm, $aln) = (@_);
+	my ($taxon, $seqName, $outputFa, $refSpec, $hitlimit, $rep, $sub_strict, $subcoremode, $ev_blst, $ev_hmm, $aln, $core) = (@_);
 	my $taxaDir = $taxaPath . $taxon;
 	printDebug("Running fdog: $taxon\t$seqName\t$outputFa\t$refSpec\t$taxaDir");
 	if (! -e $taxaDir) {
@@ -2045,29 +2017,31 @@ sub runHamstr {
 			printDebug(@hamstr);
 			system(@hamstr) == 0 or die "Error: fdog failed for " . $taxon . "\n";
 
-			if ($outputFa !~ /extended/){
-				$outputFa .= '.extended';
-			}
-			if(-e $resultFile) {
-				unless (-e $outputFa) {
-					open(EXTENDEDFA, ">$outputFa") or die "Cannot create $outputFa\n";
-				} else {
-					open(EXTENDEDFA, ">>$outputFa") or die "Cannot create $outputFa\n";
+			if ($core == 1) {
+				if ($outputFa !~ /extended/){
+					$outputFa .= '.extended';
 				}
-				my $resultFa = Bio::SeqIO->new(-file => $resultFile, '-format' => 'Fasta');
-				while(my $resultSeq = $resultFa->next_seq) {
-					if ($resultSeq->id =~ /$taxon\|(.)+\|[01]$/) {
-						my @tmpId = split("\\|", $resultSeq->id);
-						print EXTENDEDFA ">$tmpId[0]\|$tmpId[-3]\|$tmpId[-2]\|$tmpId[-1]\n",$resultSeq->seq,"\n";
+				if(-e $resultFile) {
+					unless (-e $outputFa) {
+						open(EXTENDEDFA, ">$outputFa") or die "Cannot create $outputFa\n";
+					} else {
+						open(EXTENDEDFA, ">>$outputFa") or die "Cannot create $outputFa\n";
 					}
+					my $resultFa = Bio::SeqIO->new(-file => $resultFile, '-format' => 'Fasta');
+					while(my $resultSeq = $resultFa->next_seq) {
+						if ($resultSeq->id =~ /$taxon\|(.)+\|[01]$/) {
+							my @tmpId = split("\\|", $resultSeq->id);
+							print EXTENDEDFA ">$tmpId[0]\|$tmpId[-3]\|$tmpId[-2]\|$tmpId[-1]\n",$resultSeq->seq,"\n";
+						}
+					}
+					# addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
+				} else {
+					# add seed sequence to output extended.fa if no ortholog was found in refSpec
+					if ($taxon eq $refSpec) {
+						addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
+					}
+					printDebug("$resultFile not found");
 				}
-				# addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
-			} else {
-				# add seed sequence to output extended.fa if no ortholog was found in refSpec
-				if ($taxon eq $refSpec) {
-					addSeedSeq($seqId, $seqName, $coreOrthologsPath, $refSpec, $outputFa);
-				}
-				printDebug("$resultFile not found");
 			}
 		}
 		#remove the created folders and files
@@ -2081,17 +2055,26 @@ sub runHamstr {
 		if (!$strict) {
 			$delCommandFa = "rm -rf  \"" . $outputPath . "/fa_dir_" . $taxon . "_" . $seqName . "_" . $refSpec . "\"";
 			$delCommandHmm = "rm -rf \"" .  $outputPath . "/hmm_search_" . $taxon . "_" . $seqName . "\"";
-			$delCommandHam = "rm -f \"" . $outputPath . "/hamstrsearch_" . $taxon . "_" . $seqName . ".out" . "\"";
+			if ($core == 1) {
+				$delCommandHam = "rm -f \"" . $outputPath . "/hamstrsearch_" . $taxon . "_" . $seqName . ".out" . "\"";
+			}
 		} else {
 			$delCommandFa = "rm -rf \"" . $outputPath . "/fa_dir_" . $taxon . "_" . $seqName . "_strict" . "\"";
 			$delCommandHmm = "rm -rf \"" .  $outputPath . "/hmm_search_" . $taxon . "_" . $seqName . "\"";
-			$delCommandHam = "rm -f \"" . $outputPath . "/hamstrsearch_" . $taxon . "_" . $seqName . ".strict.out" . "\"";
+			if ($core == 1) {
+				$delCommandHam = "rm -f \"" . $outputPath . "/hamstrsearch_" . $taxon . "_" . $seqName . ".strict.out" . "\"";
+			}
 		}
-		printDebug("executing $delCommandFa", "executing $delCommandHmm", "executing $delCommandHam");
+		printDebug("executing $delCommandFa", "executing $delCommandHmm");
+		if ($core == 1) {
+			printDebug("executing $delCommandHam");
+		}
 		if ($autoclean) {
 			system ($delCommandFa) == 0 or die "Error deleting result files\n";
 			system ($delCommandHmm) == 0 or die "Error deleting result files\n";
-			system ($delCommandHam) == 0 or die "Error deleting result files\n";
+			if ($core == 1) {
+				system ($delCommandHam) == 0 or die "Error deleting result files\n";
+			}
 		}
 	}
 	else {
@@ -2653,7 +2636,7 @@ sub initialCheck {
 		}
 	}
 	# check weight_dir
-	if ($fasoff != 1 && !$assembly) {
+	if ($fasoff != 1) {
 		my %seen;
 		my @allTaxa = grep( !$seen{$_}++, @genomeDir, @blastDir);
 		my @notFolder;
