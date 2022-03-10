@@ -21,6 +21,8 @@ import argparse
 import subprocess
 from pathlib import Path
 import yaml
+from ete3 import NCBITaxa
+
 
 def checkFileExist(file):
     if not os.path.exists(os.path.abspath(file)):
@@ -171,8 +173,33 @@ def runSingle(args):
     except:
         sys.exit('Problem running\n%s' % (cmd))
 
+def createConfigPP(outpath, seqName, refspec):
+    settings = dict(
+        mainInput = '%s/%s/%s.phyloprofile' % (outpath, seqName, seqName),
+        fastaInput = '%s/%s/%s.extended.fa' % (outpath, seqName, seqName),
+    )
+    domainFile = '%s/%s/%s_forward.domains' % (outpath, seqName, seqName)
+    if os.path.exists(os.path.abspath(domainFile)):
+        settings['domainInput'] = domainFile
+    taxId = refspec.split('@')[1]
+    refspec = getTaxName(taxId)
+    if not refspec == 'UNK':
+        settings['rank'] = 'species'
+        settings['refspec'] = refspec
+    settings['clusterProfile'] = 'FALSE'
+    with open('%s/%s/%s.config.yml' % (outpath, seqName, seqName), 'w') as outfile:
+        yaml.dump(settings, outfile, default_flow_style = False)
+
+def getTaxName(taxId):
+    ncbi = NCBITaxa()
+    try:
+        name = ncbi.get_taxid_translator([taxId])[int(taxId)]
+    except:
+        name = 'UNK'
+    return(name)
+
 def main():
-    version = '0.0.45'
+    version = '0.0.51'
     parser = argparse.ArgumentParser(description='You are running fdog.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -204,16 +231,18 @@ def main():
     core_options.add_argument('--coreOnly', help='Compile only the core orthologs', action='store_true', default=False)
     core_options.add_argument('--reuseCore', help='Reuse existing core set of your sequence', action='store_true', default=False)
     core_options.add_argument('--minDist', help='Minimum systematic distance of primer taxa for the core set compilation. Default: genus',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom'],
                             action='store', default='genus')
     core_options.add_argument('--maxDist', help='Maximum systematic distance of primer taxa for the core set compilation. Default: kingdom',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom'],
                             action='store', default='kingdom')
     core_options.add_argument('--coreOrth', help='Number of orthologs added to the core set. Default: 5', action='store', default=5, type=int)
     core_options.add_argument('--coreTaxa', help='List of primer taxa that should exclusively be used for the core set compilation', action='store', default='')
     core_options.add_argument('--coreStrict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     core_options.add_argument('--CorecheckCoorthologsRef', help='During the core compilation, an ortholog also be accepted when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
+                                action='store_true', default=True)
+    core_options.add_argument('--CorecheckCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the core compilation',
                                 action='store_true', default=False)
     core_options.add_argument('--coreRep', help='Obtain only the sequence being most similar to the corresponding sequence in the core set rather than all putative co-orthologs',
                                 action='store_true', default=False)
@@ -233,6 +262,8 @@ def main():
     ortho_options.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     ortho_options.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
+                                action='store_true', default=True)
+    ortho_options.add_argument('--checkCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the final ortholog search',
                                 action='store_true', default=False)
     ortho_options.add_argument('--rbh', help='Requires a reciprocal best hit during the ortholog search to accept a new ortholog',
                                 action='store_true', default=False)
@@ -240,9 +271,9 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00005',
+    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
-    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00005',
+    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
     ortho_options.add_argument('--evalRelaxfac', help='The factor to relax the e-value cut-off (Blast search and HMM search). Default: 10',
                                 action='store', default=10, type=int)
@@ -305,7 +336,10 @@ def main():
     reuseCore = args.reuseCore
     coreTaxa = args.coreTaxa
     coreStrict = args.coreStrict
-    CorecheckCoorthologsRef = args.CorecheckCoorthologsRef
+    CorecheckCoorthologsRef = True #args.CorecheckCoorthologsRef
+    CorecheckCoorthologsOff = args.CorecheckCoorthologsOff
+    if CorecheckCoorthologsOff == True:
+        CorecheckCoorthologsRef = False
     coreRep = args.coreRep
     coreHitLimit = args.coreHitLimit
     distDeviation = args.distDeviation
@@ -313,6 +347,9 @@ def main():
     # ortholog search arguments
     strict = args.strict
     checkCoorthologsRef = args.checkCoorthologsRef
+    checkCoorthologsOff = args.checkCoorthologsOff
+    if checkCoorthologsOff == True:
+        checkCoorthologsRef = False
     rbh = args.rbh
     rep = args.rep
     ignoreDistance = args.ignoreDistance
@@ -406,6 +443,9 @@ def main():
 
     ### run fdog
     runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, False])
+
+    ### create PhyloProfile config file
+    createConfigPP(outpath, seqName, refspec)
 
 if __name__ == '__main__':
     main()

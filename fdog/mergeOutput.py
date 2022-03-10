@@ -20,10 +20,21 @@ import sys
 import os
 from os import listdir as ldir
 import argparse
+import yaml
 
+def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
+    settings = dict(
+        mainInput = '%s/%s' % (directory, phyloprofile),
+        fastaInput = '%s/%s' % (directory, ex_fasta)
+    )
+    if not domains_0 == None:
+        settings['domainInput'] = '%s/%s' % (directory, domains_0)
+    settings['clusterProfile'] = 'TRUE'
+    with open('%s.config.yml' % (out), 'w') as outfile:
+        yaml.dump(settings, outfile, default_flow_style = False)
 
 def main():
-    version = '0.0.1'
+    version = '0.1.0'
     parser = argparse.ArgumentParser(description='You are running fdog.mergeOutput version ' + str(version) + '.')
     parser.add_argument('-i', '--input',
                         help='Input directory, where all single output (.extended.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
@@ -42,23 +53,26 @@ def main():
     domains_0 = None
     domains_1 = None
     ex_fasta = None
+    lines_seen = set()
     for infile in ldir(directory):
         if infile.endswith('.phyloprofile') and not infile == out + '.phyloprofile':
             if not phyloprofile:
-                phyloprofile = open(out + '.phyloprofile', 'w')
-                phyloprofile.write('geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n')
+                phyloprofile = out + '.phyloprofile'
+                phyloprofile_out = open(phyloprofile, 'w')
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    if not line == 'geneID\tncbiID\torthoID\tFAS_F\tFAS_B\n':
-                        phyloprofile.write(line)
+                    if line not in lines_seen: # not a duplicate
+                        phyloprofile_out.write(line)
+                        lines_seen.add(line)
         elif infile.endswith('_forward.domains') and not infile == out + '_forward.domains':
             if not domains_0:
-                domains_0 = open(out + '_forward.domains', 'w')
+                domains_0 = out + '_forward.domains'
+                domains_0_out = open(domains_0, 'w')
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    domains_0.write(line)
+                    domains_0_out.write(line)
         elif infile.endswith('_reverse.domains') and not infile == out + '_reverse.domains':
             if not domains_1:
                 domains_1 = open(out + '_reverse.domains', 'w')
@@ -68,19 +82,23 @@ def main():
                     domains_1.write(line)
         elif infile.endswith('.extended.fa') and not infile == out + '.extended.fa':
             if not ex_fasta:
-                ex_fasta = open(out + '.extended.fa', 'w')
+                ex_fasta = out + '.extended.fa'
+                ex_fasta_out = open(ex_fasta, 'w')
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    ex_fasta.write(line)
+                    ex_fasta_out.write(line)
     if phyloprofile:
-        phyloprofile.close()
+        phyloprofile_out.close()
     if domains_0:
-        domains_0.close()
+        domains_0_out.close()
     if domains_1:
         domains_1.close()
     if ex_fasta:
-        ex_fasta.close()
+        ex_fasta_out.close()
+
+    createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out)
+    print('Done! Output files:\n%s/%s.*' % (directory,out))
 
 
 if __name__ == "__main__":
