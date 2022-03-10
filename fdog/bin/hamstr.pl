@@ -200,6 +200,7 @@ use run_genewise_hamstr;
 
 ######################## start main ###########################################
 my $version = "HaMStR v.13.4.6";
+
 ######################## checking whether the configure script has been run ###
 my $configure = 0;
 if ($configure == 0){

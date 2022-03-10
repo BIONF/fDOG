@@ -116,6 +116,7 @@ dependencies=(
   mafft # for linsi
   muscle
   fasta36
+  augustus #for fdog.assembly
 )
 
 for i in "${dependencies[@]}"; do
@@ -134,6 +135,8 @@ for i in "${dependencies[@]}"; do
       fi
     elif [ "$tool" = "fasta36" ]; then
       conda install -y -c bioconda fasta3
+    elif [ "$tool" = "augustus" ]; then
+      conda install -y -c bioconda augustus
     else
       conda install -y -c bioconda $i
     fi
@@ -363,6 +366,8 @@ clustalw
 mafft
 muscle
 fasta3
+augustus
+tblastn
 )
 for i in "${condaPkgs[@]}"; do
   if [[ -z $(conda list | $grepprog "$i ") ]]; then
@@ -375,6 +380,13 @@ for i in "${condaPkgs[@]}"; do
       progname="hmmsearch"
     elif [ "$i" == "fasta3" ]; then
       progname="fasta36"
+    elif [ "$i" == "tblastn" ]; then
+      requiredver="2.9.0"
+      currentver="$(tblastn -version | head -n1 | cut -d" " -f2 | sed 's/+//g')"
+      t=$(printf '%s\n' $requiredver $currentver | sort -V | head -n1)
+      if [ $t == $currentver ]; then
+        echo -e "\t\e[31mWARNING BLAST+ needs an update to at least version ${requiredver}!\e[0m"
+      fi
     fi
     if [ -z "$(which $progname)" ]; then
       echo -e "\t\e[31m$i could not be installed\e[0m"

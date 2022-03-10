@@ -85,6 +85,7 @@ dependenciesUbuntu=(
   perl-doc
   locales
   lib32z1
+  augustus
 )
 
 dependenciesMac=(
@@ -94,6 +95,7 @@ dependenciesMac=(
   mafft
   brewsci/bio/muscle
   blast
+  augustus
 )
 
 if [ "$sys" == "Darwin" ]; then
@@ -108,7 +110,11 @@ else
   sudo apt-get update -y
   for i in "${dependenciesUbuntu[@]}"; do
     echo $i
-    sudo apt-get install -y -qq $i > /dev/null
+    if ["$i" == "augustus"]; then
+      sudo apt install augustus > /dev/null
+    else
+      sudo apt-get install -y -qq $i > /dev/null
+    fi
   done
 fi
 
@@ -119,6 +125,7 @@ dependencies=(
   mafft
   muscle
   blastn
+  augustus
 )
 
 for i in "${dependencies[@]}"; do
