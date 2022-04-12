@@ -750,7 +750,6 @@ def ortholog_search_tblastn(args):
         output.append(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
         extract_seq(regions, db_path, tmp_path, mode)
 
-
     if gene_prediction == "augustus":
         ############### make Augustus PPX search ###################################
         time_augustus_start = time.time()
