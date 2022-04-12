@@ -29,6 +29,8 @@ from tqdm import tqdm
 import fdog.runSingle as fdogFn
 import shutil
 import yaml
+from ete3 import NCBITaxa
+
 
 def getSortedFiles(directory):
     list = os.listdir(directory)
@@ -43,7 +45,7 @@ def getSortedFiles(directory):
 
 def prepare(args, step):
     (seqFile, seqName, fdogPath, refspec, minDist, maxDist, coreOrth,
-    append, force, cleanup, group, blast, db,
+    append, force, noCleanup, group, blast, db,
     outpath, hmmpath, blastpath, searchpath, weightpath,
     coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
     fasoff, countercheck, coreFilter, minScore,
@@ -64,7 +66,7 @@ def prepare(args, step):
     seqFile, hmmpath, blastpath, searchpath, weightpath = fdogFn.checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])
     # group arguments
     basicArgs = [fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth]
-    ioArgs = [append, force, cleanup, group, blast, db]
+    ioArgs = [append, force, noCleanup, group, blast, db]
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
     coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
     fasArgs = [fasoff, countercheck, coreFilter, minScore]
@@ -145,16 +147,20 @@ def searchOrtho(options, seeds, inFol, cpu, outpath):
 def joinOutputs(outpath, jobName, seeds, keep, silent):
     print('Joining single outputs...')
     finalFa = '%s/%s.extended.fa' % (outpath, jobName)
+    finalPP = open('%s/%s.phyloprofile' % (outpath, jobName), 'wb')
     Path(outpath+'/singleOutput').mkdir(parents=True, exist_ok=True)
     with open(finalFa,'wb') as wfd:
         for seed in seeds:
             seqName = getSeedName(seed)
             resultFile = '%s/%s/%s.extended.fa'  % (outpath, seqName, seqName)
+            resultPP ='%s/%s/%s.phyloprofile'  % (outpath, seqName, seqName)
             if silent == False:
                 print(resultFile)
             if os.path.exists(resultFile):
                 with open(resultFile,'rb') as fd:
                     shutil.copyfileobj(fd, wfd)
+                with open(resultPP,'rb') as pp:
+                    shutil.copyfileobj(pp, finalPP)
                 shutil.move(outpath + '/' + seqName, outpath + '/singleOutput')
             else:
                 Path(outpath+'/missingOutput').mkdir(parents=True, exist_ok=True)
@@ -173,6 +179,15 @@ def joinOutputs(outpath, jobName, seeds, keep, silent):
     shutil.rmtree(outpath + '/singleOutput')
     return(finalFa)
 
+def removeDupLines (infilename, outfilename):
+    lines_seen = set() # holds lines already seen
+    outfile = open(outfilename, "w")
+    for line in open(infilename, "r"):
+        if line not in lines_seen: # not a duplicate
+            outfile.write(line)
+            lines_seen.add(line)
+    outfile.close()
+
 def calcFAS (outpath, extendedFa, weightpath, cpu):
     print('Starting calculating FAS scores...')
     start = time.time()
@@ -188,8 +203,28 @@ def calcFAS (outpath, extendedFa, weightpath, cpu):
     except:
         sys.exit('Problem running\n%s' % (fasCmd))
 
+def createConfigPP(outpath, jobName, refspec):
+    settings = dict(
+        mainInput = '%s/%s.phyloprofile' % (outpath, jobName),
+        fastaInput = '%s/%s.extended.fa' % (outpath, jobName),
+    )
+    domainFile = '%s/%s_forward.domains' % (outpath, jobName)
+    if os.path.exists(os.path.abspath(domainFile)):
+        settings['domainInput'] = domainFile
+    taxId = refspec.split('@')[1]
+    refspec = fdogFn.getTaxName(taxId)
+    if not refspec == 'UNK':
+        settings['rank'] = 'species'
+        settings['refspec'] = refspec
+    settings['clusterProfile'] = 'TRUE'
+    print("HERER")
+    print(settings)
+    print('%s/%s.config.yml' % (outpath, jobName))
+    with open('%s/%s.config.yml' % (outpath, jobName), 'w') as configfile:
+        yaml.dump(settings, configfile, default_flow_style = False)
+
 def main():
-    version = '0.0.45'
+    version = '0.0.51'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -212,7 +247,7 @@ def main():
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--forceComplete', help='Overwrite existing core orthologs and all output files', action='store_true', default=False)
-    addtionalIO.add_argument('--cleanup', help='Temporary output will be deleted. Default: True', action='store_true', default=True)
+    addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--group', help='Allows to limit the search to a certain systematic group', action='store', default='')
     addtionalIO.add_argument('--blast', help='Determine sequence id and refspec automatically. Note, the chosen sequence id and reference species does not necessarily reflect the species the sequence was derived from.',
@@ -223,16 +258,18 @@ def main():
     core_options.add_argument('--coreOnly', help='Compile only the core orthologs', action='store_true', default=False)
     core_options.add_argument('--reuseCore', help='Reuse existing core set of your sequence', action='store_true', default=False)
     core_options.add_argument('--minDist', help='Minimum systematic distance of primer taxa for the core set compilation. Default: genus',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom'],
                             action='store', default='genus')
     core_options.add_argument('--maxDist', help='Maximum systematic distance of primer taxa for the core set compilation. Default: kingdom',
-                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'],
+                            choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom'],
                             action='store', default='kingdom')
     core_options.add_argument('--coreOrth', help='Number of orthologs added to the core set. Default: 5', action='store', default=5, type=int)
     core_options.add_argument('--coreTaxa', help='List of primer taxa that should exclusively be used for the core set compilation', action='store', default='')
     core_options.add_argument('--coreStrict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     core_options.add_argument('--CorecheckCoorthologsRef', help='During the core compilation, an ortholog also be accepted when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
+                                action='store_true', default=True)
+    core_options.add_argument('--CorecheckCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the core compilation',
                                 action='store_true', default=False)
     core_options.add_argument('--coreRep', help='Obtain only the sequence being most similar to the corresponding sequence in the core set rather than all putative co-orthologs',
                                 action='store_true', default=False)
@@ -252,6 +289,8 @@ def main():
     ortho_options.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
                                 action='store_true', default=False)
     ortho_options.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
+                                action='store_true', default=True)
+    ortho_options.add_argument('--checkCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the final ortholog search',
                                 action='store_true', default=False)
     ortho_options.add_argument('--rbh', help='Requires a reciprocal best hit during the ortholog search to accept a new ortholog',
                                 action='store_true', default=False)
@@ -259,9 +298,9 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00005',
+    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
-    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00005',
+    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
     ortho_options.add_argument('--evalRelaxfac', help='The factor to relax the e-value cut-off (Blast search and HMM search). Default: 10',
                                 action='store', default=10, type=int)
@@ -315,7 +354,7 @@ def main():
     append = args.append
     force = args.force
     forceComplete = args.forceComplete
-    cleanup = args.cleanup
+    noCleanup = args.noCleanup
     keep = args.keep
     group = args.group
     blast = args.blast
@@ -327,6 +366,9 @@ def main():
     coreTaxa = args.coreTaxa
     coreStrict = args.coreStrict
     CorecheckCoorthologsRef = args.CorecheckCoorthologsRef
+    CorecheckCoorthologsOff = args.CorecheckCoorthologsOff
+    if CorecheckCoorthologsOff == True:
+        CorecheckCoorthologsRef = False
     coreRep = args.coreRep
     coreHitLimit = args.coreHitLimit
     distDeviation = args.distDeviation
@@ -334,6 +376,9 @@ def main():
     # ortholog search arguments
     strict = args.strict
     checkCoorthologsRef = args.checkCoorthologsRef
+    checkCoorthologsOff = args.checkCoorthologsOff
+    if checkCoorthologsOff == True:
+        checkCoorthologsRef = False
     rbh = args.rbh
     rep = args.rep
     ignoreDistance = args.ignoreDistance
@@ -446,7 +491,7 @@ def main():
 
     ### join options
     options = [fdogPath, refspec, minDist, maxDist, coreOrth,
-                append, force, cleanup, group, blast, db,
+                append, force, noCleanup, group, blast, db,
                 outpath, hmmpath, blastpath, searchpath, weightpath,
                 coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
                 fasoff, countercheck, coreFilter, minScore,
@@ -493,12 +538,21 @@ def main():
             print("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force option." % (jobName, outpath))
         ### calculate FAS scores
         if fasoff == False:
+            if os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
+                os.remove('%s/%s.phyloprofile' % (outpath, jobName))
             if not os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
                 if os.path.exists(finalFa) and os.path.getsize(finalFa) > 0:
                     fasTime = calcFAS(outpath, finalFa, weightpath, cpu)
                     multiLog.write('==> FAS calculation finished in %s sec\n' % fasTime)
                 else:
                     print("Final fasta file %s not exists or empty!" % finalFa)
+        else:
+            shutil.move('%s/%s.phyloprofile' % (outpath, jobName), '%s/%s.phyloprofile.tmp' % (outpath, jobName))
+            removeDupLines ('%s/%s.phyloprofile.tmp' % (outpath, jobName), '%s/%s.phyloprofile' % (outpath, jobName))
+            os.remove('%s/%s.phyloprofile.tmp' % (outpath, jobName))
+
+    ### create PhyloProfile config file
+    createConfigPP(outpath, jobName, refspec)
 
     fdogEnd = time.time()
     print('==> fdogs.run finished in ' + '{:5.3f}s'.format(fdogEnd-fdogStart))

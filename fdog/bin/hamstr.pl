@@ -196,9 +196,11 @@ use run_genewise_hamstr;
 ## 21.01.2021 (v13.4.2 - vinh) fiexed bug when refspec has "dot" in its name
 ## 19.03.2021 (v13.4.3 - vinh) changed $path to current directory
 ## 19.03.2021 (v13.4.5 - vinh) do not replace space by @ for hmm output in parseHmmer4pm
+## 12.01.2022 (v13.4.6 - vinh) change aligner from MUSCLE to MAFFT if the sequence is longer than 12,000 aa
 
 ######################## start main ###########################################
-my $version = "HaMStR v.13.4.5";
+my $version = "HaMStR v.13.4.6";
+
 ######################## checking whether the configure script has been run ###
 my $configure = 0;
 if ($configure == 0){
@@ -2095,18 +2097,27 @@ sub identifyCoorthologsProt{
 	open (OUT, ">$tmpdirTmp/$localid.orth.fa") or die "failed to open $localid.orth.fa\n";
 	print OUT join "\n", @out;
 	close OUT;
+
+	## check sequence length
+	my $alignmentprog_co_tmp = $alignmentprog_co;
+	my $tooLong = checkSeqLen("$tmpdir/$localid.orth.fa");
+	if ($tooLong == 1) {
+		$alignmentprog_co_tmp = "mafft-linsi";
+	}
+	printOUT("Aligner: $alignmentprog_co_tmp\n");
+
 	## aligning sequences
-	if ($alignmentprog_co eq 'mafft-linsi'){
+	if ($alignmentprog_co_tmp eq 'mafft-linsi'){
 		`mafft --maxiterate 1000 --localpair --anysymbol --quiet $tmpdir/$localid.orth.fa > "$tmpdirTmp/$localid.orth.aln"`;
 	}
-	elsif ($alignmentprog_co eq 'muscle') {
-		`$alignmentprog_co -quiet -in $tmpdir/$localid.orth.fa -out "$tmpdirTmp/$localid.orth.aln"`;
+	elsif ($alignmentprog_co_tmp eq 'muscle') {
+		`muscle -quiet -in $tmpdir/$localid.orth.fa -out "$tmpdirTmp/$localid.orth.aln"`;
 	}
 	else {
-		die "$alignmentprog_co is neither mafft-linsi nor muscle\n";
+		die "$alignmentprog_co_tmp is neither mafft-linsi nor muscle\n";
 	}
 	if (! -e "$tmpdirTmp/$localid.orth.aln") {
-		die "something wrong running $alignmentprog_co\n";
+		die "something wrong running $alignmentprog_co_tmp\n";
 	}
 	## do the matrix caluclation
 	my $in = Bio::AlignIO->new(-format => 'fasta',
@@ -2146,6 +2157,21 @@ sub identifyCoorthologsProt{
 	}
 	printOUT(join "\n", @infofile);
 }
+
+######## sub check sequence length. If a sequence is longer than 12.000 aa,
+######## change MUSCLE to MAFFT-LINSI (due to Segmentation fault issue of MUSCLE)
+sub checkSeqLen {
+	my $file =$_[0];
+	my $out = `awk '/^>/ {if (seqlen){print seqlen}; print ;seqlen=0;next; } { seqlen += length(\$0)}END{print seqlen}' "$file"`;
+    my @out = split("\n", $out);
+    foreach my $line (@out) {
+        if ($line !~ />/ & $line > 12000) {
+            return(1)
+        }
+    }
+	return(0)
+}
+
 ######## sub checkCoorthologRef
 sub checkCoorthologRef {
 	## relevant steps are
@@ -2158,18 +2184,27 @@ sub checkCoorthologRef {
 	open (OUT, ">$tmpdir/$localid.co.fa") or die "failed to open $localid.co.fa\n";
 	print OUT ">query\n$query\n>best\n$best\n>ref\n$ref\n";
 	close OUT;
+
+	## check sequence length
+	my $alignmentprog_co_tmp = $alignmentprog_co;
+	my $tooLong = checkSeqLen("$tmpdir/$localid.co.fa");
+	if ($tooLong == 1) {
+		$alignmentprog_co_tmp = "mafft-linsi";
+	}
+	printOUT("Aligner: $alignmentprog_co_tmp\n");
+
 	## aligning sequences
-	if ($alignmentprog_co eq 'mafft-linsi'){
+	if ($alignmentprog_co_tmp eq 'mafft-linsi'){
 		`mafft --maxiterate 1000 --localpair --anysymbol --quiet $tmpdir/$localid.co.fa > "$tmpdir/$localid.co.aln"`;
 	}
-	elsif ($alignmentprog_co eq 'muscle') {
-		`$alignmentprog_co -quiet -in $tmpdir/$localid.co.fa -out "$tmpdir/$localid.co.aln"`;
+	elsif ($alignmentprog_co_tmp eq 'muscle') {
+		`muscle -quiet -in $tmpdir/$localid.co.fa -out "$tmpdir/$localid.co.aln"`;
 	}
 	else {
-		die "$alignmentprog_co is neither mafft-linsi nor muscle\n";
+		die "$alignmentprog_co_tmp is neither mafft-linsi nor muscle\n";
 	}
 	if (! -e "$tmpdir/$localid.co.aln") {
-		die "something wrong running $alignmentprog_co in routine checkCoorthologRef\n";
+		die "something wrong running $alignmentprog_co_tmp in routine checkCoorthologRef\n";
 	}
 	## do the matrix caluclation
 	my $in = Bio::AlignIO->new(-format => 'fasta',
