@@ -721,6 +721,9 @@ def ortholog_search_tblastn(args):
     assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
     db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
     blast_dir_path = assemblyDir + "/" + asName + "/blast_dir/"
+    if not os.path.exists(blast_dir_path):
+        cmd = 'mkdir ' + blast_dir_path
+        starting_subprocess(cmd, 'silent')
     db_check = searching_for_db(blast_dir_path)
 
     if db_check == 0:
