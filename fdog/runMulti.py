@@ -532,7 +532,10 @@ def main():
             ### join output
             finalFa = joinOutputs(outpath, jobName, seeds, keep, silent)
         else:
-            sys.exit("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force option." % (jobName, outpath))
+            if append == True:
+                sys.exit("Currently the append option is not available. Please use fdog.run if you need this option!")
+            else:
+                sys.exit("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force or --append option." % (jobName, outpath))
         ### calculate FAS scores
         if fasoff == False:
             if os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
