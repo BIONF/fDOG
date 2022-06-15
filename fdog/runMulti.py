@@ -75,7 +75,7 @@ def prepare(args, step):
     return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute)
 
 def getSeedName(seedFile):
-    seqName = seedFile.split('.')[0]
+    seqName = seedFile.rsplit('.', 1)[0]
     seqName = re.sub('[\|\.]', '_', seqName)
     return(seqName)
 
@@ -217,14 +217,11 @@ def createConfigPP(outpath, jobName, refspec):
         settings['rank'] = 'species'
         settings['refspec'] = refspec
     settings['clusterProfile'] = 'TRUE'
-    print("HERER")
-    print(settings)
-    print('%s/%s.config.yml' % (outpath, jobName))
     with open('%s/%s.config.yml' % (outpath, jobName), 'w') as configfile:
         yaml.dump(settings, configfile, default_flow_style = False)
 
 def main():
-    version = '0.0.51'
+    version = '0.0.52'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')
@@ -535,7 +532,10 @@ def main():
             ### join output
             finalFa = joinOutputs(outpath, jobName, seeds, keep, silent)
         else:
-            print("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force option." % (jobName, outpath))
+            if append == True:
+                sys.exit("Currently the append option is not available. Please use fdog.run if you need this option!")
+            else:
+                sys.exit("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force or --append option." % (jobName, outpath))
         ### calculate FAS scores
         if fasoff == False:
             if os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
