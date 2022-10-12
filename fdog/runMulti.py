@@ -221,7 +221,7 @@ def createConfigPP(outpath, jobName, refspec):
         yaml.dump(settings, configfile, default_flow_style = False)
 
 def main():
-    version = '0.0.52'
+    version = '0.0.53'
     parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
     required = parser.add_argument_group('Required arguments')

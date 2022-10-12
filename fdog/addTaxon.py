@@ -84,7 +84,7 @@ def runBlast(args):
         os.symlink(fileInGenome, fileInBlast)
 
 def main():
-    version = '0.0.10'
+    version = '0.0.11'
     parser = argparse.ArgumentParser(description='You are running fdog.addTaxon version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
@@ -165,7 +165,7 @@ def main():
             if ' ' in id:
                 sys.exit('\033[91mERROR: Sequence IDs (e.g. %s) must not contain space(s)!\033[0m' % id)
             else:
-                if '\|' in id:
+                if '|' in id:
                     print('\033[91mWARNING: Sequence IDs contain pipe(s). They will be replaced by "_"!\033[0m')
                     id = re.sub('\|', '_', id)
             # if len(id) > 20:
