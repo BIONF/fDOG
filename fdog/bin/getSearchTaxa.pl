@@ -7,22 +7,22 @@ use Bio::TreeIO;
 use Getopt::Std;
 use Cwd 'abs_path';
 
+# get search taxa based on super taxon name (e.g. get all mammalian in the genome_dir folder)
+# used in runMulti.py
+
 sub usage {
     my $msg = shift;
-    print "example: perl getSearchTaxa.pl -i genome_dir -b 0.00005 -h 0.00005 -r 10 -n mammalia -t taxonomy -o searchList.txt\n";
+    print "example: perl getSearchTaxa.pl -i genome_dir -n mammalia -t taxonomy -o searchList.txt\n";
     print "-i\tFolder contains all search species (e.g. genome_dir)\n";
     die $msg."\n";
 }
 
 # global variables
-our($opt_i,$opt_b,$opt_h,$opt_r,$opt_n,$opt_t,$opt_o);
-getopts('i:b:h:r:n:t:o:');
+our($opt_i,$opt_n,$opt_t,$opt_o);
+getopts('i:n:t:o:');
 
 # sanity checks;
 my $genome_dir = ($opt_i) ? $opt_i : usage("ERROR: No input folder given\n");
-my $eval_blast = ($opt_b) ? $opt_b : usage("ERROR: No eval_blast given\n");
-my $eval_hmmer = ($opt_h) ? $opt_h : usage("ERROR: No eval_hmmer given\n");
-my $eval_relaxfac = ($opt_r) ? $opt_r : usage("ERROR: No eval_relaxfac given\n");
 my $group = ($opt_n) ? $opt_n : usage("ERROR: No group given\n");
 my $idx_dir = ($opt_t) ? $opt_t : usage("ERROR: No taxonomy dir given\n");
 my $output = ($opt_o) ? $opt_o : usage("ERROR: No output given\n");
@@ -41,8 +41,6 @@ if($group ne "all") {
     # get tree
     %taxa = getTaxa($genome_dir);
     my $tree = getTree();
-    my $final_eval_blast = $eval_blast*$eval_relaxfac;
-    my $final_eval_hmmer = $eval_hmmer*$eval_relaxfac;
     if($groupNode) {
         foreach($tree->get_nodes()) {
             if($_->id == $groupNode->id) {

@@ -521,7 +521,7 @@ def main():
                 print('Creating list for search taxa...')
                 searchTaxa = '%s/searchTaxa.txt' % (outpath)
                 searchGroup = group
-                cmd = 'perl %s/bin/getSearchTaxa.pl -i %s -b %s -h %s -r %s -n %s -t %s/taxonomy -o %s' % (fdogPath, searchpath, evalBlast, evalHmmer, evalRelaxfac, searchGroup, fdogPath, searchTaxa)
+                cmd = 'perl %s/bin/getSearchTaxa.pl -i %s -n %s -t %s/taxonomy -o %s' % (fdogPath, searchpath, searchGroup, fdogPath, searchTaxa)
                 try:
                     subprocess.call([cmd], shell = True)
                 except:

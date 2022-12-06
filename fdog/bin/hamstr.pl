@@ -1,18 +1,18 @@
 #!/usr/bin/perl
 use strict;
 use Getopt::Long;
-use Parallel::ForkManager;
+# use Parallel::ForkManager;
 use Bio::SearchIO;
-use Bio::Search::Hit::BlastHit;
+# use Bio::Search::Hit::BlastHit;
 use Bio::SeqIO;
 use Bio::Align::ProteinStatistics;
 use Bio::AlignIO;
-use Term::Cap;
+# use Term::Cap;
 use POSIX;
 use Cwd;
 use Cwd 'abs_path';
-use Statistics::R;
-use File::Basename;
+# use Statistics::R;
+# use File::Basename;
 use lib dirname(__FILE__);
 use run_genewise_hamstr;
 
@@ -532,7 +532,7 @@ my $tmpdir = "$outpath/tmp";
 my $co_seqs = parseSeqfile("$fafile");
 
 ## initialize the forking procedure
-my $pm = new Parallel::ForkManager($cpu);
+# my $pm = new Parallel::ForkManager($cpu);
 
 ## collect all the entries of the final output file
 #my ($spid, $exit_code, $ident, $exit_signal, $core_dump, $data);
@@ -553,7 +553,7 @@ my $pm = new Parallel::ForkManager($cpu);
 $hmmcount = scalar(@hmms);
 
 for (my $i = 0; $i < @hmms; $i++) {
-	my $pid = $pm->start and next;
+	# my $pid = $pm->start and next;
 	my $localid = $$;
 	$frame = undef;
 	$fileobj = undef;
@@ -584,7 +584,7 @@ for (my $i = 0; $i < @hmms; $i++) {
 	my ($query_name, $results, $hitlimit_local, $criticalValue) = parseHmmer4pm($hmmout, $hmmsearch_dir);
 	if (! $results) {
 		printOUT("no hit found for $query_name\n");
-		$pm->finish;
+		# $pm->finish;
 		next;
 	}
 	## Automatic hit limit information
@@ -706,14 +706,14 @@ for (my $i = 0; $i < @hmms; $i++) {
 	if (@seqs2store > 0) {
 		my $seqref = \@seqs2store;
 		my $estref = \@cds2store;
-		$pm->finish;
+		# $pm->finish;
 	}
 	else {
-		$pm->finish;
+		# $pm->finish;
 	}
 }
 
-$pm->wait_all_children;
+# $pm->wait_all_children;
 
 ### The following bit of code has been out-commented as shared memory between forked child
 ### processes does not exist. The handing back of return values from the child to the parent
@@ -2248,62 +2248,62 @@ sub printOUT {
 	return();
 }
 ###### sub getLag
-sub getLag {
-	print "\nInside getlag\n";
-	my ($hits, $hitcount) = @_;
-	my $minScore = $hits->[$hitcount-1]->{hmmscore};
-	my $maxScore = $hits->[0]->{hmmscore};
-	if ($minScore == $maxScore) {
-		## there is nothing to do, since there is either only one hit, or all hits have the same
-		## hmmscore. Return the value of $hitcount.
-		return($hitcount, 1);
-	}
-	## debug
-	else {
-		print "hitcount is $hitcount, max is $maxScore, min is $minScore\n";
-		my @yData = qw();
-		my @xData = qw();
-		my @xDataLog = qw();
-		## now we generate a reversed list of the normalized bitscores
-		for (my $i = 0; $i < $hitcount; $i++) {
-			push(@yData, 1 - ($hits->[$i]->{hmmscore} - $minScore)/($maxScore - $minScore));
-			push(@xDataLog, log(0.1*($i+1)));
-			push(@xData, (0.1*($i+1)));
-		}
-		## The module requires a sufficient amount of trailing 1 to measure the lag point,
-		## so we just append them
-		for (my $i = $hitcount; $i < ($hitcount+20); $i++) {
-			push(@yData, 1);
-			push(@xData, 0.1*($i));
-			push(@xDataLog, 0.1*($i));
-		}
-		### calculate end point of lag phase
-		my $R = Statistics::R->new();
-		# set variables for R
-		my $lagPoint = computeLagPoint($R, \@xDataLog, \@yData);
-		if ($lagPoint eq 'NA'){
-			print "Least square fit to data failed! Trying log-transformed data.\n";
-			my $lagPoint = computeLagPoint($R, \@xDataLog, \@yData);
-		}
-		### compute the cutoff
-		if ($lagPoint eq 'NA') {
-			return();
-		}
-		else {
-			my $hitLimitGetLag;
-			print "limit is $lagPoint. Abs is " . abs($lagPoint) . "\n";
-			for (my $i = 0; $i < @xData; $i++) {
-				if ($xData[$i] > abs($lagPoint)) {
-					$hitLimitGetLag = $i + 1;
-					print "Setting hl to $hitLimitGetLag\n";
-					last;
-				}
-			}
-			print "hitlimit in getLag is $hitLimitGetLag\n";
-			return ($hitLimitGetLag, $lagPoint);
-		}
-	}
-}
+# sub getLag {
+# 	print "\nInside getlag\n";
+# 	my ($hits, $hitcount) = @_;
+# 	my $minScore = $hits->[$hitcount-1]->{hmmscore};
+# 	my $maxScore = $hits->[0]->{hmmscore};
+# 	if ($minScore == $maxScore) {
+# 		## there is nothing to do, since there is either only one hit, or all hits have the same
+# 		## hmmscore. Return the value of $hitcount.
+# 		return($hitcount, 1);
+# 	}
+# 	## debug
+# 	else {
+# 		print "hitcount is $hitcount, max is $maxScore, min is $minScore\n";
+# 		my @yData = qw();
+# 		my @xData = qw();
+# 		my @xDataLog = qw();
+# 		## now we generate a reversed list of the normalized bitscores
+# 		for (my $i = 0; $i < $hitcount; $i++) {
+# 			push(@yData, 1 - ($hits->[$i]->{hmmscore} - $minScore)/($maxScore - $minScore));
+# 			push(@xDataLog, log(0.1*($i+1)));
+# 			push(@xData, (0.1*($i+1)));
+# 		}
+# 		## The module requires a sufficient amount of trailing 1 to measure the lag point,
+# 		## so we just append them
+# 		for (my $i = $hitcount; $i < ($hitcount+20); $i++) {
+# 			push(@yData, 1);
+# 			push(@xData, 0.1*($i));
+# 			push(@xDataLog, 0.1*($i));
+# 		}
+# 		### calculate end point of lag phase
+# 		my $R = Statistics::R->new();
+# 		# set variables for R
+# 		my $lagPoint = computeLagPoint($R, \@xDataLog, \@yData);
+# 		if ($lagPoint eq 'NA'){
+# 			print "Least square fit to data failed! Trying log-transformed data.\n";
+# 			my $lagPoint = computeLagPoint($R, \@xDataLog, \@yData);
+# 		}
+# 		### compute the cutoff
+# 		if ($lagPoint eq 'NA') {
+# 			return();
+# 		}
+# 		else {
+# 			my $hitLimitGetLag;
+# 			print "limit is $lagPoint. Abs is " . abs($lagPoint) . "\n";
+# 			for (my $i = 0; $i < @xData; $i++) {
+# 				if ($xData[$i] > abs($lagPoint)) {
+# 					$hitLimitGetLag = $i + 1;
+# 					print "Setting hl to $hitLimitGetLag\n";
+# 					last;
+# 				}
+# 			}
+# 			print "hitlimit in getLag is $hitLimitGetLag\n";
+# 			return ($hitLimitGetLag, $lagPoint);
+# 		}
+# 	}
+# }
 ##########################
 sub getHitLimit {
 	my ($hits, $hitcount) = @_;

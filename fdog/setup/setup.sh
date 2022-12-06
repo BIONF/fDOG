@@ -337,7 +337,7 @@ perlModules=(
   DB_File
   File::Copy
   File::Path
-  File::Basename
+  # File::Basename
   File::Which
   List::Util
   Parallel::ForkManager
@@ -345,20 +345,20 @@ perlModules=(
   Getopt::Long
   IO::Handle
   IPC::Run
-  Statistics::R
-  Term::Cap
+  # Statistics::R
+  # Term::Cap
   Time::HiRes
   Bio::AlignIO
   Bio::Align::ProteinStatistics
   Bio::DB::Taxonomy
   Bio::SearchIO
   Bio::SearchIO::blastxml
-  Bio::Search::Hit::BlastHit
+  # Bio::Search::Hit::BlastHit
   Bio::Seq
   Bio::SeqIO
   Bio::SeqUtils
   Bio::Tree::Tree
-  Bio::Tools::Run::StandAloneBlast
+  # Bio::Tools::Run::StandAloneBlast
 )
 
 echo "Perl modules"
