@@ -201,16 +201,16 @@ use run_genewise_hamstr;
 ######################## start main ###########################################
 my $version = "HaMStR v.13.4.6";
 ######################## checking whether the configure script has been run ###
-my $configure = 0;
+my $configure = 1;
 if ($configure == 0){
 	die "\n\n$version\n\nPLEASE RUN setup1s BEFORE USING HAMSTR\n\n";
 }
 ########## EDIT THE FOLLOWING LINES TO CUSTOMIZE YOUR SCRIPT ##################
 my $prog = 'hmmsearch'; #program for the hmm search
 my $eval = 1; # default evalue cutoff for the hmm search
-my $sedprog = 'sed';
-my $grepprog = 'grep';
-my $readlinkprog = 'readlink';
+my $sedprog = 'gsed';
+my $grepprog = 'ggrep';
+my $readlinkprog = 'greadlink';
 my $alignmentprog = 'clustalw';
 my $alignmentprog_co = 'muscle';
 ########## EDIT THE FOLLOWING TWO LINES TO CHOOSE YOUR BLAST PROGRAM ##########
@@ -627,10 +627,10 @@ for (my $i = 0; $i < @hmms; $i++) {
 	## 5) do the rest only if at least one hit was obtained
 	if (defined $fileobj) {
 		## 5a) if the hits are derived from ESTs, get the best ORF
-		if ($estflag) {
-			$fileobj =  &predictORF($frame);
-		}
-		&processHits($localid, $fileobj);
+		# if ($estflag) {
+		# 	$fileobj =  &predictORF($frame);
+		# }
+		# &processHits($localid, $fileobj);
 		if (!$rep and !$concat) {
 			## identify co-orothologs only for protein sequences. This adds a key 'coorthologs' to the $fileobj->{$taxon} that
 			## holds the index values for the sequences in the $fileobj->{$taxon}->{ids} and the corresponding {prot} array ref
@@ -1322,29 +1322,29 @@ sub checkInput {
 	}
 
 	## check how hamstr should deal with possible introns in transcripts:
-	if ($estflag) {
-		my $breaker = 0;
-		while ($keepintron !~ /^[kmr]/i and ($breaker < 4)){
-			$breaker ++;
-			print "option intron was set to $keepintron: Please answer either with 'k(eep)', 'm(ask)', or 'r(emove)':\t";
-			$keepintron = <STDIN>;
-			chomp $keepintron;
-			if (($breaker > 3) and ($keepintron !~ /^[kmr]/i)){
-				print "No proper answer is given: exiting.\nPlease re-start HaMStR with the option -intron=[kmr].\nOptions are 'k(eep)', 'm(ask)', or 'r(emove)'. Default is 'k(eep)' introns.\n";
-				exit;
-			}
-		}
-		if ($keepintron =~ /^k/i) {
-			push @log, "\tKeep introns (Default) has been chosen. HaMStR will keep any introns in lower case in the reported CDS. Thus, CDS cannot be directly translated into the aa sequence.";
-		}
-		elsif ($keepintron =~ /^m/i) {
-			push @log, "\tMask introns has been chosen. HaMStR will keep any introns but masks them as 'N' in the reported CDS. Thus, CDS cannot be directly translated into the aa sequence."
-		}
-		elsif ($keepintron =~ /^r/i) {
-			push @log, "\tRemove introns has been chosen. HaMStR will remove any position that genewise could not align to the reference protein rendering the CDS consistent with the amino acid sequence";
-		}
-
-	}
+	# if ($estflag) {
+	# 	my $breaker = 0;
+	# 	while ($keepintron !~ /^[kmr]/i and ($breaker < 4)){
+	# 		$breaker ++;
+	# 		print "option intron was set to $keepintron: Please answer either with 'k(eep)', 'm(ask)', or 'r(emove)':\t";
+	# 		$keepintron = <STDIN>;
+	# 		chomp $keepintron;
+	# 		if (($breaker > 3) and ($keepintron !~ /^[kmr]/i)){
+	# 			print "No proper answer is given: exiting.\nPlease re-start HaMStR with the option -intron=[kmr].\nOptions are 'k(eep)', 'm(ask)', or 'r(emove)'. Default is 'k(eep)' introns.\n";
+	# 			exit;
+	# 		}
+	# 	}
+	# 	if ($keepintron =~ /^k/i) {
+	# 		push @log, "\tKeep introns (Default) has been chosen. HaMStR will keep any introns in lower case in the reported CDS. Thus, CDS cannot be directly translated into the aa sequence.";
+	# 	}
+	# 	elsif ($keepintron =~ /^m/i) {
+	# 		push @log, "\tMask introns has been chosen. HaMStR will keep any introns but masks them as 'N' in the reported CDS. Thus, CDS cannot be directly translated into the aa sequence."
+	# 	}
+	# 	elsif ($keepintron =~ /^r/i) {
+	# 		push @log, "\tRemove introns has been chosen. HaMStR will remove any position that genewise could not align to the reference protein rendering the CDS consistent with the amino acid sequence";
+	# 	}
+	#
+	# }
 
 	return ($check, @log);
 }
@@ -1388,12 +1388,12 @@ sub check4reciprocity {
 			!`blastall -p $algorithm -d $refspec_final->[$k]->{searchdb} -F $filter -e $eval_blast -m7 -i $tmpdir/$$.fa -o $tmpdir/$$.blast` or die "Problem running $blast_prog\n"
 		}
 		else {
-			if ($estflag){
-				`$blast_prog -ublast $tmpdir/$$.fa -db $refspec_final->[$k]->{searchdb}.udb -strand both -accel $accel -evalue $eval_blast -blast6out $tmpdir/$$.blast` or die "Problem running $blast_prog\n;"
-			}
-			else {
+			# if ($estflag){
+			# 	`$blast_prog -ublast $tmpdir/$$.fa -db $refspec_final->[$k]->{searchdb}.udb -strand both -accel $accel -evalue $eval_blast -blast6out $tmpdir/$$.blast` or die "Problem running $blast_prog\n;"
+			# }
+			# else {
 				`$blast_prog -ublast $tmpdir/$$.fa -db $refspec_final->[$k]->{searchdb}.udb -accel $accel -evalue $eval_blast -blast6out $tmpdir/$$.blast` or die "Problem running $blast_prog\n;"
-			}
+			# }
 			## sort the output as ublast does not do it (at least not for ESTs)
 			`sort -n -r -k 12 $tmpdir/$$.blast >$tmpdir/blastsort.tmp`;
 			`mv $tmpdir/blastsort.tmp $tmpdir/$$.blast`;
@@ -1466,14 +1466,14 @@ sub check4reciprocity {
 				}
 				else {
 					printOUT("\nBest hit $bestid differs from reference sequence $refid! Doing further checks\n");
-					if ($estflag){
-						printOUT("Frame is $hits->[0]->{frame} or $frame\n");
-						my ($hitseqtr) = &findORF($hitseq, $bestseq, $frame);
-						($suc, $qhdistance, $rhdistance) = &checkCoorthologRef($localid, $hitseqtr, $bestseq, $refseq);
-					}
-					else {
+					# if ($estflag){
+					# 	printOUT("Frame is $hits->[0]->{frame} or $frame\n");
+					# 	my ($hitseqtr) = &findORF($hitseq, $bestseq, $frame);
+					# 	($suc, $qhdistance, $rhdistance) = &checkCoorthologRef($localid, $hitseqtr, $bestseq, $refseq);
+					# }
+					# else {
 						($suc, $qhdistance, $rhdistance) = &checkCoorthologRef($localid, $hitseq, $bestseq, $refseq);
-					}
+					# }
 					## print distances (debug mode)
 					if ($debug){
 						my $distDebugFile = $outpath . "/" . $taxon_global . ".debug.dist"; #$path . "/output/" . $taxon_global . ".debug.dist";
@@ -1518,16 +1518,16 @@ sub check4reciprocity {
 			return (0, $hitseq);
 		}
 	}
-	if ($relaxed_suc == 1) {
-		if ($estflag and $frame eq '-') {
-			## reverse sequence
-			$hitseq = &revComp($hitseq);
-		}
-		return (1, $hitseq, $frame);
-	}
-	else {
-		return (0, $hitseq);
-	}
+	# if ($relaxed_suc == 1) {
+	# 	if ($estflag and $frame eq '-') {
+	# 		## reverse sequence
+	# 		$hitseq = &revComp($hitseq);
+	# 	}
+	# 	return (1, $hitseq, $frame);
+	# }
+	# else {
+	# 	return (0, $hitseq);
+	# }
 }
 
 #############
@@ -1580,23 +1580,23 @@ sub getBestBlasthit {
 	return($hits);
 }
 ##################
-sub getTaxon {
-	my ($hitname) = @_;
-	if ($hitname =~ /\D/) {
-		$hitname =~ s/_.*//;
-	}
-	my $taxon = `$grepprog -m 1 "^$hitname," $taxon_file | $sedprog -e 's/^.*,//'`;
-	chomp $taxon;
-	$taxon =~ s/^[0-9]+,//;
-	$taxon =~ s/\s*$//;
-	$taxon =~ s/\s/_/g;
-	if ($taxon) {
-		return ($taxon);
-	}
-	else {
-		return();
-	}
-}
+# sub getTaxon {
+# 	my ($hitname) = @_;
+# 	if ($hitname =~ /\D/) {
+# 		$hitname =~ s/_.*//;
+# 	}
+# 	my $taxon = `$grepprog -m 1 "^$hitname," $taxon_file | $sedprog -e 's/^.*,//'`;
+# 	chomp $taxon;
+# 	$taxon =~ s/^[0-9]+,//;
+# 	$taxon =~ s/\s*$//;
+# 	$taxon =~ s/\s/_/g;
+# 	if ($taxon) {
+# 		return ($taxon);
+# 	}
+# 	else {
+# 		return();
+# 	}
+# }
 ###############
 sub determineReferences {
 	my ($localid, $fileobj, $taxon, $refspec_final, $hitname, $hithmmscore, $hitseq, $hitcount) = @_;
@@ -1644,217 +1644,217 @@ $fileobj->{$taxon}->{refspec}->[$hitcount] = $refspec;
 return($fileobj);
 }
 ###############
-sub processHits {
-	my ($localid, $fileobj) = @_;
-	## 1) align all hit sequences for a taxon against the reference species
-	my @taxa = keys(%$fileobj);
-	for (my $i = 0; $i < @taxa; $i++) {
-		&orfRanking($localid, $taxa[$i]);
-	}
-}
+# sub processHits {
+# 	my ($localid, $fileobj) = @_;
+# 	## 1) align all hit sequences for a taxon against the reference species
+# 	my @taxa = keys(%$fileobj);
+# 	for (my $i = 0; $i < @taxa; $i++) {
+# 		&orfRanking($localid, $taxa[$i]);
+# 	}
+# }
 
 
 ################
-sub predictORF {
-	my $fileobj_new;
-	my @taxa = keys(%$fileobj);
-	for (my $i = 0; $i < @taxa; $i++) {
-		my $protobj = $fileobj->{$taxa[$i]}->{prot};
-		my $idobj = $fileobj->{$taxa[$i]}->{ids};
-		my $refseqobj = $fileobj->{$taxa[$i]}->{refseq};
-		my $refspecobj = $fileobj->{$taxa[$i]}->{refspec};
-		my @ids = @$idobj;
-		for (my $j = 0; $j < @ids; $j++) {
-			my $refseq = $refseqobj->[$j];
-			my $refspec = $refspecobj->[$j];
-			my $est = $protobj->[$j];
-			if (! $est) {
-				die "error in retrieval of est sequence for $ids[$j] in subroutine processHits\n";
-			}
-			### debuggin IUB code
-			if ($est =~ /[^AGCT]/i) {
-				$est =~ s/[^AGCTagct]/n/g;
-			}
-			printOUT("running genewise using frame $frame\n");
-			my $gw = run_genewise_hamstr->new($est, $refseq, $tmpdir, $keepintron);
-			my $translation = $gw->translation;
-			my $cds = $gw->codons;
-			$translation =~ s/[-!]//g;
-			$fileobj_new->{$taxa[$i]}->{ids}->[$j] = $ids[$j];
-			$fileobj_new->{$taxa[$i]}->{prot}->[$j] = $translation;
-			$fileobj_new->{$taxa[$i]}->{cds}->[$j] = $cds;
-			$fileobj_new->{$taxa[$i]}->{refseq}->[$j] = $refseq;
-			$fileobj_new->{$taxa[$i]}->{refspec}->[$j] = $refspec;
-		}
-	}
-	return($fileobj_new);
-}
+# sub predictORF {
+# 	my $fileobj_new;
+# 	my @taxa = keys(%$fileobj);
+# 	for (my $i = 0; $i < @taxa; $i++) {
+# 		my $protobj = $fileobj->{$taxa[$i]}->{prot};
+# 		my $idobj = $fileobj->{$taxa[$i]}->{ids};
+# 		my $refseqobj = $fileobj->{$taxa[$i]}->{refseq};
+# 		my $refspecobj = $fileobj->{$taxa[$i]}->{refspec};
+# 		my @ids = @$idobj;
+# 		for (my $j = 0; $j < @ids; $j++) {
+# 			my $refseq = $refseqobj->[$j];
+# 			my $refspec = $refspecobj->[$j];
+# 			my $est = $protobj->[$j];
+# 			if (! $est) {
+# 				die "error in retrieval of est sequence for $ids[$j] in subroutine processHits\n";
+# 			}
+# 			### debuggin IUB code
+# 			if ($est =~ /[^AGCT]/i) {
+# 				$est =~ s/[^AGCTagct]/n/g;
+# 			}
+# 			printOUT("running genewise using frame $frame\n");
+# 			my $gw = run_genewise_hamstr->new($est, $refseq, $tmpdir, $keepintron);
+# 			my $translation = $gw->translation;
+# 			my $cds = $gw->codons;
+# 			$translation =~ s/[-!]//g;
+# 			$fileobj_new->{$taxa[$i]}->{ids}->[$j] = $ids[$j];
+# 			$fileobj_new->{$taxa[$i]}->{prot}->[$j] = $translation;
+# 			$fileobj_new->{$taxa[$i]}->{cds}->[$j] = $cds;
+# 			$fileobj_new->{$taxa[$i]}->{refseq}->[$j] = $refseq;
+# 			$fileobj_new->{$taxa[$i]}->{refspec}->[$j] = $refspec;
+# 		}
+# 	}
+# 	return($fileobj_new);
+# }
 ############################
-sub orfRanking {
-	my ($localid, $spec) = @_;
-	my $result;
-	my $refprot;
-	my $refcds;
-	my @toalign;
-	my $protobj = $fileobj->{$spec}->{prot};
-	my $idobj = $fileobj->{$spec}->{ids};
-	my $refcluster; ## variables to take the cluster and its id for later analysis
-	my $refid;
-	if (@$protobj == 1) {
-		## nothing to chose from
-		$refprot = $protobj->[0];
-		$refcds = $fileobj->{$spec}->{cds}->[0];
-		my $length = length($refprot);
-		$refid = $idobj->[0];
-	}
-	else {
-		## more than one cluster
-		## note, I set the refseq fix to the first entry. This is to avoid that in this routine
-		## sequences from different taxa are used.
-		push @toalign, ">$fileobj->{$spec}->{refspec}->[0]";
-		push @toalign, $fileobj->{$spec}->{refseq}->[0];
-		## now walk through all the contigs
-		for (my $i = 0; $i < @$protobj; $i++) {
-			my @testseq = (">$idobj->[$i]", $protobj->[$i]);
-			@testseq = (@testseq, @toalign);
-			open (OUT, ">$tmpdir/$localid.ref.fa") or die "could not open file for writing refseqs\n";
-			print OUT join "\n", @testseq;
-			close OUT;
-			## run clustalw
-			!(`$alignmentprog -infile=$tmpdir/$localid.ref.fa -output=fasta -outfile=$tmpdir/$localid.ref.aln 2>&1 >$tmpdir/$localid.ref.log`) or die "error running clustalw\n";
-			## get the alignment score
-			$result->[$i]->{score} =  `$grepprog "Alignment Score" $tmpdir/$localid.ref.log |$sedprog -e 's/[^0-9]//g'`;
-			if (!$result->[$i]->{score}) {
-				die "error in determining alignment score\n";
-			}
-			chomp $result->[$i]->{score};
-			## get the aligned sequence
-			open (ALN, "$tmpdir/$localid.ref.aln") or die "failed to open alignment file\n";
-			my @aln = <ALN>;
-			close ALN;
-			my $aseq = extractSeq($idobj->[$i], @aln);
-			## remove the terminal gaps
-			$aseq =~ s/-*$//;
-			$result->[$i]->{aend} = length $aseq;
-			my ($head) = $aseq =~ /^(-*).*/;
-			($result->[$i]->{astart}) = length($head)+1;
-			## add the hmmscore to $result
-			$result->[$i]->{hmmscore} = $fileobj->{$spec}->{hmmscore}->[$i];
-		}
-		### the results for all seqs has been gathered, now order them according to alignment start in the refseq
-		$result = &sortRef($result);
-		($refprot, $refcds, $refid) = &determineRef($result,$spec);
-	}
-	$fileobj->{$spec}->{refprot} = $refprot;
-	$fileobj->{$spec}->{refcds}  = $refcds;
-	$fileobj->{$spec}->{refid}   = $refid;
-	$fileobj->{$spec}->{refspec_final} = $fileobj->{$spec}->{refspec}->[0];
-	return();
-}
-###########################
-sub sortRef {
-	my $result = shift;
-	my @sortref;
-	for (my $i = 0; $i < @$result; $i++) {
-		$sortref[$i]->{index} = $i;
-		$sortref[$i]->{astart} = $result->[$i]->{astart};
-		$sortref[$i]->{aend} = $result->[$i]->{aend};
-		$sortref[$i]->{score} = $result->[$i]->{score};
-		$sortref[$i]->{hmmscore} = $result->[$i]->{hmmscore};
-	}
-	@sortref = sort { $a->{astart} <=> $b->{astart} } @sortref;
-	for (my $i = 0; $i < @sortref; $i++) {
-		($result->[$i]->{id}, $result->[$i]->{start}, $result->[$i]->{end}, $result->[$i]->{score}, $result->[$i]->{hmmscore}) = ($sortref[$i]->{index}, $sortref[$i]->{astart}, $sortref[$i]->{aend}, $sortref[$i]->{score}, $sortref[$i]->{hmmscore});
-	}
-	return($result);
-}
-########################
-sub determineRef {
-	my ($result, $spec) = @_;
-	my $lastend = 0;
-	my $lastscore = 0;
-	my $final;
-	my $count = 0;
-	my $id = '';
-	my $scorekey = 'hmmscore';
-	if ($sortalign){
-		$scorekey = 'score';
-	}
-	for (my $i = 0; $i < @$result; $i++) {
-		if ($result->[$i]->{start} < $lastend or $lastend == 0) {
-			if ($result->[$i]->{$scorekey} > $lastscore) {
-				$lastend = $result->[$i]->{end};
-				$lastscore = $result->[$i]->{$scorekey};
-				$id = $result->[$i]->{id};
-				printOUT("ref is $id with score $lastscore\n");
-			}
-		}
-		elsif ($result->[$i]->{start} > $lastend) {
-			## a new part of the alignment is covered. Fix the results obtained so far
-			$final->[$count]->{id} = $id;
-			$lastend = $result->[$i]->{end};
-			$id = $result->[$i]->{id};
-			$count++;
-		}
-	}
-	$final->[$count]->{id} = $id;
-	## now concatenate the results
-	my $refprot = '';
-	my $refid = '';
-	my $refcds = '';
-
-	## now comes a dirty hack. The user has the chance to maximize phylogentic information by concatenating
-	## orthologous sequences that do no align to the same part of the reference protein (option -concat). If so,
-	## the co-ortholog-detection at a later step will not work and will be disabled.
-	my $looplimit = 1;
-	if ($concat) {
-		$looplimit = scalar(@$final);
-	}
-	for (my $i = 0; $i < $looplimit; $i++) {
-		my $seq = $fileobj->{$spec}->{prot}->[$final->[$i]->{id}];
-		my $cdsseq = $fileobj->{$spec}->{cds}->[$final->[$i]->{id}];
-		my $length = length($seq);
-		if ($concat){
-			$refid .= "$fileobj->{$spec}->{ids}->[$final->[$i]->{id}]-$length" . "PP";
-		}
-		else {
-			$refid .= "$fileobj->{$spec}->{ids}->[$final->[$i]->{id}]";
-		}
-		$refprot .= $seq;
-		if ($estflag) {
-			$refcds .= $cdsseq;
-		}
-	}
-	$refid =~ s/PP$//;
-	return($refprot, $refcds, $refid);
-}
-#############################
-sub extractSeq {
-	my ($id, @aln) = @_;
-	my $seq = '';
-	my $start = 0;
-	for (my $i = 0; $i < @aln; $i++) {
-		if ($aln[$i] =~ $id) {
-			$start = 1;
-		}
-		elsif ($aln[$i] =~ />/ and $start == 1) {
-			last;
-		}
-		elsif ($start == 1) {
-			$seq .= $aln[$i];
-		}
-	}
-	$seq =~ s/\s//g;
-	return ($seq);
-}
+# sub orfRanking {
+# 	my ($localid, $spec) = @_;
+# 	my $result;
+# 	my $refprot;
+# 	my $refcds;
+# 	my @toalign;
+# 	my $protobj = $fileobj->{$spec}->{prot};
+# 	my $idobj = $fileobj->{$spec}->{ids};
+# 	my $refcluster; ## variables to take the cluster and its id for later analysis
+# 	my $refid;
+# 	if (@$protobj == 1) {
+# 		## nothing to chose from
+# 		$refprot = $protobj->[0];
+# 		$refcds = $fileobj->{$spec}->{cds}->[0];
+# 		my $length = length($refprot);
+# 		$refid = $idobj->[0];
+# 	}
+# 	else {
+# 		## more than one cluster
+# 		## note, I set the refseq fix to the first entry. This is to avoid that in this routine
+# 		## sequences from different taxa are used.
+# 		push @toalign, ">$fileobj->{$spec}->{refspec}->[0]";
+# 		push @toalign, $fileobj->{$spec}->{refseq}->[0];
+# 		## now walk through all the contigs
+# 		for (my $i = 0; $i < @$protobj; $i++) {
+# 			my @testseq = (">$idobj->[$i]", $protobj->[$i]);
+# 			@testseq = (@testseq, @toalign);
+# 			open (OUT, ">$tmpdir/$localid.ref.fa") or die "could not open file for writing refseqs\n";
+# 			print OUT join "\n", @testseq;
+# 			close OUT;
+# 			## run clustalw
+# 			!(`$alignmentprog -infile=$tmpdir/$localid.ref.fa -output=fasta -outfile=$tmpdir/$localid.ref.aln 2>&1 >$tmpdir/$localid.ref.log`) or die "error running clustalw\n";
+# 			## get the alignment score
+# 			$result->[$i]->{score} =  `$grepprog "Alignment Score" $tmpdir/$localid.ref.log |$sedprog -e 's/[^0-9]//g'`;
+# 			if (!$result->[$i]->{score}) {
+# 				die "error in determining alignment score\n";
+# 			}
+# 			chomp $result->[$i]->{score};
+# 			## get the aligned sequence
+# 			open (ALN, "$tmpdir/$localid.ref.aln") or die "failed to open alignment file\n";
+# 			my @aln = <ALN>;
+# 			close ALN;
+# 			my $aseq = extractSeq($idobj->[$i], @aln);
+# 			## remove the terminal gaps
+# 			$aseq =~ s/-*$//;
+# 			$result->[$i]->{aend} = length $aseq;
+# 			my ($head) = $aseq =~ /^(-*).*/;
+# 			($result->[$i]->{astart}) = length($head)+1;
+# 			## add the hmmscore to $result
+# 			$result->[$i]->{hmmscore} = $fileobj->{$spec}->{hmmscore}->[$i];
+# 		}
+# 		### the results for all seqs has been gathered, now order them according to alignment start in the refseq
+# 		$result = &sortRef($result);
+# 		($refprot, $refcds, $refid) = &determineRef($result,$spec);
+# 	}
+# 	$fileobj->{$spec}->{refprot} = $refprot;
+# 	$fileobj->{$spec}->{refcds}  = $refcds;
+# 	$fileobj->{$spec}->{refid}   = $refid;
+# 	$fileobj->{$spec}->{refspec_final} = $fileobj->{$spec}->{refspec}->[0];
+# 	return();
+# }
+# ###########################
+# sub sortRef {
+# 	my $result = shift;
+# 	my @sortref;
+# 	for (my $i = 0; $i < @$result; $i++) {
+# 		$sortref[$i]->{index} = $i;
+# 		$sortref[$i]->{astart} = $result->[$i]->{astart};
+# 		$sortref[$i]->{aend} = $result->[$i]->{aend};
+# 		$sortref[$i]->{score} = $result->[$i]->{score};
+# 		$sortref[$i]->{hmmscore} = $result->[$i]->{hmmscore};
+# 	}
+# 	@sortref = sort { $a->{astart} <=> $b->{astart} } @sortref;
+# 	for (my $i = 0; $i < @sortref; $i++) {
+# 		($result->[$i]->{id}, $result->[$i]->{start}, $result->[$i]->{end}, $result->[$i]->{score}, $result->[$i]->{hmmscore}) = ($sortref[$i]->{index}, $sortref[$i]->{astart}, $sortref[$i]->{aend}, $sortref[$i]->{score}, $sortref[$i]->{hmmscore});
+# 	}
+# 	return($result);
+# }
+# ########################
+# sub determineRef {
+# 	my ($result, $spec) = @_;
+# 	my $lastend = 0;
+# 	my $lastscore = 0;
+# 	my $final;
+# 	my $count = 0;
+# 	my $id = '';
+# 	my $scorekey = 'hmmscore';
+# 	if ($sortalign){
+# 		$scorekey = 'score';
+# 	}
+# 	for (my $i = 0; $i < @$result; $i++) {
+# 		if ($result->[$i]->{start} < $lastend or $lastend == 0) {
+# 			if ($result->[$i]->{$scorekey} > $lastscore) {
+# 				$lastend = $result->[$i]->{end};
+# 				$lastscore = $result->[$i]->{$scorekey};
+# 				$id = $result->[$i]->{id};
+# 				printOUT("ref is $id with score $lastscore\n");
+# 			}
+# 		}
+# 		elsif ($result->[$i]->{start} > $lastend) {
+# 			## a new part of the alignment is covered. Fix the results obtained so far
+# 			$final->[$count]->{id} = $id;
+# 			$lastend = $result->[$i]->{end};
+# 			$id = $result->[$i]->{id};
+# 			$count++;
+# 		}
+# 	}
+# 	$final->[$count]->{id} = $id;
+# 	## now concatenate the results
+# 	my $refprot = '';
+# 	my $refid = '';
+# 	my $refcds = '';
+#
+# 	## now comes a dirty hack. The user has the chance to maximize phylogentic information by concatenating
+# 	## orthologous sequences that do no align to the same part of the reference protein (option -concat). If so,
+# 	## the co-ortholog-detection at a later step will not work and will be disabled.
+# 	my $looplimit = 1;
+# 	if ($concat) {
+# 		$looplimit = scalar(@$final);
+# 	}
+# 	for (my $i = 0; $i < $looplimit; $i++) {
+# 		my $seq = $fileobj->{$spec}->{prot}->[$final->[$i]->{id}];
+# 		my $cdsseq = $fileobj->{$spec}->{cds}->[$final->[$i]->{id}];
+# 		my $length = length($seq);
+# 		if ($concat){
+# 			$refid .= "$fileobj->{$spec}->{ids}->[$final->[$i]->{id}]-$length" . "PP";
+# 		}
+# 		else {
+# 			$refid .= "$fileobj->{$spec}->{ids}->[$final->[$i]->{id}]";
+# 		}
+# 		$refprot .= $seq;
+# 		if ($estflag) {
+# 			$refcds .= $cdsseq;
+# 		}
+# 	}
+# 	$refid =~ s/PP$//;
+# 	return($refprot, $refcds, $refid);
+# }
+# #############################
+# sub extractSeq {
+# 	my ($id, @aln) = @_;
+# 	my $seq = '';
+# 	my $start = 0;
+# 	for (my $i = 0; $i < @aln; $i++) {
+# 		if ($aln[$i] =~ $id) {
+# 			$start = 1;
+# 		}
+# 		elsif ($aln[$i] =~ />/ and $start == 1) {
+# 			last;
+# 		}
+# 		elsif ($start == 1) {
+# 			$seq .= $aln[$i];
+# 		}
+# 	}
+# 	$seq =~ s/\s//g;
+# 	return ($seq);
+# }
 ##############################
-sub revComp {
-	my ($seq) = @_;
-	chomp($seq);
-	$seq =~ tr/AGCTYRKMWSagct/TCGARYMKWSTCGA/;
-	$seq = reverse($seq);
-	return($seq);
-}
+# sub revComp {
+# 	my ($seq) = @_;
+# 	chomp($seq);
+# 	$seq =~ tr/AGCTYRKMWSagct/TCGARYMKWSTCGA/;
+# 	$seq = reverse($seq);
+# 	return($seq);
+# }
 ##############################
 # sub parseHmmer3pm {
 # 	my ($file, $path) = @_;
@@ -2225,20 +2225,20 @@ sub checkCoorthologRef {
 	}
 }
 ####### sub findORF
-sub findORF{
-	my ($est, $prot, $frame) = @_;
-	if ($frame eq '-') {
-		$est = revComp($est);
-	}
-	### debuggin IUB code
-	if ($est =~ /[^AGCT]/i) {
-		$est =~ s/[^AGCTagct]/n/g;
-	}
-	printOUT("\trunning genewise using frame $frame\n");
-	my $gw = run_genewise_hamstr->new($est, $prot, "$tmpdir");
-	my $translation = $gw->translation;
-	return ($translation, $est);
-}
+# sub findORF{
+# 	my ($est, $prot, $frame) = @_;
+# 	if ($frame eq '-') {
+# 		$est = revComp($est);
+# 	}
+# 	### debuggin IUB code
+# 	if ($est =~ /[^AGCT]/i) {
+# 		$est =~ s/[^AGCTagct]/n/g;
+# 	}
+# 	printOUT("\trunning genewise using frame $frame\n");
+# 	my $gw = run_genewise_hamstr->new($est, $prot, "$tmpdir");
+# 	my $translation = $gw->translation;
+# 	return ($translation, $est);
+# }
 ####### sub printOUT
 sub printOUT {
 	my $message = shift;
@@ -2330,28 +2330,28 @@ sub printDebug{
 	}
 }
 ##########################
-sub computeLagPoint {
-	my ($R, $xdata, $ydata) = @_;
-	$R->set( 'x', \@$xdata);
-	$R->set( 'y', \@$ydata );
-	# define function
-	$R->run( q`func = function(t,params){ 1/(1 + exp(4 * params[1] * (params[2] - x) + 2)) }`);
-	# do Nonlinear Least Squares Fitting
-	$R->run(q`try <- try(nls(y ~ 1/(1 + exp(4 * mean * (lamda - x) + 2)),
-	start = list(mean=1.4, lamda=0.5),
-	control = list(maxiter=500)), TRUE)`);
-	$R->run(q`if(class(try) != "try-error"){
-		f = nls(y ~ 1/(1 + exp(4 * mean * (lamda - x) + 2)),
-		start = list(mean=1.4, lamda=0.5),
-		control = list(maxiter=500))
-		p = coef(f)
-		lagPoint = p[2]
-	} else {
-		lagPoint = "NA"
-	}`);
-
-
-	### return lag point
-	my $lagPoint = $R->get('lagPoint');
-	return($lagPoint);
-}
+# sub computeLagPoint {
+# 	my ($R, $xdata, $ydata) = @_;
+# 	$R->set( 'x', \@$xdata);
+# 	$R->set( 'y', \@$ydata );
+# 	# define function
+# 	$R->run( q`func = function(t,params){ 1/(1 + exp(4 * params[1] * (params[2] - x) + 2)) }`);
+# 	# do Nonlinear Least Squares Fitting
+# 	$R->run(q`try <- try(nls(y ~ 1/(1 + exp(4 * mean * (lamda - x) + 2)),
+# 	start = list(mean=1.4, lamda=0.5),
+# 	control = list(maxiter=500)), TRUE)`);
+# 	$R->run(q`if(class(try) != "try-error"){
+# 		f = nls(y ~ 1/(1 + exp(4 * mean * (lamda - x) + 2)),
+# 		start = list(mean=1.4, lamda=0.5),
+# 		control = list(maxiter=500))
+# 		p = coef(f)
+# 		lagPoint = p[2]
+# 	} else {
+# 		lagPoint = "NA"
+# 	}`);
+#
+#
+# 	### return lag point
+# 	my $lagPoint = $R->get('lagPoint');
+# 	return($lagPoint);
+# }

@@ -136,7 +136,7 @@ my $startTime = gettime();
 ############ General settings
 my $version = 'oneSeq v.2.4.1';
 ##### configure for checking if the setup.sh script already run
-my $configure = 0;
+my $configure = 1;
 if ($configure == 0){
 	die "\n\nPLEASE RUN fdog.setup BEFORE USING fdog\n\n";
 }
@@ -155,9 +155,9 @@ $path =~ s/\/$//;
 printDebug("Path is $path");
 
 #### Programs and output
-my $sedprog = 'sed';
-my $grepprog = 'grep';
-my $readlinkprog = 'readlink';
+my $sedprog = 'gsed';
+my $grepprog = 'ggrep';
+my $readlinkprog = 'greadlink';
 
 my $globalaligner = 'ggsearch36';
 my $glocalaligner = 'glsearch36';
@@ -2459,14 +2459,14 @@ sub printDebug{
 		print "\n";
 	}
 }
-sub printVariableDebug{
-	my @values = @_;
-	print "\n\nDEBUG\n";
-	foreach (@values){
-		print $_."\n";
-	}
-	print "\nEND OF DEBUG\n\n";
-}
+# sub printVariableDebug{
+# 	my @values = @_;
+# 	print "\n\nDEBUG\n";
+# 	foreach (@values){
+# 		print $_."\n";
+# 	}
+# 	print "\nEND OF DEBUG\n\n";
+# }
 #################
 sub getInput {
 	my ($message, $dieopt) = @_;
