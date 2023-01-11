@@ -38,21 +38,11 @@ import re
 import shutil
 from tqdm import tqdm
 from datetime import datetime
+from pkg_resources import get_distribution
 
-def checkFileExist(file):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found' % file)
+import fdog.libs.zzz as general_fn
+import fdog.libs.tree as tree_fn
 
-def getTaxName(taxId):
-    ncbi = NCBITaxa()
-    try:
-        ncbiName = ncbi.get_taxid_translator([taxId])[int(taxId)]
-        ncbiName = re.sub('[^a-zA-Z1-9\s]+', '', ncbiName)
-        taxName = ncbiName.split()
-        name = taxName[0][:3].upper()+taxName[1][:2].upper()
-    except:
-        name = "UNK" + taxId
-    return(name)
 
 def parseMapFile(mappingFile):
     nameDict = {}
@@ -65,7 +55,7 @@ def parseMapFile(mappingFile):
             try:
                 taxName = tmp[2].strip()
             except:
-                taxName = getTaxName(taxId)
+                taxName = tree_fn.get_tax_name(taxId)
             try:
                 ver = tmp[3].strip()
             except:
@@ -94,8 +84,8 @@ def runAddTaxon(args):
         sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.9'
-    parser = argparse.ArgumentParser(description='You are running fdog.addTaxa version ' + str(version) + '.')
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-i', '--input', help='Path to input folder', action='store', default='', required=True)
@@ -114,7 +104,7 @@ def main():
     args = parser.parse_args()
     folIn = args.input
     mapping = args.mapping
-    checkFileExist(mapping)
+    general_fn.check_file_exist(mapping)
     outPath = args.outPath
     if outPath == '':
         fdogPath = os.path.realpath(__file__).replace('/addTaxa.py','')

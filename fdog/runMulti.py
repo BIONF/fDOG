@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-# Copyright (C) 2020 Vinh Tran
+# Copyright (C) 2022 Vinh Tran
 #
-#  This script is used to run fdog with multiple seed sequences.
+#  This file is part of fDOG tool https://github.com/BIONF/fDOG
 #
 #  This script is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -17,22 +17,28 @@
 
 import sys
 import os
-from os import listdir
+from pathlib import Path
 from os.path import isfile, join
-import time
 import argparse
 import subprocess
-from pathlib import Path
-import multiprocessing as mp
 import re
-from tqdm import tqdm
-import fdog.runSingle as fdogFn
 import shutil
-import yaml
+import multiprocessing as mp
+from tqdm import tqdm
 from ete3 import NCBITaxa
+from pkg_resources import get_distribution
+import time
+
+import fdog.libs.preparation as prepare_fn
+import fdog.libs.orthosearch as ortho_fn
+import fdog.libs.corecompile as core_fn
+import fdog.libs.fas as fas_fn
+import fdog.libs.tree as tree_fn
+import fdog.libs.output as output_fn
 
 
-def getSortedFiles(directory):
+
+def get_sorted_files(directory):
     list = os.listdir(directory)
     pairs = []
     for file in list:
@@ -43,129 +49,62 @@ def getSortedFiles(directory):
     pairs.sort(key=lambda s: s[0], reverse=True)
     return([x[1] for x in pairs])
 
-def prepare(args, step):
-    (seqFile, seqName, fdogPath, refspec, minDist, maxDist, coreOrth,
-    append, force, noCleanup, group, blast, db,
-    outpath, hmmpath, blastpath, searchpath, weightpath,
-    coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
-    fasoff, countercheck, coreFilter, minScore,
-    strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-    cpu, hyperthread, checkOff, debug, silent) = args
 
-    mute = False
-    if step == 'core':
-        coreOnly = True
-        silent = True
-        mute = True
-    else:
-        reuseCore = True
-        fasoff = True
-        if silent == True:
-            mute = True
-    ### check input arguments
-    seqFile, hmmpath, blastpath, searchpath, weightpath = fdogFn.checkInput([fdogPath, seqFile, refspec, outpath, hmmpath, blastpath, searchpath, weightpath])
-    # group arguments
-    basicArgs = [fdogPath, seqFile, seqName, refspec, minDist, maxDist, coreOrth]
-    ioArgs = [append, force, noCleanup, group, blast, db]
-    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
-    coreArgs = [coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation]
-    fasArgs = [fasoff, countercheck, coreFilter, minScore]
-    orthoArgs = [strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa]
-    otherArgs = [cpu, hyperthread, checkOff, debug, True]
-    return(basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute)
-
-def getSeedName(seedFile):
+def get_seed_name(seedFile):
     seqName = seedFile.rsplit('.', 1)[0]
     seqName = re.sub('[\|\.]', '_', seqName)
     return(seqName)
 
-def getIndividualRuntime(step, outpath, seeds):
-    logFile = outpath + '/runtime_core.txt'
-    searchTerm = 'Core set compilation finished in'
-    if step == 'ortho':
-        logFile = outpath + '/runtime_ortho.txt'
-        searchTerm = 'Ortholog search completed in'
-    log = open(logFile, "w")
-    for seed in seeds:
-        seqName = getSeedName(seed)
-        logFile = outpath + '/' + seqName + '/fdog.log'
-        if os.path.exists(logFile):
-            with open(logFile, 'r') as f:
-                for line in f:
-                    if searchTerm in line:
-                        runtime = line.split()[-2]
-                        log.write('%s\t%s\n' % (seqName, runtime))
-        else:
-            missing = open(outpath + '/missing.txt', 'a+')
-            missing.write(step + '\t' + seqName + '\n')
-    log.close()
 
-def compileCore(options, seeds, inFol, cpu, outpath):
-    print('Starting compiling core orthologs...')
-    start = time.time()
-    coreCompilationJobs = []
+def compile_core(core_options, other_options, seeds, inFol, cpus, outpath):
+    core_compilation_jobs = []
+    (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
+    otherCoreArgs_bkp = otherCoreArgs
+    (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
+    (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
     for seed in seeds:
-        seqFile = [inFol + '/' + seed]
-        seqName = getSeedName(seed)
-        if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)):
-            (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'core')
-            coreCompilationJobs.append([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute])
-    if len(coreCompilationJobs) > 0:
-        pool = mp.Pool(cpu)
-        coreOut = []
-        for _ in tqdm(pool.imap_unordered(fdogFn.runSingle, coreCompilationJobs), total=len(coreCompilationJobs)):
-            coreOut.append(_)
+        seqFile = ('%s/%s' % (inFol, seed))
+        seqName = get_seed_name(seed)
+        if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
+            seed_id = prepare_fn.identify_seed_id(seqFile, refspec, blastpath, debug)
+            core_compilation_jobs.append([seqFile, seqName, refspec, seed_id,
+                        reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
+                        otherCoreArgs, debug])
+    if len(core_compilation_jobs) > 0:
+        pool = mp.Pool(cpus)
+        coreOut = ''
+        for _ in tqdm(pool.imap_unordered(core_fn.run_compile_core, core_compilation_jobs), total=len(core_compilation_jobs)):
+            pass
         pool.close()
         pool.join()
-        # read logs file to get runtime for individual seeds
-        getIndividualRuntime('core', outpath, seeds)
-    end = time.time()
-    multiCoreTime = '{:5.3f}'.format(end-start)
-    print('==> Core compiling finished in %s sec' % multiCoreTime) #'{:5.3f}s'.format(end-start))
-    return(multiCoreTime)
 
-def searchOrtho(options, seeds, inFol, cpu, outpath):
-    print('Searching orthologs for...')
-    start = time.time()
-    coreCompilationJobs = []
+
+def search_ortholog(options, seeds, inFol, cpu, outpath):
+    (orthoArgs, otherArgs, pathArgs, refspec) = options
+    (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
     for seed in seeds:
         seqFile = [inFol + '/' + seed]
-        seqName = getSeedName(seed)
-        (basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute) = prepare(seqFile + [seqName] + options, 'ortholog')
-        if mute == True:
-            print(seed)
-        else:
-            print('\n##### ' + seed)
-        fdogFn.runSingle([basicArgs, ioArgs, pathArgs, coreArgs, orthoArgs, fasArgs, otherArgs, mute])
-    end = time.time()
-    # read logs file to get runtime for individual seeds
-    getIndividualRuntime('ortho', outpath, seeds)
-    multiOrthoTime = '{:5.3f}'.format(end-start)
-    print('==> Ortholog search finished in %s sec' % multiOrthoTime)
-    return(multiOrthoTime)
+        seqName = get_seed_name(seed)
+        if not os.path.exists('%s/%s.extended.fa' % (outpath, seqName)) or force == True:
+            hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
+            output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
 
-def joinOutputs(outpath, jobName, seeds, keep, silent):
-    print('Joining single outputs...')
+
+def join_outputs(outpath, jobName, seeds, keep, silentOff):
     finalFa = '%s/%s.extended.fa' % (outpath, jobName)
-    finalPP = open('%s/%s.phyloprofile' % (outpath, jobName), 'wb')
-    Path(outpath+'/singleOutput').mkdir(parents=True, exist_ok=True)
+    single_output_fol = '%s/%s_singleOutput' % (outpath, jobName)
+    Path('%s/%s_singleOutput' % (outpath, jobName)).mkdir(parents=True, exist_ok=True)
     with open(finalFa,'wb') as wfd:
         for seed in seeds:
-            seqName = getSeedName(seed)
-            resultFile = '%s/%s/%s.extended.fa'  % (outpath, seqName, seqName)
-            resultPP ='%s/%s/%s.phyloprofile'  % (outpath, seqName, seqName)
-            if silent == False:
+            seqName = get_seed_name(seed)
+            resultFile = '%s/%s.extended.fa'  % (outpath, seqName)
+            if silentOff == True:
                 print(resultFile)
             if os.path.exists(resultFile):
                 with open(resultFile,'rb') as fd:
                     shutil.copyfileobj(fd, wfd)
-                with open(resultPP,'rb') as pp:
-                    shutil.copyfileobj(pp, finalPP)
-                shutil.move(outpath + '/' + seqName, outpath + '/singleOutput')
-            else:
-                Path(outpath+'/missingOutput').mkdir(parents=True, exist_ok=True)
-                if not os.path.exists(outpath + '/missingOutput/' + seqName):
-                    shutil.move(outpath + '/' + seqName, outpath + '/missingOutput')
+                if not os.path.exists('%s/%s.extended.fa' % (single_output_fol, seqName)):
+                    shutil.move(resultFile, single_output_fol)
             if os.path.exists(outpath + '/' + seqName + '.fa'):
                 os.remove(outpath + '/' + seqName + '.fa')
             if os.path.exists(os.getcwd() + '/' + seqName + '.fa'):
@@ -173,59 +112,19 @@ def joinOutputs(outpath, jobName, seeds, keep, silent):
     if keep == True:
         try:
             print('Compressing single outputs...')
-            shutil.make_archive(outpath + '/' + jobName + '_singleOutput', 'gztar', outpath+'/singleOutput')
+            shutil.make_archive(single_output_fol, 'gztar', single_output_fol)
         except:
-            shutil.make_archive(outpath + '/' + jobName + '_singleOutput', 'tar', outpath+'/singleOutput')
-    shutil.rmtree(outpath + '/singleOutput')
-    return(finalFa)
+            shutil.make_archive(single_output_fol, 'tar', single_output_fol)
+    shutil.rmtree(single_output_fol)
 
-def removeDupLines (infilename, outfilename):
-    lines_seen = set() # holds lines already seen
-    outfile = open(outfilename, "w")
-    for line in open(infilename, "r"):
-        if line not in lines_seen: # not a duplicate
-            outfile.write(line)
-            lines_seen.add(line)
-    outfile.close()
-
-def calcFAS (outpath, extendedFa, weightpath, cpu):
-    print('Starting calculating FAS scores...')
-    start = time.time()
-    fasCmd = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (extendedFa, weightpath, cpu)
-    try:
-        subprocess.call([fasCmd], shell = True)
-        end = time.time()
-        if os.path.exists(outpath + '/tmp'):
-            shutil.rmtree(outpath + '/tmp')
-        fasTime = '{:5.3f}s'.format(end-start)
-        print('==> FAS calculation finished in %s sec' % fasTime)
-        return(fasTime)
-    except:
-        sys.exit('Problem running\n%s' % (fasCmd))
-
-def createConfigPP(outpath, jobName, refspec):
-    settings = dict(
-        mainInput = '%s/%s.phyloprofile' % (outpath, jobName),
-        fastaInput = '%s/%s.extended.fa' % (outpath, jobName),
-    )
-    domainFile = '%s/%s_forward.domains' % (outpath, jobName)
-    if os.path.exists(os.path.abspath(domainFile)):
-        settings['domainInput'] = domainFile
-    taxId = refspec.split('@')[1]
-    refspec = fdogFn.getTaxName(taxId)
-    if not refspec == 'UNK':
-        settings['rank'] = 'species'
-        settings['refspec'] = refspec
-    settings['clusterProfile'] = 'TRUE'
-    with open('%s/%s.config.yml' % (outpath, jobName), 'w') as configfile:
-        yaml.dump(settings, configfile, default_flow_style = False)
 
 def main():
-    version = '0.0.53'
-    parser = argparse.ArgumentParser(description='You are running fdogs.run version ' + str(version) + '.')
-    parser.add_argument('--version', action='version', version=str(version))
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.',
+                                     epilog="For more information on certain options, please refer to the wiki pages "
+                                            "on github: https://github.com/BIONF/fDOG/wiki")
     required = parser.add_argument_group('Required arguments')
-    required.add_argument('--input', help='Input folder containing the seed sequences (protein only) in fasta format',
+    required.add_argument('--seqFolder', help='Input folder containing the seed sequences (protein only) in fasta format',
                             action='store', default='', required=True)
     required.add_argument('--jobName', help='Job name. This will also be file name for the output',
                             action='store', default='', required=True)
@@ -240,17 +139,6 @@ def main():
     optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
     optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
-    addtionalIO = parser.add_argument_group('Other I/O options')
-    addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
-    addtionalIO.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
-    addtionalIO.add_argument('--forceComplete', help='Overwrite existing core orthologs and all output files', action='store_true', default=False)
-    addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
-    addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
-    addtionalIO.add_argument('--group', help='Allows to limit the search to a certain systematic group', action='store', default='')
-    addtionalIO.add_argument('--blast', help='Determine sequence id and refspec automatically. Note, the chosen sequence id and reference species does not necessarily reflect the species the sequence was derived from.',
-                                action='store_true', default=False)
-    addtionalIO.add_argument('--db', help='Run fdog in database mode. Requires a mySql database. Only for internal use.', action='store_true', default=False)
-
     core_options = parser.add_argument_group('Core compilation options')
     core_options.add_argument('--coreOnly', help='Compile only the core orthologs', action='store_true', default=False)
     core_options.add_argument('--reuseCore', help='Reuse existing core set of your sequence', action='store_true', default=False)
@@ -260,12 +148,8 @@ def main():
     core_options.add_argument('--maxDist', help='Maximum systematic distance of primer taxa for the core set compilation. Default: kingdom',
                             choices=['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom'],
                             action='store', default='kingdom')
-    core_options.add_argument('--coreOrth', help='Number of orthologs added to the core set. Default: 5', action='store', default=5, type=int)
+    core_options.add_argument('--coreSize', help='Maximul number of orthologs in core set. Default: 6', action='store', default=6, type=int)
     core_options.add_argument('--coreTaxa', help='List of primer taxa that should exclusively be used for the core set compilation', action='store', default='')
-    core_options.add_argument('--coreStrict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
-                                action='store_true', default=False)
-    core_options.add_argument('--CorecheckCoorthologsRef', help='During the core compilation, an ortholog also be accepted when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
-                                action='store_true', default=True)
     core_options.add_argument('--CorecheckCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the core compilation',
                                 action='store_true', default=False)
     core_options.add_argument('--coreRep', help='Obtain only the sequence being most similar to the corresponding sequence in the core set rather than all putative co-orthologs',
@@ -274,20 +158,14 @@ def main():
                                 action='store', default=3, type=int)
     core_options.add_argument('--distDeviation', help='The deviation in score in percent (0 = 0 percent, 1 = 100 percent) allowed for two taxa to be considered similar. Default: 0.05',
                                 action='store', default=0.05, type=float)
-    core_options.add_argument('--ignoreDistance', help='Ignore the distance between Taxa and to choose orthologs only based on score',
-                                action='store_true', default=False)
-    core_options.add_argument('--local', help='Specify the alignment strategy during core ortholog compilation. Default: True',
-                                action='store_true', default=True)
-    core_options.add_argument('--glocal', help='Specify the alignment strategy during core ortholog compilation. Default: False',
-                                action='store_true', default=False)
+    core_options.add_argument('--alnStrategy', help='Specify the alignment strategy during core ortholog compilation. Default: local',
+                                choices=['local', 'glocal', 'global'],
+                                action='store', default='local')
 
-    ortho_options = parser.add_argument_group('Search strategy options')
-    ortho_options.add_argument('--searchTaxa', help='Specify list of search taxa', action='store', default='')
-    ortho_options.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set',
-                                action='store_true', default=False)
-    ortho_options.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it',
-                                action='store_true', default=True)
-    ortho_options.add_argument('--checkCoorthologsOff', help='Turn off checking for co-ortholog of the reverse search during the final ortholog search',
+    ortho_options = parser.add_argument_group('Ortholog search strategy options')
+    ortho_options.add_argument('--searchTaxa', help='Specify file contains list of search taxa', action='store', default='')
+    ortho_options.add_argument('--group', help='Allows to limit the search to a certain systematic group', action='store', default='')
+    ortho_options.add_argument('--checkCoorthologsRefOff', help='Turn off checking for co-ortholog of the reverse search during the final ortholog search',
                                 action='store_true', default=False)
     ortho_options.add_argument('--rbh', help='Requires a reciprocal best hit during the ortholog search to accept a new ortholog',
                                 action='store_true', default=False)
@@ -299,45 +177,40 @@ def main():
                                 action='store', default=0.00005, type=float)
     ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00001',
                                 action='store', default=0.00005, type=float)
-    ortho_options.add_argument('--evalRelaxfac', help='The factor to relax the e-value cut-off (Blast search and HMM search). Default: 10',
-                                action='store', default=10, type=int)
     ortho_options.add_argument('--hitLimit', help='number of hits of the initial pHMM based search that should be evaluated via a reverse search. Default: 10',
                                 action='store', default=10, type=int)
-    ortho_options.add_argument('--autoLimit', help='Invoke a lagPhase analysis on the score distribution from the hmmer search. This will determine automatically a hit limit for each query. Note, it will be effective for both the core compilation and the final ortholog search',
-                                action='store_true', default=False)
-    ortho_options.add_argument('--scoreThreshold', help='Instead of setting an automatic hit limit, you can specify with this flag that only candidates with an hmm score no less than x percent of the hmm score of the best hit are further evaluated. Default: x = 10. You can change this cutoff with the option -scoreCutoff. Note, it will be effective for both the core compilation and the final ortholog search',
-                                action='store_true', default=False)
-    ortho_options.add_argument('--scoreCutoff', help='In combination with -scoreThreshold you can define the percent range of the hmms core of the best hit up to which a candidate of the hmmsearch will be subjected for further evaluation. Default: 10',
+    ortho_options.add_argument('--scoreCutoff', help='Define the percent range of the hmms core of the best hit up to which a candidate of the hmmsearch will be subjected for further evaluation. Default: 10',
                                 action='store', default=10, type=int)
 
     fas_options = parser.add_argument_group('FAS options')
-    fas_options.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
-    fas_options.add_argument('--countercheck', help='The FAS score will be computed in two ways', action='store_true', default=True)
     fas_options.add_argument('--coreFilter',
                                 help='Specifiy mode for filtering core orthologs by FAS score. In \'relaxed\' mode candidates with insufficient FAS score will be disadvantaged. In \'strict\' mode candidates with insufficient FAS score will be deleted from the candidates list. The option \'--minScore\' specifies the cut-off of the FAS score.',
                                 choices=['relaxed', 'strict'], action='store', default='')
     fas_options.add_argument('--minScore', help='Specify the threshold for coreFilter. Default: 0.75', action='store', default=0.75, type=float)
 
+    addtionalIO = parser.add_argument_group('Other I/O options')
+    addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
+    addtionalIO.add_argument('--force', help='Overwrite existing ortholog search output files', action='store_true', default=False)
+    addtionalIO.add_argument('--forceCore', help='Overwrite existing core set of your sequence', action='store_true', default=False)
+    addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
+    addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
+    addtionalIO.add_argument('--debug', help='Set this flag to obtain more detailed information about the ortholog search progress', action='store_true', default=False)
+    addtionalIO.add_argument('--debugCore', help='Set this flag to obtain more detailed information about the core compilation actions', action='store_true', default=False)
+    addtionalIO.add_argument('--silentOff', help='Show more output to terminal', action='store_true', default=False)
+
     optional = parser.add_argument_group('Other options')
+    optional.add_argument('--fasOff', help='Turn OFF FAS support', action='store_true', default=False)
     optional.add_argument('--aligner', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. DEFAULT: muscle',
         choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
-    optional.add_argument('--cpu', help='Determine the number of threads to be run in parallel. Default: 4', action='store', default=4, type=int)
-    optional.add_argument('--hyperthread', help='Set this flag to use hyper threading. Default: False', action='store_true', default=False)
-    optional.add_argument('--checkOff', help='Set this flag to turn of the initial checks. Default: False', action='store_true', default=False)
-    optional.add_argument('--debug', help='Set this flag to obtain more detailed information about the programs actions', action='store_true', default=False)
-    optional.add_argument('--silentOff', help='Show more output to terminal', action='store_true', default=False)
+    optional.add_argument('--cpus', help='Determine the number of threads to be run in parallel. Default: 4', action='store', default=4, type=int)
 
     ### get arguments
     args = parser.parse_args()
 
     # required arguments
-    inFol = os.path.abspath(args.input)
+    inFol = os.path.abspath(args.seqFolder)
     jobName = args.jobName
     refspec = args.refspec
-
-    minDist = args.minDist
-    maxDist = args.maxDist
-    coreOrth = args.coreOrth
 
     # path arguments
     outpath = os.path.abspath(args.outpath)
@@ -347,217 +220,162 @@ def main():
     weightpath = args.weightpath
     pathFile = args.pathFile
 
-    # other I/O arguments
-    append = args.append
-    force = args.force
-    forceComplete = args.forceComplete
-    noCleanup = args.noCleanup
-    keep = args.keep
-    group = args.group
-    blast = args.blast
-    db = args.db
-
     # core compilation arguments
     coreOnly = args.coreOnly
     reuseCore = args.reuseCore
+    minDist = args.minDist
+    maxDist = args.maxDist
+    coreSize = args.coreSize
     coreTaxa = args.coreTaxa
-    coreStrict = args.coreStrict
-    CorecheckCoorthologsRef = args.CorecheckCoorthologsRef
+    if not coreTaxa == '':
+        if os.path.exists(os.path.abspath(coreTaxa)):
+            coreTaxa = os.path.abspath(coreTaxa)
     CorecheckCoorthologsOff = args.CorecheckCoorthologsOff
-    if CorecheckCoorthologsOff == True:
-        CorecheckCoorthologsRef = False
     coreRep = args.coreRep
     coreHitLimit = args.coreHitLimit
     distDeviation = args.distDeviation
+    alnStrategy = args.alnStrategy
 
     # ortholog search arguments
-    strict = args.strict
-    checkCoorthologsRef = args.checkCoorthologsRef
-    checkCoorthologsOff = args.checkCoorthologsOff
-    if checkCoorthologsOff == True:
-        checkCoorthologsRef = False
+    searchTaxa = args.searchTaxa
+    if not searchTaxa == '':
+        if os.path.exists(os.path.abspath(searchTaxa)):
+            searchTaxa = os.path.abspath(searchTaxa)
+    group = args.group
+    if not group == '' and not searchTaxa == '':
+        print('WARNING: Both --group and --searchTaxa are specified. Search taxa will be obtained only from %s!' % searchTaxa)
+        group = ''
+    checkCoorthologsRefOff = args.checkCoorthologsRefOff
     rbh = args.rbh
     rep = args.rep
-    ignoreDistance = args.ignoreDistance
     lowComplexityFilter = args.lowComplexityFilter
     evalBlast = args.evalBlast
     evalHmmer = args.evalHmmer
-    evalRelaxfac = args.evalRelaxfac
     hitLimit = args.hitLimit
-    autoLimit = args.autoLimit
-    scoreThreshold = args.scoreThreshold
     scoreCutoff = args.scoreCutoff
-    aligner = args.aligner
-    local = args.local
-    glocal = args.glocal
-    searchTaxa = args.searchTaxa
 
     # fas arguments
-    fasoff = args.fasoff
-    countercheck = args.countercheck
+    fasOff = args.fasOff
     coreFilter = args.coreFilter
     minScore = args.minScore
 
-    # others
-    cpu = args.cpu
-    hyperthread = args.hyperthread
-    checkOff = args.checkOff
+    # other I/O arguments
+    append = args.append
+    force = args.force
+    forceCore = args.forceCore
+    noCleanup = args.noCleanup
+    keep = args.keep
     debug = args.debug
+    debugCore = args.debugCore
     silentOff = args.silentOff
-    if silentOff == True:
-        silent = False
-    else:
-        silent = True
 
-    ### check fas
-    if not fasoff:
-        try:
-            fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
-        except:
-            sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
-
-    ### delete output folder and files if needed
-    if forceComplete:
-        if os.path.exists(outpath):
-            print("Removing existing output directory %s" % outpath)
-            shutil.rmtree(outpath)
-            Path(outpath).mkdir(parents=True, exist_ok=True)
-    if force:
-        if os.path.exists(outpath):
-            print("Removing existing files %s in %s*" % (jobName, outpath))
-            outfiles = os.listdir(outpath)
-            for item in outfiles:
-                if item.startswith(jobName):
-                    try:
-                        os.remove(os.path.join(outpath, item))
-                    except:
-                        shutil.rmtree(outpath+'/'+item)
-                if item.startswith("runtime"):
-                    os.remove(os.path.join(outpath, item))
-            if os.path.exists(outpath + '/missing.txt'):
-                os.remove(outpath + '/missing.txt')
-
-    ### get fdog and data path
-    dataPath = ''
-    fdogPath = os.path.realpath(__file__).replace('/runMulti.py','')
-    pathconfigFile = fdogPath + '/bin/pathconfig.txt'
-    if not os.path.exists(pathconfigFile):
-        sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-    if pathFile == '':
-        with open(pathconfigFile) as f:
-            dataPath = f.readline().strip()
-    else:
-        cfg = fdogFn.load_config(pathFile)
-        try:
-            dataPath = cfg['dataPath']
-        except:
-            dataPath = 'config'
-
-    if hmmpath == '':
-        hmmpath = outpath + '/core_orthologs'
-        # hmmpath = dataPath + '/core_orthologs'
-        # if dataPath == 'config':
-        #     try:
-        #         hmmpath = cfg['hmmpath']
-        #     except:
-        #         sys.exit('hmmpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
-    else:
-        hmmpath = os.path.abspath(hmmpath)
-    if blastpath == '':
-        blastpath = dataPath + '/blast_dir'
-        if dataPath == 'config':
-            try:
-                blastpath = cfg['blastpath']
-            except:
-                sys.exit('blastpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
-    if searchpath == '':
-        searchpath = dataPath + '/genome_dir'
-        if dataPath == 'config':
-            try:
-                searchpath = cfg['searchpath']
-            except:
-                sys.exit('searchpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
-    if weightpath == '':
-        weightpath = dataPath + '/weight_dir'
-        if dataPath == 'config':
-            try:
-                weightpath = cfg['weightpath']
-            except:
-                sys.exit('weightpath not found in %s. Please check https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure' % pathFile)
+    # others
+    aligner = args.aligner
+    cpus = args.cpus
+    if cpus > os.cpu_count():
+        cpus = os.cpu_count()
 
 
-    ### join options
-    options = [fdogPath, refspec, minDist, maxDist, coreOrth,
-                append, force, noCleanup, group, blast, db,
-                outpath, hmmpath, blastpath, searchpath, weightpath,
-                coreOnly, reuseCore, coreTaxa, coreStrict, CorecheckCoorthologsRef, coreRep, coreHitLimit, distDeviation,
-                fasoff, countercheck, coreFilter, minScore,
-                strict, checkCoorthologsRef, rbh, rep, ignoreDistance, lowComplexityFilter, evalBlast, evalHmmer, evalRelaxfac, hitLimit, autoLimit, scoreThreshold, scoreCutoff, aligner, local, glocal, searchTaxa,
-                cpu, hyperthread, checkOff, debug, silent]
+    ##### Check and group parameters
+    (inFol, hmmpath, blastpath, searchpath, weightpath) = prepare_fn.check_input(
+                    [inFol, refspec, outpath, hmmpath,
+                    blastpath, searchpath, weightpath, pathFile])
+    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
+
 
     ### START
     Path(outpath).mkdir(parents=True, exist_ok=True)
     multiLog = open(outpath + '/' + jobName + '_log.txt', "w")
     fdogStart = time.time()
-    seeds = getSortedFiles(inFol)
-    print('PID ' + str(os.getpid()))
-    multiLog.write('PID ' + str(os.getpid()) + '\n')
+    seeds = get_sorted_files(inFol)
+    print('PID %s - Jobname %s'% (str(os.getpid()), jobName))
+    multiLog.write('PID %s - Jobname %s\n'% (str(os.getpid()), jobName))
 
-    ### run core compilation
+
+    ##### DO CORE COMPILATION
     if reuseCore == False:
-        multiCoreTime = compileCore(options, seeds, inFol, cpu, outpath)
-        multiLog.write('==> Core compilation finished in %s sec\n' % multiCoreTime)
+        print('Starting compiling core orthologs...')
+        start = time.time()
+        coreArgs = [minDist, maxDist, coreSize, coreTaxa, distDeviation,
+                    alnStrategy, fasOff]
+        orthoCoreArgs = [CorecheckCoorthologsOff, rbh, True, evalBlast,
+                        lowComplexityFilter, evalHmmer, coreHitLimit,
+                        scoreCutoff, aligner] # rep = True
+        otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
+        core_options = [coreArgs, orthoCoreArgs, otherCoreArgs]
+        other_options = [refspec, reuseCore, forceCore, pathArgs, debug]
+        compile_core(core_options, other_options, seeds, inFol, cpus, outpath)
+        end = time.time()
+        multi_core_time = '{:5.3f}'.format(end-start)
+        print('==> Ortholog search finished in %ss\n' % multi_core_time)
+        multiLog.write('==> Core compilation finished in %ss\n' % multi_core_time)
     else:
         if not os.path.exists(hmmpath):
             sys.exit('--reuseCore was set, but no core orthologs found in %s! You could use --hmmpath to manually specify the core ortholog directory.' % outpath)
 
-    ### do ortholog search
-    if coreOnly == False:
-        if not os.path.exists('%s/%s.extended.fa' % (outpath, jobName)):
-            ### create list of search taxa
-            searchTaxa = ''
-            searchGroup = 'all'
+
+    ##### DO ORTHOLOG SEARCH USING HMM (HAMSTR)
+    finalFa = '%s/%s.extended.fa' % (outpath, jobName)
+    if not coreOnly:
+        print('Searching orthologs...')
+        start = time.time()
+        if not os.path.exists(finalFa) or force == True:
+            ### get list of search taxa
             if not group == '':
-                print('Creating list for search taxa...')
-                searchTaxa = '%s/searchTaxa.txt' % (outpath)
-                searchGroup = group
-                cmd = 'perl %s/bin/getSearchTaxa.pl -i %s -n %s -t %s/taxonomy -o %s' % (fdogPath, searchpath, searchGroup, fdogPath, searchTaxa)
-                try:
-                    subprocess.call([cmd], shell = True)
-                except:
-                    sys.exit('Problem running\n%s' % (cmd))
-            ### run ortholog search
-            multiOrthoTime = searchOrtho(options, seeds, inFol, cpu, outpath)
-            multiLog.write('==> Ortholog search finished in %s sec\n' % multiOrthoTime)
-            ### join output
-            finalFa = joinOutputs(outpath, jobName, seeds, keep, silent)
-        else:
-            if append == True:
-                sys.exit("Currently the append option is not available. Please use fdog.run if you need this option!")
-            else:
-                sys.exit("%s.extended.fa found in %s! If you want to re-run the ortholog search, please use --force or --append option." % (jobName, outpath))
-        ### calculate FAS scores
-        if fasoff == False:
-            if os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
-                os.remove('%s/%s.phyloprofile' % (outpath, jobName))
-            if not os.path.exists('%s/%s.phyloprofile' % (outpath, jobName)):
-                if os.path.exists(finalFa) and os.path.getsize(finalFa) > 0:
-                    fasTime = calcFAS(outpath, finalFa, weightpath, cpu)
-                    multiLog.write('==> FAS calculation finished in %s sec\n' % fasTime)
+                ### Check valid taxonomy group
+                ncbi = NCBITaxa()
+                group_id = ncbi.get_name_translator([group])
+                if len(group_id) == 0:
+                    exit('ERROR: Taxon group "%s" invalid!' % group)
+                ### create taxonomy tree from list of search taxa
+                searchTaxa = []
+                tax_ids = core_fn.get_core_taxa_ids(coreTaxa, blastpath)
+
+                for tax_id in tax_ids.keys():
+                    check = tree_fn.check_taxon_group(group_id[group][0], tax_id, ncbi)
+                    if check == True:
+                        searchTaxa.append(tax_ids[tax_id])
+                if debugCore:
+                    print(searchTaxa)
+                if len(searchTaxa) == 0:
+                    exit('ERROR: No taxon found within %s taxonomy group!' % group)
                 else:
-                    print("Final fasta file %s not exists or empty!" % finalFa)
-        else:
-            shutil.move('%s/%s.phyloprofile' % (outpath, jobName), '%s/%s.phyloprofile.tmp' % (outpath, jobName))
-            removeDupLines ('%s/%s.phyloprofile.tmp' % (outpath, jobName), '%s/%s.phyloprofile' % (outpath, jobName))
-            os.remove('%s/%s.phyloprofile.tmp' % (outpath, jobName))
+                    searchTaxa = ','.join(searchTaxa)
 
-    ### create PhyloProfile config file
-    createConfigPP(outpath, jobName, refspec)
+            if len(searchTaxa) == '':
+                searchTaxa = general_fn.read_dir(searchpath)
+                searchTaxa = ','.join(searchTaxa)
 
-    fdogEnd = time.time()
-    print('==> fdogs.run finished in ' + '{:5.3f}s'.format(fdogEnd-fdogStart))
-    multiLog.write('==> fdogs.run finished in ' + '{:5.3f}s'.format(fdogEnd-fdogStart))
-    multiLog.close()
+            ### do ortholog search
+            orthoArgs = [checkCoorthologsRefOff, rbh, rep, evalBlast,
+                        lowComplexityFilter, evalHmmer, hitLimit, scoreCutoff, aligner]
+            otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
+            ortho_options = [orthoArgs, otherArgs, pathArgs, refspec]
+            search_ortholog(ortho_options, seeds, inFol, cpus, outpath)
+            end = time.time()
+            multi_ortho_time = '{:5.3f}'.format(end-start)
+            print('==> Ortholog search finished in %ss\n' % multi_ortho_time)
+            multiLog.write('==> Ortholog search finished in %ss\n' % multi_ortho_time)
+            ### join output
+            print('Joining single outputs...')
+            start = time.time()
+            join_outputs(outpath, jobName, seeds, keep, silentOff)
+            end = time.time()
+            print('==> Joining outputs finished in %ss\n' % '{:5.3f}'.format(end-start))
+
+        ##### DO FINAL FAS CALCULATION
+        if not fasOff:
+            try:
+                fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
+            except:
+                sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
+            if os.path.exists(finalFa):
+                start = time.time()
+                fas_fn.calc_fas_multi(finalFa, outpath, weightpath, cpus)
+                end = time.time()
+                print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
+                multiLog.write('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
+
 
 if __name__ == '__main__':
     main()

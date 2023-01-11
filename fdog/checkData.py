@@ -27,10 +27,10 @@ from Bio import SeqIO
 import re
 from datetime import datetime
 import csv
+from pkg_resources import get_distribution
 
-def checkFileExist(file):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found' % file)
+import fdog.libs.zzz as general_fn
+
 
 def countLine(file,pattern,contain):
     nline = 0
@@ -132,7 +132,7 @@ def checkDataFolder(checkDir, replace, delete, concat):
                 for faFile in faFiles:
                     if os.path.islink(faFile):
                         faFile = os.path.realpath(faFile)
-                    checkFileExist(faFile)
+                    general_fn.check_file_exist(faFile)
                     if not '.mapping' in faFile:
                         if not '.checked' in faFile:
                             if not os.path.exists(faFile+".checked"):
@@ -209,8 +209,8 @@ def checkMissingNcbiID(namesDmp, taxaList):
     return(missingTaxa.keys(), dupTaxa)
 
 def main():
-    version = '0.0.6'
-    parser = argparse.ArgumentParser(description='You are running fdog.checkData version ' + str(version) + '.')
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     parser.add_argument('-g', '--genomeDir', help='Path to search taxa directory (e.g. fdog_dataPath/genome_dir)', action='store', default='')
     parser.add_argument('-b', '--blastDir', help='Path to blastDB directory (e.g. fdog_dataPath/blast_dir)', action='store', default='')
     parser.add_argument('-w', '--weightDir', help='Path to feature annotation directory (e.g. fdog_dataPath/weight_dir)', action='store', default='')
@@ -264,7 +264,7 @@ def main():
     ### check ncbi IDs
     print('=> Checking NCBI taxonomy IDs...')
     namesDmp = fdogPath + '/taxonomy/names.dmp'
-    checkFileExist(namesDmp)
+    general_fn.check_file_exist(namesDmp)
     missingTaxa, dupTaxa = checkMissingNcbiID(namesDmp, join2Lists(genomeTaxa, blastTaxa))
     if (len(missingTaxa) > 0):
         print('\033[92m*** WARNING: Taxa not found in current fdog\'s NCBI taxonomy database:\033[0m')

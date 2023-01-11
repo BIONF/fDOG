@@ -147,26 +147,26 @@ if [ -z "$(which fasta36)" ]; then
   fi
 fi
 
-cd "$CURRENT/taxonomy"
-if ! [ -f "nodes" ]; then
-  wget "ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz"
-  tar xf taxdump.tar.gz
-  rm taxdump.tar.gz
-  echo "Taxonomy database indexing. It can take a while, please wait..."
-  perl $CURRENT/setup/indexTaxonomy.pl $CURRENT/taxonomy
-  rm citations.dmp
-  rm delnodes.dmp
-  rm division.dmp
-  rm gencode.dmp
-  rm merged.dmp
-  rm gc.prt
-  rm readme.txt
-fi
-cd $CURRENT
-if ! [ -f "$CURRENT/taxonomy/nodes" ]; then
-  echo -e "\e[31mError while indexing NCBI taxonomy database! Please check $CURRENT/taxonomy/ folder and run this setup again!\e[0m"
-  exit
-fi
+# cd "$CURRENT/taxonomy"
+# if ! [ -f "nodes" ]; then
+#   wget "ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz"
+#   tar xf taxdump.tar.gz
+#   rm taxdump.tar.gz
+#   echo "Taxonomy database indexing. It can take a while, please wait..."
+#   perl $CURRENT/setup/indexTaxonomy.pl $CURRENT/taxonomy
+#   rm citations.dmp
+#   rm delnodes.dmp
+#   rm division.dmp
+#   rm gencode.dmp
+#   rm merged.dmp
+#   rm gc.prt
+#   rm readme.txt
+# fi
+# cd $CURRENT
+# if ! [ -f "$CURRENT/taxonomy/nodes" ]; then
+#   echo -e "\e[31mError while indexing NCBI taxonomy database! Please check $CURRENT/taxonomy/ folder and run this setup again!\e[0m"
+#   exit
+# fi
 
 setupFAS=0
 if [ $fas == 1 ]; then
@@ -266,39 +266,39 @@ touch $BIN/pathconfig.txt
 echo $outDir >> $BIN/pathconfig.txt
 
 ### add paths to bash profile file
-echo "-------------------------------------"
-echo "Adding WISECONFIGDIR to ~/$bashFile"
+# echo "-------------------------------------"
+# echo "Adding WISECONFIGDIR to ~/$bashFile"
 
-wisePath=$(which "genewise")
-if [ -z "$($grepprog WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
-  echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
-fi
+# wisePath=$(which "genewise")
+# if [ -z "$($grepprog WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
+#   echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
+# fi
 
 # echo "Adding paths to ~/$rprofile"
 # if [ -z "$($grepprog $CURRENT/bin ~/$rprofile)" ]; then
 #   echo "Sys.setenv(PATH = paste(\"$CURRENT/bin\", Sys.getenv(\"PATH\"), sep=\":\"))" >> ~/$rprofile
 # fi
-echo "done!"
+# echo "done!"
 
 ### adapt paths in fdog scripts
-echo "-------------------------------------"
-echo "Adapting paths in fdog scripts"
-# update the sed and grep commands
-$sedprog -i -e "s/\(my \$sedprog = '\).*/\1$sedprog';/" $CURRENT/bin/hamstr.pl
-$sedprog -i -e "s/\(my \$grepprog = '\).*/\1$grepprog';/" $CURRENT/bin/hamstr.pl
-$sedprog -i -e "s/\(my \$readlinkprog = '\).*/\1$readlinkprog';/" $CURRENT/bin/hamstr.pl
-$sedprog -i -e "s/\(my \$sedprog = '\).*/\1$sedprog';/" $CURRENT/bin/oneSeq.pl
-$sedprog -i -e "s/\(my \$grepprog = '\).*/\1$grepprog';/" $CURRENT/bin/oneSeq.pl
-$sedprog -i -e "s/\(my \$readlinkprog = '\).*/\1$readlinkprog';/" $CURRENT/bin/oneSeq.pl
-
-# localize the perl installation
-path2perl=`which perl`
-echo "path to perl: $path2perl"
-$sedprog -i -e "s|\#\!.*|\#\!$path2perl|g" $CURRENT/bin/hamstr.pl
-$sedprog -i -e "s|\#\!.*|\#\!$path2perl|g" $CURRENT/bin/translate.pl
-$sedprog -i -e "s|\#\!.*|\#\!$path2perl|g" $CURRENT/bin/oneSeq.pl
-
-echo "done!"
+# echo "-------------------------------------"
+# echo "Adapting paths in fdog scripts"
+# # update the sed and grep commands
+# $sedprog -i -e "s/\(my \$sedprog = '\).*/\1$sedprog';/" $CURRENT/bin/hamstr.pl
+# $sedprog -i -e "s/\(my \$grepprog = '\).*/\1$grepprog';/" $CURRENT/bin/hamstr.pl
+# $sedprog -i -e "s/\(my \$readlinkprog = '\).*/\1$readlinkprog';/" $CURRENT/bin/hamstr.pl
+# $sedprog -i -e "s/\(my \$sedprog = '\).*/\1$sedprog';/" $CURRENT/bin/oneSeq.pl
+# $sedprog -i -e "s/\(my \$grepprog = '\).*/\1$grepprog';/" $CURRENT/bin/oneSeq.pl
+# $sedprog -i -e "s/\(my \$readlinkprog = '\).*/\1$readlinkprog';/" $CURRENT/bin/oneSeq.pl
+#
+# # localize the perl installation
+# path2perl=`which perl`
+# echo "path to perl: $path2perl"
+# $sedprog -i -e "s|\#\!.*|\#\!$path2perl|g" $CURRENT/bin/hamstr.pl
+# $sedprog -i -e "s|\#\!.*|\#\!$path2perl|g" $CURRENT/bin/translate.pl
+# $sedprog -i -e "s|\#\!.*|\#\!$path2perl|g" $CURRENT/bin/oneSeq.pl
+#
+# echo "done!"
 
 ### final check
 echo "-------------------------------------"
@@ -307,7 +307,7 @@ flag=0
 
 echo "Tools"
 dependencies=(
-genewise
+# genewise
 hmmsearch
 hmmscan
 hmmbuild
@@ -330,56 +330,56 @@ for i in "${dependencies[@]}"; do
   fi
 done
 
-perlModules=(
-  Array::Utils
-  Capture::Tiny
-  DBI
-  DB_File
-  File::Copy
-  File::Path
-  # File::Basename
-  File::Which
-  List::Util
-  Parallel::ForkManager
-  POSIX
-  Getopt::Long
-  IO::Handle
-  IPC::Run
-  # Statistics::R
-  # Term::Cap
-  Time::HiRes
-  Bio::AlignIO
-  Bio::Align::ProteinStatistics
-  Bio::DB::Taxonomy
-  Bio::SearchIO
-  Bio::SearchIO::blastxml
-  # Bio::Search::Hit::BlastHit
-  Bio::Seq
-  Bio::SeqIO
-  Bio::SeqUtils
-  Bio::Tree::Tree
-  # Bio::Tools::Run::StandAloneBlast
-)
+# perlModules=(
+#   Array::Utils
+#   Capture::Tiny
+#   DBI
+#   DB_File
+#   File::Copy
+#   File::Path
+#   File::Basename
+#   File::Which
+#   List::Util
+#   Parallel::ForkManager
+#   POSIX
+#   Getopt::Long
+#   IO::Handle
+#   IPC::Run
+#   # Statistics::R
+#   # Term::Cap
+#   Time::HiRes
+#   Bio::AlignIO
+#   Bio::Align::ProteinStatistics
+#   Bio::DB::Taxonomy
+#   Bio::SearchIO
+#   Bio::SearchIO::blastxml
+#   # Bio::Search::Hit::BlastHit
+#   Bio::Seq
+#   Bio::SeqIO
+#   Bio::SeqUtils
+#   Bio::Tree::Tree
+#   # Bio::Tools::Run::StandAloneBlast
+# )
+#
+# echo "Perl modules"
+# for i in "${perlModules[@]}"; do
+#   msg=$((perl -e "use $i") 2>&1)
+#   if ! [[ -z ${msg} ]]; then
+#     echo -e "\t\e[31mWARNING $i could not be installed\e[0m"
+#     flag=1
+#   fi
+# done
 
-echo "Perl modules"
-for i in "${perlModules[@]}"; do
-  msg=$((perl -e "use $i") 2>&1)
-  if ! [[ -z ${msg} ]]; then
-    echo -e "\t\e[31mWARNING $i could not be installed\e[0m"
-    flag=1
-  fi
-done
-
-echo "Environment paths"
-envPaths=(
-WISECONFIGDIR
-)
-for i in "${envPaths[@]}"; do
-  if [ -z "$($grepprog $i ~/$bashFile)" ]; then
-    echo -e "\t\e[31mWARNING $i was not added into ~/$bashFile\e[0m"
-    flag=1
-  fi
-done
+# echo "Environment paths"
+# envPaths=(
+# WISECONFIGDIR
+# )
+# for i in "${envPaths[@]}"; do
+#   if [ -z "$($grepprog $i ~/$bashFile)" ]; then
+#     echo -e "\t\e[31mWARNING $i was not added into ~/$bashFile\e[0m"
+#     flag=1
+#   fi
+# done
 if [ "$fasta36" == "no" ]; then
   if [ -z "$($grepprog PATH=$CURRENT/bin/aligner/bin ~/$bashFile)" ]; then
     echo -e "\t\e[31mWARNING $CURRENT/bin/aligner/bin was not added into ~/$bashFile\e[0m"
@@ -394,14 +394,14 @@ if [ "$flag" == 1 ]; then
   echo "Then run this setup again to try one more time!"
   exit
 else
-  echo "Generating symbolic links"
-  ln -s -f $CURRENT/bin/hamstr.pl $CURRENT/bin/hamstr
-  ln -s -f $CURRENT/bin/oneSeq.pl $CURRENT/bin/oneSeq
-  echo "Sourcing bash profile file"
-  source ~/$bashFile
-  echo "-------------------------------------"
-  $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/hamstr.pl
-  $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/oneSeq.pl
+  # echo "Generating symbolic links"
+  # ln -s -f $CURRENT/bin/hamstr.pl $CURRENT/bin/hamstr
+  # ln -s -f $CURRENT/bin/oneSeq.pl $CURRENT/bin/oneSeq
+  # echo "Sourcing bash profile file"
+  # source ~/$bashFile
+  # echo "-------------------------------------"
+  # $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/hamstr.pl
+  # $sedprog -i -e 's/my $configure = .*/my $configure = 1;/' $CURRENT/bin/oneSeq.pl
   if [ "$setupFAS" == 1 ]; then
     echo "All tests succeeded."
     echo -e "\e[91mPLEASE RUN\e[0m \e[96mfas.setup\e[0m \e[91mTO CONFIGURE FAS BEFORE USING fdog!\e[0m"

@@ -110,7 +110,7 @@ fi
 
 dependencies=(
   blastp # blast
-  genewise # wise2
+  # genewise # wise2
   hmmsearch # hmmer (for both hmmsearch and hmmbuild)
   clustalw
   mafft # for linsi
@@ -126,12 +126,12 @@ for i in "${dependencies[@]}"; do
       conda install -y -c bioconda blast
     elif [ "$tool" = "hmmsearch" ]; then
       conda install -y -c bioconda hmmer
-    elif [ "$tool" = "genewise" ]; then
-      conda install -y -c bioconda wise2
-      wisePath=$(which "genewise")
-      if [ -z "$($grepprog WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
-        echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
-      fi
+    # elif [ "$tool" = "genewise" ]; then
+    #   conda install -y -c bioconda wise2
+    #   wisePath=$(which "genewise")
+    #   if [ -z "$($grepprog WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
+    #     echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
+    #   fi
     elif [ "$tool" = "fasta36" ]; then
       conda install -y -c bioconda fasta3
     else
@@ -155,7 +155,7 @@ perlModules=(
   DB_File
   File::Copy
   File::Path
-  # File::Basename
+  File::Basename
   File::Which
   List::Util
   Parallel::ForkManager
@@ -317,10 +317,10 @@ echo $outDir >> $BIN/pathconfig.txt
 echo "-------------------------------------"
 echo "Adding WISECONFIGDIR to ~/$bashFile"
 
-wisePath=$(which "genewise")
-if [ -z "$($grepprog WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
-  echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
-fi
+# wisePath=$(which "genewise")
+# if [ -z "$($grepprog WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
+#   echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
+# fi
 
 # echo "Adding paths to ~/$rprofile"
 # if [ -z "$($grepprog $CURRENT/bin ~/$rprofile)" ]; then
@@ -369,8 +369,8 @@ for i in "${condaPkgs[@]}"; do
     progname=$i
     if [ "$i" == "blast" ]; then
       progname="blastp"
-    elif [ "$i" == "wise2" ]; then
-      progname="genewise"
+    # elif [ "$i" == "wise2" ]; then
+    #   progname="genewise"
     elif [ "$i" == "hmmer" ]; then
       progname="hmmsearch"
     elif [ "$i" == "fasta3" ]; then

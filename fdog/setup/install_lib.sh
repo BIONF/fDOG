@@ -88,7 +88,7 @@ dependenciesUbuntu=(
 )
 
 dependenciesMac=(
-  brewsci/bio/genewise
+  # brewsci/bio/genewise
   hmmer # hmmer (for both hmmsearch and hmmbuild)
   brewsci/bio/clustal-w
   mafft
@@ -113,7 +113,7 @@ else
 fi
 
 dependencies=(
-  genewise
+  # genewise
   hmmsearch
   hmmbuild
   mafft
@@ -129,10 +129,10 @@ for i in "${dependencies[@]}"; do
 done
 if [ "$flag" == 1 ]; then exit 1; fi
 
-wisePath=$(which "genewise")
-if [ -z "$(grep WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
-  echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
-fi
+# wisePath=$(which "genewise")
+# if [ -z "$(grep WISECONFIGDIR=$wisePath ~/$bashFile)" ]; then
+#   echo "export WISECONFIGDIR=${wisePath}" >> ~/$bashFile
+# fi
 
 echo "Installing Perl modules..."
 perlModules=(
@@ -142,7 +142,7 @@ perlModules=(
   DB_File
   File::Copy
   File::Path
-  # File::Basename
+  File::Basename
   File::Which
   List::Util
   Parallel::ForkManager

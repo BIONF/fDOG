@@ -20,6 +20,7 @@ import os
 import argparse
 import subprocess
 import shutil
+from pkg_resources import get_distribution
 
 
 def query_yes_no(question, default='yes'):
@@ -46,8 +47,8 @@ def query_yes_no(question, default='yes'):
 
 
 def main():
-    version = '0.0.1'
-    parser = argparse.ArgumentParser(description='You are running fdog.remove version ' + str(version) + '.')
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     parser.add_argument('--data', help='Remove fdog together with all files/data within the installed fdog directory', action='store_true', default=False)
     args = parser.parse_args()
     data = args.data
@@ -65,7 +66,7 @@ def main():
         print('fdog will be uninstalled. Some files/data still can be found in %s! Enter to continue' % fdogPath)
     if query_yes_no('Are you sure?'):
         if data:
-            folders = ['bin', 'core_orthologs', 'taxonomy', 'data']
+            folders = ['bin', 'data']
             for f in folders:
                 dirPath = fdogPath+'/'+f
                 if os.path.exists(os.path.abspath(dirPath)):
@@ -75,7 +76,7 @@ def main():
         try:
             subprocess.call([uninstallCmd], shell = True)
         except:
-            print('Error by uninstalling fdog. Please manually uninstall it using pip uninstall fdog')
+            print('Error by uninstalling fdog. Please manually uninstall it using <pip uninstall fdog>')
         if data:
             if os.path.exists(os.path.abspath(fdogPath)):
                 shutil.rmtree(fdogPath)

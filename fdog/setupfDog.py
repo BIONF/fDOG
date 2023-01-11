@@ -22,6 +22,8 @@ import argparse
 import subprocess
 from ete3 import NCBITaxa
 from pathlib import Path
+from pkg_resources import get_distribution
+
 
 def checkOptConflict(lib, conda):
     if lib:
@@ -29,8 +31,8 @@ def checkOptConflict(lib, conda):
             sys.exit('*** ERROR: --lib and --conda cannot be used at the same time!')
 
 def main():
-    version = '0.0.3'
-    parser = argparse.ArgumentParser(description='You are running fdog.setup version ' + str(version) + '.')
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-o', '--outPath', help='Output path for fdog data', action='store', default='', required=True)
