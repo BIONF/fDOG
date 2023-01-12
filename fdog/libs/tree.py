@@ -15,7 +15,7 @@
 #
 #######################################################################
 
-
+import re
 from ete3 import NCBITaxa
 
 import fdog.libs.zzz as general_fn
@@ -106,14 +106,34 @@ def get_leaves_dict(spec_lineage, tree, min_index, max_index):
     return(general_fn.remove_dup_in_dict(node_dict))
 
 
-def get_tax_name(taxId):
-    """ Get taxonomy name for a given taxon ID """
+def check_tax_id(tax_id):
+    """ Check valid taxon ID
+    Return taxon name (UNK<tax_id> if ID not found in ncbi db)
+    """
     ncbi = NCBITaxa()
+    tmp = ncbi.get_rank([tax_id])
     try:
-        ncbiName = ncbi.get_taxid_translator([taxId])[int(taxId)]
-        ncbiName = re.sub('[^a-zA-Z1-9\s]+', '', ncbiName)
-        taxName = ncbiName.split()
-        name = taxName[0][:3].upper()+taxName[1][:2].upper()
+        tmp = ncbi.get_rank([tax_id])
+        rank = tmp[int(tax_id)]
+        if not rank == 'species':
+            print('\033[92mWARNING: rank of %s is not SPECIES (%s)\033[0m' % (tax_id, rank))
+        else:
+            ncbi_name = ncbi.get_taxid_translator([tax_id])[int(tax_id)]
+            print('\033[92mNCBI taxon info: %s %s\033[0m' % (tax_id, ncbi_name))
+        return(ncbi_name)
     except:
-        name = "UNK" + taxId
+        print('\033[92mWARNING: %s not found in NCBI taxonomy database!\033[0m' % tax_id)
+        return('UNK%s' % tax_id)
+
+
+def abbr_ncbi_name(ncbi_name):
+    """ Parse ncbi taxon name into abbr name
+    E.g. "Homo sapiens" -> "HOMSA"
+    """
+    if not ncbi_name.startswith('UNK'):
+        ncbi_name = re.sub('[^a-zA-Z1-9\s]+', '', ncbi_name)
+        tax_name = ncbi_name.split()
+        name = tax_name[0][:3].upper()+tax_name[1][:2].upper()
+    else:
+        name = ncbi_name
     return(name)

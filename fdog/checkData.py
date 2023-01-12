@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-# Copyright (C) 2020 Vinh Tran
+# Copyright (C) 2022 Vinh Tran
 #
 #  This script is used to check fdog data which are present in
 #  genome_dir, blast_dir and weight_dir
