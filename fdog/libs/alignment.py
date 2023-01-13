@@ -85,7 +85,7 @@ def calc_Kimura_dist(aln_dict, id_1, id_2, debug):
             kimura = 999
         return(kimura)
     else:
-        sys.exit('%s or %s not found in %s!' % (id_1, id_2, aln_file))
+        sys.exit('%s or %s not found in %s!' % (id_1, id_2, aln_dict))
 
 
 def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):

@@ -66,7 +66,7 @@ def get_anno_fas(seqName, spec, seq_id, seq, hmmpath, weightpath):
         except:
             sys.exit(
                 'ERROR: Annotation for %s cannot be found in %s'
-                % (seq_id, refspec_anno))
+                % (seq_id, spec_anno))
     return(out_json)
 
 

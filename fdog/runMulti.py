@@ -29,6 +29,7 @@ from ete3 import NCBITaxa
 from pkg_resources import get_distribution
 import time
 
+import fdog.libs.zzz as general_fn
 import fdog.libs.preparation as prepare_fn
 import fdog.libs.orthosearch as ortho_fn
 import fdog.libs.corecompile as core_fn

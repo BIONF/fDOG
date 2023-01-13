@@ -62,7 +62,7 @@ def generate_spec_name(tax_id, name, ver):
 
 def create_genome(args):
     """ Create fa and fai in genome_dir """
-    (faIn, genome_path, spec_name, force) = args
+    (faIn, genome_path, spec_name, force, replace, delete) = args
     ### load fasta seq
     in_seq = SeqIO.to_dict((SeqIO.parse(open(faIn), 'fasta')))
     if not os.path.exists(genome_path):

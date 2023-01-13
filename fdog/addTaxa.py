@@ -127,7 +127,7 @@ def main():
         ## create jobs
         genome_path = '%s/genome_dir/%s' % (outPath, spec_name)
         Path(genome_path).mkdir(parents = True, exist_ok = True)
-        genome_jobs.append([f, genome_path, spec_name, force])
+        genome_jobs.append([f, genome_path, spec_name, force, replace, delete])
         if coreTaxa:
             genome_file = '%s/%s.fa' % (genome_path, spec_name)
             blast_jobs.append([outPath, spec_name, genome_file, force, True])

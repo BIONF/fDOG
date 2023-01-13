@@ -51,7 +51,7 @@ def get_core_taxa_ids(coreTaxa, blastpath):
             if not os.path.exists(
                     os.path.abspath(
                         '%s/%s/%s.phr' % (blastpath,core_taxon,core_taxon))):
-                ignored_taxa.append(search_taxon)
+                ignored_taxa.append(core_taxon)
             else:
                 id = core_taxon.split('@')[1]
                 if not id in tax_ids:
