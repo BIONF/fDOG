@@ -40,7 +40,7 @@ jobs:
       run: |
         pwd
         pip install .
-        path=$(fdog.setup -d ./ --getSourcepath); for i in $(less $path/data/dependencies.txt); do apt-get install -y -qq $i; done
+        path=$(fdog.setup -d ./ --getSourcepath); for i in $(less $path/data/dependencies.txt); do sudo apt-get install -y -qq $i; done
         fdog.setup -d /home/runner/work/fDOG/fDOG/dt --woFAS
         # fdog.showTaxa
         # fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasOff
