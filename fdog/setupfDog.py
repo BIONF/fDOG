@@ -119,6 +119,7 @@ def check_dependencies(fdogPath):
     missing = []
     dependencies = '%s/data/dependencies.txt' % fdogPath
     for tool in general_fn.read_file(dependencies):
+        print(tool)
         function = tool
         if tool == 'hmmer':
             function = 'hmmsearch'
