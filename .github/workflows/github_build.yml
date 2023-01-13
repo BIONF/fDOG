@@ -42,13 +42,13 @@ jobs:
         pip install .
         path=$(fdog.setup -d ./ --getSourcepath); for i in $(less $path/data/dependencies.txt); do sudo apt-get install -y -qq $i; done
         fdog.setup -d /home/runner/work/fDOG/fDOG/dt --woFAS
-        # fdog.showTaxa
-        # fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasOff
-        # mkdir seeds
-        # file='/home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa'; for i in $(grep ">" $file | head); do id=$(echo $i | sed 's/>//'); grep -A1 $i $file > seeds/$id.fa; done
-        # fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasOff
-        # head /home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
-        # fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
+        fdog.showTaxa
+        fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasOff
+        mkdir seeds
+        file='/home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa'; for i in $(grep ">" $file | head); do id=$(echo $i | sed 's/>//'); grep -A1 $i $file > seeds/$id.fa; done
+        fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasOff
+        head /home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
+        fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
         ls
     - name: Deploy
       if: startsWith(github.event.ref, 'refs/tags')
