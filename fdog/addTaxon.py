@@ -94,7 +94,7 @@ def main():
 
     ### create file in genome_dir
     print('Parsing FASTA file...')
-    genome_file = add_taxon_fn.create_genome([faIn, genome_path, spec_name, force])
+    genome_file = add_taxon_fn.create_genome([faIn, genome_path, spec_name, force, replace, delete])
     out_msg = 'Output for %s can be found in %s within genome_dir'  % (spec_name, outPath)
 
     ### create blast db
