@@ -127,6 +127,13 @@ def check_dependencies(fdogPath):
         try:
             subprocess.check_output(['which %s' % function], shell = True, stderr = subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
+            if sudo:
+                install_cmd = 'sudo apt-get install -y -qq %s' % tool
+                try:
+                    subprocess.run(['install_cmd'], shell = True, check = True)
+                except subprocess.CalledProcessError as e:
+                    sys.exit('\033[91mERROR: Cannot install dependencies in %s!\033[0m' % dependencies)
+
             missing.append(tool)
     return(tool)
 
@@ -224,7 +231,8 @@ def main():
     else:
         missing_tools = check_dependencies(fdogPath)
         if len(missing_tools) > 0:
-            sys.exit('\033[91mERROR: Please install these tools before using fDOG\n%s!\033[0m' % ', '.join(missing_tools))
+            install_cmd = 'sudo apt-get install -y -qq <tool>'
+            sys.exit('\033[91mERROR: Please install these tools before using fDOG\n%s\nUsing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
     install_fasta36(fdogPath, os.getcwd())
 
 
