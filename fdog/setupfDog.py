@@ -18,64 +18,189 @@
 
 import sys
 import os
+import platform
 import argparse
 import subprocess
+import shutil
 from ete3 import NCBITaxa
 from pathlib import Path
 from pkg_resources import get_distribution
 
+import fdog.libs.zzz as general_fn
+import fdog.libs.fas as fas_fn
+import fdog.libs.alignment as align_fn
 
-def checkOptConflict(lib, conda):
-    if lib:
-        if (conda):
-            sys.exit('*** ERROR: --lib and --conda cannot be used at the same time!')
+
+def get_source_path():
+    fdogPath = os.path.realpath(__file__).replace('/setupfDog.py','')
+    return(fdogPath)
+
+
+def get_data_path(fdogPath):
+    pathconfigFile = fdogPath + '/bin/pathconfig.txt'
+    if not os.path.exists(pathconfigFile):
+        sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+    else:
+        with open(pathconfigFile) as f:
+            dataPath = f.readline().strip()
+            print(dataPath)
+    sys.exit()
+
+
+def install_fas(woFAS):
+    if not woFAS:
+        print('=> greedyFAS (https://github.com/BIONF/FAS)')
+        ### check if fas already installed
+        try:
+            fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
+        except:
+            install_fas_cmd = 'pip install greedyFAS'
+            try:
+                subprocess.check_output([install_fas_cmd], shell = True, stderr = subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                sys.exit('\033[91mERROR: Problem with installing FAS! Please do it manually. See: https://github.com/BIONF/FAS!\033[0m')
+        ### check if fas installed but not yet configured
+        check_fas = fas_fn.check_fas_executable()
+
+
+def install_fasta36(fdogPath, cwd):
+    print('=> FASTA36 (https://github.com/wrpearson/fasta36)')
+    try:
+        subprocess.check_output(['which fasta36'], shell = True, stderr = subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        fasta36v = '36.3.8h_04-May-2020'
+        fasta36url = 'https://github.com/wrpearson/fasta36/archive/refs/tags'
+        fasta36file = 'v%s.tar.gz' % fasta36v
+        if not os.path.exists('%s/bin/aligner/bin/fasta36' % fdogPath):
+            if os.path.exists('%s/bin/aligner' % fdogPath):
+                shutil.rmtree('%s/bin/aligner' % fdogPath)
+            general_fn.download_file(fasta36url, fasta36file)
+            shutil.unpack_archive(fasta36file, '%s/bin/' % fdogPath, 'gztar')
+            os.remove(fasta36file)
+            shutil.move('%s/bin/fasta36-%s' % (fdogPath, fasta36v), '%s/bin/aligner' % fdogPath)
+            if 'Darwin' in platform.uname():
+                make_cmd = 'make -f %s/bin/aligner/make/Makefile.os_x86_64 all' % fdogPath
+            elif 'Linux' in platform.uname():
+                make_cmd = 'make -f %s/bin/aligner/make/Makefile.linux64_sse2 all' % fdogPath
+            else:
+                sys.exit('\033[91mERROR: Cannot identify type of system (neither Linux nor Darwin/MacOS)\033[0m')
+            try:
+                print('Compiling fasta36. Please wait...')
+                os.chdir('%s/bin/aligner/src' % fdogPath)
+                subprocess.run(make_cmd, shell = True, check = True)
+            except:
+                sys.exit('\033[91mERROR: Cannot install FASTA36!\033[0m')
+            os.chdir(cwd)
+            if not os.path.exists('%s/bin/aligner/bin/fasta36' % fdogPath):
+                sys.exit('\033[91mERROR: fasta36 not found! Please install it manually!\033[0m')
+            else:
+                print('FASTA36 installed at %s/bin/aligner/' % fdogPath)
+        else:
+            fasta36_path = align_fn.check_fasta36_executable(fdogPath)
+            print('FASTA36 found at %s' % fasta36_path)
+
+
+def download_data(dataPath, force):
+    data_fdog_file = "data_HaMStR-2019c.tar.gz"
+    checksum_data = "1748371655 621731824 $data_fdog_file"
+    Path('%s/genome_dir' % dataPath).mkdir(parents = True, exist_ok = True)
+    genome_path = '%s/genome_dir' % dataPath
+    blast_path = '%s/genome_dir' % dataPath
+    weight_path = '%s/genome_dir' % dataPath
+    for i in [genome_path, blast_path, weight_path]:
+        general_fn.check_file_exist(i)
+    if len(general_fn.read_dir(genome_path)) < 1 or force:
+        data_url = 'https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo'
+        if os.path.exists(data_fdog_file) and force:
+            os.remove(data_fdog_file)
+        general_fn.download_file(data_url, data_fdog_file)
+        try:
+            print('Extracting %s...' % data_fdog_file)
+            shutil.unpack_archive(data_fdog_file, dataPath, 'gztar')
+        except:
+            sys.exit('\033[91mERROR: Cannot extract %s to %s!\033[0m' % (data_fdog_file, dataPath))
+        check_cmd = 'fdog.checkData -g %s/genome_dir -b %s/blast_dir -w %s/weight_dir' % (dataPath, dataPath, dataPath)
+        try:
+            print('Checking downloaded data...')
+            subprocess.run([check_cmd], stdout = subprocess.DEVNULL, check = True, shell = True)
+        except:
+            print('\033[96mWARNING: Problem with validating downloaded data. Please run fdog.checkData manually!\033[0m')
+        os.remove(data_fdog_file)
+        print('fDOG data downloaded and saved at %s' % dataPath)
+    else:
+        print('fDOG data found at %s' % dataPath)
+
 
 def main():
     version = get_distribution('fdog').version
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
-    required.add_argument('-o', '--outPath', help='Output path for fdog data', action='store', default='', required=True)
-    optional.add_argument('--conda', help='Setup fdog within a conda env', action='store_true', default=False)
-    optional.add_argument('--lib', help='Install fdog libraries only', action='store_true', default=False)
-    optional.add_argument('--getSourcepath', help='Get path to installed fdog', action='store_true', default=False)
-    optional.add_argument('--getDatapath', help='Get fdog default data path', action='store_true', default=False)
+    required.add_argument('-d', '--dataPath', help='Output path for fDOG data', action='store', default='', required=True)
+    optional.add_argument('--getSourcepath', help='Get path to installed fdog package', action='store_true', default=False)
+    optional.add_argument('--getDatapath', help='Get fDOG default data path', action='store_true', default=False)
+    optional.add_argument('--woFAS', help='Do not install FAS (https://github.com/BIONF/FAS)', action='store_true', default=False)
+    optional.add_argument('--force', help='Force overwrite fDOG data', action='store_true', default=False)
 
-    ### get arguments
+    ### parse arguments
     args = parser.parse_args()
-    conda = args.conda
-    lib = args.lib
-    checkOptConflict(lib, conda)
-    outPath = args.outPath
-    Path(outPath).mkdir(parents = True, exist_ok = True)
-    fdogPath = os.path.realpath(__file__).replace('/setupfDog.py','')
+    dataPath = args.dataPath
+    woFAS = args.woFAS
+    force = args.force
+
+
     ### get install path
+    fdogPath = get_source_path()
     if args.getSourcepath:
         print(fdogPath)
         sys.exit()
+
     ### get data path
     if args.getDatapath:
-        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
-        if not os.path.exists(pathconfigFile):
-            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        get_data_path(fdogPath)
+
+    ### check if pathconfig file exists
+    pathconfig_file = '%s/bin/pathconfig.txt' % fdogPath
+    demo_cmd = 'fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3'
+    if os.path.exists(pathconfig_file) and not force:
+        check_fas = 1
+        if not woFAS:
+            check_fas = fas_fn.check_fas_executable()
+        if check_fas == 1:
+            print('fDOG seems to be ready to use!')
+            print('You can test fDOG using the following command:\n%s' % demo_cmd)
         else:
-            with open(pathconfigFile) as f:
-                dataPath = f.readline().strip()
-                print(dataPath)
+            print('fDOG seems to be ready to use without FAS!')
+            print('You can test fDOG using the following command:\n%s --fasOff' % demo_cmd)
         sys.exit()
+
     ### get ncbi taxonomy database for ete3
-    print('Creating local NCBI taxonomy database...')
+    print('*** Creating local NCBI taxonomy database...')
     ncbi = NCBITaxa()
-    ### run setup
-    if conda:
-        setupFile = '%s/setup/setup_conda.sh -o %s' % (fdogPath, outPath)
-        subprocess.call([setupFile], shell = True)
-    else:
-        if lib:
-            setupFile = '%s/setup/setup.sh -l' % (fdogPath)
-        else:
-            setupFile = '%s/setup/setup.sh -o %s' % (fdogPath, outPath)
-        subprocess.call([setupFile], shell = True)
+
+    ### install dependencies
+    print('*** Installing dependencies...')
+    if not woFAS:
+        install_fas(woFAS)
+    install_fasta36(fdogPath, os.getcwd())
+
+    ### download pre-calculated data
+    print('*** Downloading precalculated data...')
+    if force:
+        if os.path.exists(dataPath):
+            print('WARNING: %s will be deleted!' % dataPath)
+            shutil.rmtree(dataPath)
+    Path(dataPath).mkdir(parents = True, exist_ok = True)
+    download_data(dataPath, force)
+
+    ### create pathconfig file
+    if os.path.exists(pathconfig_file):
+        os.remove(pathconfig_file)
+    with open(pathconfig_file, 'w') as cf:
+        cf.write(dataPath)
+
+    print('\033[96m==> FINISHED! fDOG data can be found at %s\033[0m' % dataPath)
+    print('You can test fDOG using the following command:\n%s' % demo_cmd)
 
 if __name__ == '__main__':
     main()

@@ -90,49 +90,48 @@ def hamstr(args):
                 os.remove(hmm_hit_fa)
             ### (4) check reciprocity
             ### (4a) if refspec_seq_id == best blast hit
-            best_blast_hit = list(blast_out['hits'].keys())[0]
-            if best_blast_hit == hmm_hit and len(blast_out['hits'].keys()) > 1:
-                best_blast_hit = list(blast_out['hits'].keys())[1]
-            else:
-                continue
-            if seed_id == best_blast_hit:
-                output_fn.print_stdout(
-                    silentOff,
-                    '%s accepted (best blast hit is ref)' % (blast_out['query']))
-                ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
-                continue
-            else:
-                ### (4b) else, check for co-ortholog ref
-                if checkCoorthologsRefOff == False:
-                    aln_fa = '%s/blast_%s_%s_%s_%s_%s.fa' % (
-                                outpath, seqName, seed_id, search_taxon,
-                                hmm_hit, best_blast_hit)
-                    with open(aln_fa, 'w') as aln_fa_out:
-                        aln_fa_out.write(
-                            '>%s\n%s\n>%s\n%s\n>%s\n%s' % (
-                                seed_id, refspec_seqs.fetch(seed_id),
-                                hmm_hit, search_seqs.fetch(hmm_hit),
-                                best_blast_hit, refspec_seqs.fetch(best_blast_hit)
+            if len(blast_out['hits'].keys()) > 0:
+                best_blast_hit = list(blast_out['hits'].keys())[0]
+                if best_blast_hit == hmm_hit and len(blast_out['hits'].keys()) > 1:
+                    best_blast_hit = list(blast_out['hits'].keys())[1]
+                if seed_id == best_blast_hit:
+                    output_fn.print_stdout(
+                        silentOff,
+                        '%s accepted (best blast hit is ref)' % (blast_out['query']))
+                    ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
+                    continue
+                else:
+                    ### (4b) else, check for co-ortholog ref
+                    if checkCoorthologsRefOff == False:
+                        aln_fa = '%s/blast_%s_%s_%s_%s_%s.fa' % (
+                                    outpath, seqName, seed_id, search_taxon,
+                                    hmm_hit, best_blast_hit)
+                        with open(aln_fa, 'w') as aln_fa_out:
+                            aln_fa_out.write(
+                                '>%s\n%s\n>%s\n%s\n>%s\n%s' % (
+                                    seed_id, refspec_seqs.fetch(seed_id),
+                                    hmm_hit, search_seqs.fetch(hmm_hit),
+                                    best_blast_hit, refspec_seqs.fetch(best_blast_hit)
+                                )
                             )
-                        )
-                    aln_seq = align_fn.do_align(aligner, aln_fa)
-                    output_fn.print_debug(
-                        debug, 'Alignment for checking co-ortholog ref', aln_seq)
-                    br_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, seed_id)
-                    bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, hmm_hit)
-                    output_fn.print_debug(
-                        debug, 'Check if distance blast_vs_ref < blast_vs_hmm',
-                        'd_br = %s; d_bh = %s' % (br_dist, bh_dist))
-                    if noCleanup == False:
-                        os.remove(aln_fa)
-                    if br_dist == bh_dist == 0 or br_dist < bh_dist:
-                        output_fn.print_stdout(
-                            silentOff,
-                            '%s accepted (best blast hit is co-ortholog to ref)'
-                            % (blast_out['query'])
-                        )
-                        ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
-                        continue
+                        aln_seq = align_fn.do_align(aligner, aln_fa)
+                        output_fn.print_debug(
+                            debug, 'Alignment for checking co-ortholog ref', aln_seq)
+                        br_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, seed_id, debug)
+                        bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, hmm_hit, debug)
+                        output_fn.print_debug(
+                            debug, 'Check if distance blast_vs_ref < blast_vs_hmm',
+                            'd_br = %s; d_bh = %s' % (br_dist, bh_dist))
+                        if noCleanup == False:
+                            os.remove(aln_fa)
+                        if br_dist == bh_dist == 0 or br_dist < bh_dist:
+                            output_fn.print_stdout(
+                                silentOff,
+                                '%s accepted (best blast hit is co-ortholog to ref)'
+                                % (blast_out['query'])
+                            )
+                            ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
+                            continue
     ### (5) check co-ortholog if more than 1 HMM hits are accepted
     if len(ortho_candi) == 0:
         output_fn.print_stdout(
@@ -159,11 +158,11 @@ def hamstr(args):
                 if noCleanup == False:
                     os.remove(aln_co_fa)
                 best_dist = align_fn.calc_Kimura_dist(
-                                aln_co_seq, seed_id, best_ortho)
+                                aln_co_seq, seed_id, best_ortho, debug)
                 for cand in ortho_candi:
                     if not cand == best_ortho:
                         candi_dist = align_fn.calc_Kimura_dist(
-                            aln_co_seq, best_ortho, cand)
+                            aln_co_seq, best_ortho, cand, debug)
                         output_fn.print_debug(
                             debug,
                             'Check if distance bestHmm_vs_ref > '

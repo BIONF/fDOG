@@ -18,12 +18,23 @@
 import sys
 import os
 import subprocess
+import shutil
 import greedyFAS.annoFAS.annoModules as annoFas
 
 import fdog.libs.zzz as general_fn
 
 
 ##### FUNCTIONS RELATED TO FAS #####
+
+def check_fas_executable():
+    try:
+        subprocess.check_output(['fas.setup -t ./ --check'], shell = True, stderr = subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        print('\033[96m%s\033[0m' % e.output.decode(sys.stdout.encoding).strip())
+        print('FAS installed but fas.setup still need to be run if you want to use it!')
+        return(0)
+    return(1)
+
 
 def get_tool_fas_path():
     """ Get path to FAS annotation tools """

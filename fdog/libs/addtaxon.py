@@ -92,7 +92,7 @@ def create_genome(args):
             if len(id) > 20:
                 long_id = 1
                 mod_id_index = mod_id_index + 1
-                id = '%s_%s' % (spec_name, mod_id_index)
+                id = '%s_%s' % (spec_name.split('@')[1], mod_id_index)
                 if not ori_id in id_dict:
                     id_dict[ori_id] = id
             ### check if seq contains special characters
@@ -124,11 +124,11 @@ def create_genome(args):
                 for o,n in id_dict.items():
                     mp.write('%s\t%s\n' % (o,n))
             if pipe == 1:
-                print('\033[91mWARNING: Sequence IDs contain pipe(s). They will be replaced by "_"!\033[0m')
+                print('\033[94mWARNING: Sequence IDs contain pipe(s). They will be replaced by "_"!\033[0m')
             if long_id == 'yes':
-                print('\033[91mWARNING: Some headers longer than 80 characters have been automatically shortened. Please check the %s.mapping file for details!\033[0m' % genome_file)
+                print('\033[94mWARNING: Some headers longer than 80 characters have been automatically shortened. Please check the %s.mapping file for details!\033[0m' % genome_file)
             if pipe == 1:
-                print('\033[91mPlease check the %s file for details!\033[0m' % mapping_file)
+                print('\033[94mWARNING: Please check the %s file for details!\033[0m' % mapping_file)
     else:
         print(genome_path + '/' + spec_name + '.fa already exists!')
     return(genome_file)
@@ -161,4 +161,4 @@ def create_annoFile(outPath, genome_file, cpus, force):
     try:
         subprocess.call([annoCmd], shell = True)
     except:
-        print('\033[91mProblem with running fas.doAnno. You can check it with this command:\n%s\033[0m' % annoCmd)
+        print('\033[91mERROR: Problem with running fas.doAnno. You can check it with this command:\n%s\033[0m' % annoCmd)

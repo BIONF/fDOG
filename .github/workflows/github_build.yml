@@ -5,9 +5,11 @@ name: build
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
+      - 0.1.0
     tags:
-    - '*'
+      - '*'
   pull_request:
     branches: [ master ]
 
@@ -38,10 +40,15 @@ jobs:
       run: |
         pwd
         pip install .
-        fdog.setup -o /home/runner/work/fDOG/fDOG/dt --lib
-        fdog.setup -o /home/runner/work/fDOG/fDOG/dt
+        fdog.setup -d /home/runner/work/fDOG/fDOG/dt
         fdog.showTaxa
-        fdog.run --seqFile infile.fa --seqName test --refspec HUMAN@9606@3 --fasoff
+        fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasoff
+        mkdir seeds
+        file='/home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa'; for i in $(grep ">" $file | head); do id=$(echo $i | sed 's/>//'); grep -A1 $i $file > seeds/$id.fa; done
+        fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasoff
+        head /home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
+        fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
+        ls
     - name: Deploy
       if: startsWith(github.event.ref, 'refs/tags')
       uses: casperdcl/deploy-pypi@v2

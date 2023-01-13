@@ -82,7 +82,7 @@ def parsing_paths(args):
 def check_input(args):
     (seqFile, refspec, outpath, hmmpath, blastpath,
         searchpath, weightpath, pathFile) = args
-    fdog_path = os.path.realpath(__file__).replace('/runSingle.py','')
+    fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py','')
     # create output directory
     Path(outpath).mkdir(parents = True, exist_ok = True)
     Path(hmmpath).mkdir(parents = True, exist_ok = True)

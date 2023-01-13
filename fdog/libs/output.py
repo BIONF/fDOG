@@ -78,3 +78,15 @@ def write_hamstr(hamstr_result, outpath, seqName, force, append):
             out_file.write('>%s\n%s\n' % (id, seq))
     return(
         'Found %s ortholog(s)!\nOutput file: %s' % (ortho_count, outfile))
+
+
+def hamstr_2_profile(fa_file):
+    """ Convert extended.fa file into phyloprofile file """
+    if os.path.exists(fa_file):
+        pp_file = fa_file.replace('.extended.fa', '.phyloprofile')
+        fa = SeqIO.to_dict((SeqIO.parse(open(fa_file),'fasta')))
+        with open(pp_file, 'w') as pp:
+            pp.write('geneID\tncbiID\torthoID\n')
+            for id in list(fa.keys()):
+                tmp = id.split('|')
+                pp.write('%s\t%s\t%s\n' % (tmp[0], tmp[1], id))

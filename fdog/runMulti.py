@@ -276,12 +276,17 @@ def main():
         cpus = os.cpu_count()
 
 
+    begin = time.time()
     ##### Check and group parameters
     (inFol, hmmpath, blastpath, searchpath, weightpath) = prepare_fn.check_input(
                     [inFol, refspec, outpath, hmmpath,
                     blastpath, searchpath, weightpath, pathFile])
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
 
+    if not fasOff:
+        check_fas = fas_fn.check_fas_executable()
+        if check_fas == 0:
+            sys.exit('ERROR: FAS is not executable! You still can use fDOG with --fasOff!')
 
     ### START
     Path(outpath).mkdir(parents=True, exist_ok=True)
@@ -375,7 +380,11 @@ def main():
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
                 multiLog.write('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
+        else:
+            output_fn.hamstr_2_profile(finalFa)
 
+        end = time.time()
+        print('==> fdogs.run finished in ' + '{:5.3f}s'.format(end - begin))
 
 if __name__ == '__main__':
     main()

@@ -82,15 +82,15 @@ def main():
     spec_name = add_taxon_fn.generate_spec_name(taxId, name, ver)
     print('Species name\t%s' % spec_name)
 
-    ### initiate paths
-    genome_path = add_taxon_fn.create_folders(outPath, spec_name, coreTaxa, noAnno)
-
     ### remove old folder if force is set
-    if force:
+    if force == True:
         if os.path.exists(outPath + '/genome_dir/' + spec_name):
             shutil.rmtree(outPath + '/genome_dir/' + spec_name)
         if os.path.exists(outPath + '/blast_dir/' + spec_name):
             shutil.rmtree(outPath + '/blast_dir/' + spec_name)
+
+    ### initiate paths
+    genome_path = add_taxon_fn.create_folders(outPath, spec_name, coreTaxa, noAnno)
 
     ### create file in genome_dir
     print('Parsing FASTA file...')

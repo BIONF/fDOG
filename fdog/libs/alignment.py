@@ -19,6 +19,7 @@ import sys
 import os
 import subprocess
 import math
+import re
 from Bio import SeqIO
 from Bio.Align.Applications import MuscleCommandline
 from Bio.Align.Applications import MafftCommandline
@@ -28,6 +29,15 @@ import fdog.libs.fasta as fasta_fn
 import fdog.libs.output as output_fn
 
 ##### FUNCTIONS RELATED TO SEQ ALIGNMENT #####
+
+def check_fasta36_executable(fdogPath):
+    try:
+        fasta36_cmd = '%s/bin/aligner/bin/ggsearch36' % fdogPath
+        subprocess.check_output(fasta36_cmd, shell = True, stderr = subprocess.STDOUT)
+        return('%s/bin/aligner/' % fdogPath)
+    except subprocess.CalledProcessError as e:
+        sys.exit('\033[91mERROR: FASTA36 at %s/bin/aligner/bin/ not executable!\033[0m' % fdogPath)
+
 
 def do_align(aligner, fa_file):
     """ Do alignment using MUSCLE or MAFFT for a multiple fasta file
@@ -51,7 +61,7 @@ def do_align(aligner, fa_file):
             'ERROR: Error doing alignment with %s for %s' % (aligner, fa_file))
 
 
-def calc_Kimura_dist(aln_dict, id_1, id_2):
+def calc_Kimura_dist(aln_dict, id_1, id_2, debug):
     """ Calculate Kimura distance for a pair of sequences
     Input is a dictionary of MSA (see do_align function).
     The Kimura distance is calculated based on perl module
@@ -66,7 +76,13 @@ def calc_Kimura_dist(aln_dict, id_1, id_2):
                     matches +=1
                 total += 1
         D = 1 - (matches/total)
-        kimura = round(- (math.log( 1 - D - (0.2 * (D ** 2)))), 5);
+        output_fn.print_debug(
+            debug, 'Kimura distance',
+            'kimura = round(- (math.log( 1 - %s - (0.2 * (%s ** 2)))), 5)' % (D, D))
+        try:
+            kimura = round(- (math.log( 1 - D - (0.2 * (D ** 2)))), 5)
+        except:
+            kimura = 999
         return(kimura)
     else:
         sys.exit('%s or %s not found in %s!' % (id_1, id_2, aln_file))
@@ -105,5 +121,7 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
         if len(l) > 1:
             gene_id = l.split()[0]
             if gene_id in aln_score:
-                aln_score[gene_id] = aln_score[gene_id] + int(l.split()[3])
+                if re.search('\(\s+\d+\)', l):
+                    l = re.sub(r'\(\s+','(', l)
+                aln_score[gene_id] = aln_score[gene_id] + int(l.split()[2])
     return(aln_score)

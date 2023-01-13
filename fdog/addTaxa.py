@@ -24,7 +24,6 @@ import os
 import argparse
 from pathlib import Path
 from Bio import SeqIO
-import subprocess
 import multiprocessing as mp
 from tqdm import tqdm
 from ete3 import NCBITaxa
@@ -57,16 +56,11 @@ def parse_map_file(mapping_file, folIn):
                 tax_name = tmp[2].strip()
             except:
                 tax_name = ''
-                # tax_name = tree_fn.check_tax_id(tax_id)
-                # tax_name = tree_fn.parse_ncbi_name(ncbi_name)
             try:
                 ver = tmp[3].strip()
             except:
-                ver = datetime.today().strftime('%y%m%d') #1
-            # print(tax_name+"@"+str(tax_id)+"@"+str(ver))
-            # spec_name = generate_spec_name(tax_id, ver)
+                ver = datetime.today().strftime('%y%m%d')
             spec_name = add_taxon_fn.generate_spec_name(tax_id, tax_name, ver)
-            # name_dict[file_name] = (tax_name, str(tax_id), str(ver))
             name_dict[file_in] = spec_name
     return(name_dict)
 

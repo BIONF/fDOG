@@ -18,6 +18,9 @@
 import sys
 import os
 from pathlib import Path
+import ssl
+import urllib.request
+import time
 
 
 ##### GENERAL FUNCTIONS FOR FILES, FOLDERS AND GENERAL VARIABLES #####
@@ -48,6 +51,46 @@ def read_dir(dir):
         if os.path.isdir('%s/%s' % (dir, i)):
             out_dirs.append(i)
     return(out_dirs)
+
+
+def download_progress(count, block_size, total_size):
+    global start_time
+    if count == 0:
+        start_time = time.time()
+        return
+    duration = time.time() - start_time
+    progress_size = int(count * block_size)
+    speed = int(progress_size / (1024 * duration))
+    percent = int(count * block_size * 100 / total_size)
+    if percent > 100:
+        percent = 100
+    sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
+                     (percent, progress_size / (1024 * 1024), speed, duration))
+    sys.stdout.flush()
+
+
+def download_file(url, file):
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    download_file = urllib.request.URLopener(context=ctx)
+    print('Downloading %s' % (url + '/' + file))
+    urllib.request.urlretrieve(url + '/' + file, file, download_progress)
+    print(' ... done!')
+
+
+def count_line(file, pattern, contain):
+    """ Count lines in file that contain (or not) a pattern """
+    nline = 0
+    with open(file, 'r') as f:
+        for line in f:
+            if contain:
+                if pattern in line:
+                    nline = nline + 1
+            else:
+                if not pattern in line:
+                    nline = nline + 1
+    return(nline)
 
 
 def get_ids_from_folder(folder, type):
@@ -93,3 +136,12 @@ def remove_dup_in_dict(dictionary):
     res = {val : key.split('_') for key, val in tmp_dict.items()}
     res = {key : val for key, val in res.items() if len(val[0]) > 0}
     return(res)
+
+
+def join_2lists(first_list, second_list):
+    """ Join 2 lists """
+    in_first = set(first_list)
+    in_second = set(second_list)
+    in_second_but_not_in_first = in_second - in_first
+    out = first_list + list(in_second_but_not_in_first)
+    return(out)

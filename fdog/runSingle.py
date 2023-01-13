@@ -187,12 +187,21 @@ def main():
         cpus = os.cpu_count()
 
 
+    begin = time.time()
     ##### Check and group parameters
+    if seqFile == 'infile.fa':
+        fdogPath = os.path.realpath(__file__).replace('/runSingle.py','')
+        seqFile = '%s/data/infile.fa' % fdogPath
+
     (seqFile, hmmpath, blastpath, searchpath, weightpath) = prepare_fn.check_input(
                     [seqFile, refspec, outpath, hmmpath,
                     blastpath, searchpath, weightpath, pathFile])
     pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
 
+    if not fasOff:
+        check_fas = fas_fn.check_fas_executable()
+        if check_fas == 0:
+            sys.exit('ERROR: FAS is not executable! You still can use fDOG with --fasOff!')
 
     ##### Identify seed ID from refspec genome
     seed_id = prepare_fn.identify_seed_id(seqFile, refspec, blastpath, debug)
@@ -262,7 +271,11 @@ def main():
                 fas_fn.calc_fas_multi(finalOutfile, outpath, weightpath, cpus)
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
+        else:
+            output_fn.hamstr_2_profile(finalOutfile)
 
+        end = time.time()
+        print('==> fdog.run finished in ' + '{:5.3f}s'.format(end - begin))
 
 if __name__ == '__main__':
     main()

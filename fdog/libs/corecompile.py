@@ -82,6 +82,7 @@ def initiate_core_files(
         for fa in input_seed:
             initial_core_fa.write('>%s\n%s\n' % (seed_id_mod, str(fa.seq)))
 
+    seed_json = ''
     if not fasOff == True:
         seed_json = fas_fn.get_anno_fas(
             seqName, refspec, seed_id, str(fa.seq), hmmpath, weightpath)
@@ -378,6 +379,9 @@ def run_compile_core(args):
             pathArgs, orthoCoreArgs, otherCoreArgs, debug) = args
     (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherCoreArgs[-6:]
+
+    fdogPath = os.path.realpath(__file__).replace('/libs/corecompile.py','')
+    align_fn.check_fasta36_executable(fdogPath)
 
     coreHmmfile = '%s/%s/hmm_dir/%s.hmm' % (hmmpath, seqName, seqName)
     coreHmmfile = os.path.abspath(coreHmmfile)
