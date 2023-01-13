@@ -60,11 +60,11 @@ def get_data_path(fdogPath):
 def install_fas(woFAS):
     """ Install greedyFAS """
     if not woFAS:
-        print('=> greedyFAS (https://github.com/BIONF/FAS)')
         ### check if fas already installed
         try:
             fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
         except:
+            print('=> greedyFAS (https://github.com/BIONF/FAS)')
             install_fas_cmd = 'pip install greedyFAS'
             try:
                 subprocess.check_output([install_fas_cmd], shell = True, stderr = subprocess.STDOUT)
@@ -76,10 +76,10 @@ def install_fas(woFAS):
 
 def install_fasta36(fdogPath, cwd):
     """ Install FASTA36 from source """
-    print('=> FASTA36 (https://github.com/wrpearson/fasta36)')
     try:
         subprocess.check_output(['which fasta36'], shell = True, stderr = subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
+        print('=> FASTA36 (https://github.com/wrpearson/fasta36)')
         fasta36v = '36.3.8h_04-May-2020'
         fasta36url = 'https://github.com/wrpearson/fasta36/archive/refs/tags'
         fasta36file = 'v%s.tar.gz' % fasta36v
@@ -214,20 +214,21 @@ def main():
     print('*** Installing dependencies...')
     if not woFAS:
         install_fas(woFAS)
-    if check_conda_env() == True:
-        req_file = '%s/data/conda_requirements.yml' % fdogPath
-        conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
-        print(conda_install_cmd)
-        try:
+    missing_tools = check_dependencies(fdogPath)
+    if len(missing_tools) > 0:
+        if check_conda_env() == True:
+            req_file = '%s/data/conda_requirements.yml' % fdogPath
+            print('=> Dependencies in %s' % req_file)
+            conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
             subprocess.call([conda_install_cmd], shell = True, check = True)
-        except:
-            sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
+            # try:
+            #     subprocess.call([conda_install_cmd], shell = True, check = True)
+            # except:
+            #     sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
+        else:
+            sys.exit('\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
     else:
-        missing_tools = check_dependencies(fdogPath)
-        print(len(missing_tools))
-        if len(missing_tools) > 0:
-            install_cmd = 'sudo apt-get install -y -qq <tool>'
-            sys.exit('\033[91mERROR: Please install these tools before using fDOG:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
+        print('=> Dependencies in %s/data/dependencies.txt already installed!' % fdogPath)
     install_fasta36(fdogPath, os.getcwd())
 
     ### download pre-calculated data
