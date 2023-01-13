@@ -42,10 +42,10 @@ jobs:
         pip install .
         fdog.setup -d /home/runner/work/fDOG/fDOG/dt
         fdog.showTaxa
-        fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasoff
+        fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasOff
         mkdir seeds
         file='/home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa'; for i in $(grep ">" $file | head); do id=$(echo $i | sed 's/>//'); grep -A1 $i $file > seeds/$id.fa; done
-        fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasoff
+        fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasOff
         head /home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
         fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
         ls
