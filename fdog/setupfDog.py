@@ -31,12 +31,22 @@ import fdog.libs.fas as fas_fn
 import fdog.libs.alignment as align_fn
 
 
+def check_conda_env():
+    """ Return if a conda env is currently using """
+    if 'CONDA_DEFAULT_ENV' in os.environ:
+        if not os.environ['CONDA_DEFAULT_ENV'] == 'base':
+            return(True)
+    return(False)
+
+
 def get_source_path():
+    """ Get path of installed fDOG library """
     fdogPath = os.path.realpath(__file__).replace('/setupfDog.py','')
     return(fdogPath)
 
 
 def get_data_path(fdogPath):
+    """ Get path of fDOG data """
     pathconfigFile = fdogPath + '/bin/pathconfig.txt'
     if not os.path.exists(pathconfigFile):
         sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
@@ -48,6 +58,7 @@ def get_data_path(fdogPath):
 
 
 def install_fas(woFAS):
+    """ Install greedyFAS """
     if not woFAS:
         print('=> greedyFAS (https://github.com/BIONF/FAS)')
         ### check if fas already installed
@@ -64,6 +75,7 @@ def install_fas(woFAS):
 
 
 def install_fasta36(fdogPath, cwd):
+    """ Install FASTA36 from source """
     print('=> FASTA36 (https://github.com/wrpearson/fasta36)')
     try:
         subprocess.check_output(['which fasta36'], shell = True, stderr = subprocess.STDOUT)
@@ -100,7 +112,27 @@ def install_fasta36(fdogPath, cwd):
             print('FASTA36 found at %s' % fasta36_path)
 
 
+def check_dependencies(fdogPath):
+    """ Check for missing dependencies
+    Dependencies are specified in fdog/data/dependencies.txt file
+    """
+    missing = []
+    dependencies = '%s/data/dependencies.txt' % fdogPath
+    for tool in general_fn.read_file(dependencies):
+        function = tool
+        if tool == 'hmmer':
+            function = 'hmmsearch'
+        if tool == 'ncbi-blast+':
+            function = 'blastp'
+        try:
+            subprocess.check_output(['which %s' % function], shell = True, stderr = subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            missing.append(tool)
+    return(tool)
+
+
 def download_data(dataPath, force):
+    """ Downloade pre-calculated fDOG data """
     data_fdog_file = "data_HaMStR-2019c.tar.gz"
     checksum_data = "1748371655 621731824 $data_fdog_file"
     Path('%s/genome_dir' % dataPath).mkdir(parents = True, exist_ok = True)
@@ -182,7 +214,19 @@ def main():
     print('*** Installing dependencies...')
     if not woFAS:
         install_fas(woFAS)
+    if check_conda_env() == True:
+        req_file = '%s/data/conda_requirements.yml' % fdogPath
+        conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
+        try:
+            subprocess.call([conda_install_cmd], shell = True, check = True)
+        except:
+            sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
+    else:
+        missing_tools = check_dependencies(fdogPath)
+        if len(missing_tools) > 0:
+            sys.exit('\033[91mERROR: Please install these tools before using fDOG\n%s!\033[0m' % ', '.join(missing_tools))
     install_fasta36(fdogPath, os.getcwd())
+
 
     ### download pre-calculated data
     print('*** Downloading precalculated data...')
