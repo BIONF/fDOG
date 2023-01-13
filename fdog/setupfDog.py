@@ -226,6 +226,7 @@ def main():
             # except:
             #     sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
         else:
+            install_cmd = 'sudo apt-get install -y -qq <tool>'
             sys.exit('\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
     else:
         print('=> Dependencies in %s/data/dependencies.txt already installed!' % fdogPath)
