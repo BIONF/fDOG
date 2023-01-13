@@ -45,7 +45,7 @@ jobs:
         fdog.showTaxa
         fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasOff
         mkdir seeds
-        file='/home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa'; for i in $(grep ">" $file | head | tail -n 2); do id=$(echo $i | sed 's/>//'); grep -A1 $i $file > seeds/$id.fa; done
+        path=$(fdog.setup -d ./ --getSourcepath); a="1 2 3"; for i in ${a[@]}; do cp $path/data/infile.fa seeds/$i.fa; done
         fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasOff
         head /home/runner/work/fDOG/fDOG/dt/genome_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
         fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
