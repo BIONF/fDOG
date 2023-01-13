@@ -127,13 +127,6 @@ def check_dependencies(fdogPath):
         try:
             subprocess.check_output(['which %s' % function], shell = True, stderr = subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            if sudo:
-                install_cmd = 'sudo apt-get install -y -qq %s' % tool
-                try:
-                    subprocess.run(['install_cmd'], shell = True, check = True)
-                except subprocess.CalledProcessError as e:
-                    sys.exit('\033[91mERROR: Cannot install dependencies in %s!\033[0m' % dependencies)
-
             missing.append(tool)
     return(tool)
 
