@@ -208,7 +208,7 @@ def main():
 
     ### get ncbi taxonomy database for ete3
     print('*** Creating local NCBI taxonomy database...')
-    ncbi = NCBITaxa()
+    # ncbi = NCBITaxa()
 
     ### install dependencies
     print('*** Installing dependencies...')
@@ -217,32 +217,34 @@ def main():
     if check_conda_env() == True:
         req_file = '%s/data/conda_requirements.yml' % fdogPath
         conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
+        print(conda_install_cmd)
         try:
             subprocess.call([conda_install_cmd], shell = True, check = True)
         except:
             sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
     else:
         missing_tools = check_dependencies(fdogPath)
+        print(len(missing_tools))
         if len(missing_tools) > 0:
             install_cmd = 'sudo apt-get install -y -qq <tool>'
-            sys.exit('\033[91mERROR: Please install these tools before using fDOG\n%s\nUsing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
-    install_fasta36(fdogPath, os.getcwd())
-
-
-    ### download pre-calculated data
-    print('*** Downloading precalculated data...')
-    if force:
-        if os.path.exists(dataPath):
-            print('WARNING: %s will be deleted!' % dataPath)
-            shutil.rmtree(dataPath)
-    Path(dataPath).mkdir(parents = True, exist_ok = True)
-    download_data(dataPath, force)
-
-    ### create pathconfig file
-    if os.path.exists(pathconfig_file):
-        os.remove(pathconfig_file)
-    with open(pathconfig_file, 'w') as cf:
-        cf.write(dataPath)
+            sys.exit('\033[91mERROR: Please install these tools before using fDOG:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
+    # install_fasta36(fdogPath, os.getcwd())
+    #
+    #
+    # ### download pre-calculated data
+    # print('*** Downloading precalculated data...')
+    # if force:
+    #     if os.path.exists(dataPath):
+    #         print('WARNING: %s will be deleted!' % dataPath)
+    #         shutil.rmtree(dataPath)
+    # Path(dataPath).mkdir(parents = True, exist_ok = True)
+    # download_data(dataPath, force)
+    #
+    # ### create pathconfig file
+    # if os.path.exists(pathconfig_file):
+    #     os.remove(pathconfig_file)
+    # with open(pathconfig_file, 'w') as cf:
+    #     cf.write(dataPath)
 
     print('\033[96m==> FINISHED! fDOG data can be found at %s\033[0m' % dataPath)
     print('You can test fDOG using the following command:\n%s' % demo_cmd)
