@@ -95,13 +95,13 @@ def count_line(file, pattern, contain):
 
 
 def get_ids_from_folder(folder, type):
-    """ Get taxonomy IDs for from blast_dir, genome_dir or weight_dir
+    """ Get taxonomy IDs for from coreTaxa_dir, searchTaxa_dir or annotation_dir
     Return dictionary {taxID:<TaxName>@<TaxID>@Ver}
     """
     tax_ids = {}
 
     for name in read_dir(folder):
-        if type == 'weight_dir':
+        if type == 'annotation_dir':
             if not name.endswith('.json'):
                 continue
             else:

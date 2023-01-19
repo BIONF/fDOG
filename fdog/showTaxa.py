@@ -39,17 +39,17 @@ def getTaxa():
     with open(pathconfigFile) as f:
         dataPath = f.readline().strip()
 
-    # print taxa in blast_dir
+    # print taxa in coreTaxa_dir
     print('##### Data found at %s' % dataPath)
     print('\n##### Taxa in the core sets, which can be used as reference species #####\n')
-    for taxon in sorted(os.listdir(dataPath + '/blast_dir/')):
-        if os.path.isdir(dataPath + '/blast_dir/' + taxon):
+    for taxon in sorted(os.listdir(dataPath + '/coreTaxa_dir/')):
+        if os.path.isdir(dataPath + '/coreTaxa_dir/' + taxon):
             print('%s\t%s' % (taxon, getNcbiName(taxon)))
 
-    # print taxa in genome_dir
+    # print taxa in searchTaxa_dir
     print('\n##### Search taxa. in which you can search orthologs #####\n')
-    for taxon in sorted(os.listdir(dataPath + '/genome_dir/')):
-        if os.path.isdir(dataPath + '/genome_dir/' + taxon):
+    for taxon in sorted(os.listdir(dataPath + '/searchTaxa_dir/')):
+        if os.path.isdir(dataPath + '/searchTaxa_dir/' + taxon):
             print('%s\t%s' % (taxon, getNcbiName(taxon)))
 
 

@@ -73,14 +73,14 @@ def parse_blast_xml(blast_output):
 
 def make_blastdb(args):
     (specName, specFile, outPath, silent) = args
-    blastCmd = 'makeblastdb -dbtype prot -in %s -out %s/blast_dir/%s/%s' % (specFile, outPath, specName, specName)
+    blastCmd = 'makeblastdb -dbtype prot -in %s -out %s/coreTaxa_dir/%s/%s' % (specFile, outPath, specName, specName)
     if silent == True:
         blastCmd = blastCmd + '> /dev/null 2>&1'
     try:
         subprocess.call([blastCmd], shell = True)
     except:
         sys.exit('Problem with running %s' % blastCmd)
-    fileInGenome = "../../genome_dir/%s/%s.fa" % (specName, specName)
-    fileInBlast = "%s/blast_dir/%s/%s.fa" % (outPath, specName, specName)
+    fileInGenome = "../../searchTaxa_dir/%s/%s.fa" % (specName, specName)
+    fileInBlast = "%s/coreTaxa_dir/%s/%s.fa" % (outPath, specName, specName)
     if not os.path.exists(fileInBlast):
         os.symlink(fileInGenome, fileInBlast)

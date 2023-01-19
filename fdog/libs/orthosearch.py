@@ -30,7 +30,7 @@ import fdog.libs.output as output_fn
 
 ##### FUNCTION FOR HMM-BASED ORTHOLOG SEARCH (HaMStR) #####
 def hamstr(args):
-    (seqName, hmmpath, blastpath, searchpath, outpath,
+    (seqName, hmmpath, corepath, searchpath, outpath,
         refspec, seed_id, search_taxon,
         evalHmmer, hitLimit, scoreCutoff,
         evalBlast, lowComplexityFilter,
@@ -44,7 +44,7 @@ def hamstr(args):
     ortho_final = {}
     ### (00) Parse input files
     hmm_file = '%s/%s/hmm_dir/%s.hmm' % (hmmpath, seqName, seqName)
-    refspec_db = '%s/%s/%s' % (blastpath, refspec, refspec)
+    refspec_db = '%s/%s/%s' % (corepath, refspec, refspec)
     refspec_fa = '%s/%s/%s.fa' % (searchpath, refspec, refspec)
     search_fa = '%s/%s/%s.fa' % (searchpath, search_taxon, search_taxon)
     ### (000) Adapt parameters
@@ -187,7 +187,7 @@ def run_hamstr(args):
     """ Perform ortholog search based on hamstr approach """
 
     (seqName, refspec, pathArgs, orthoArgs, otherArgs) = args
-    (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     (checkCoorthologsRefOff, rbh, rep, evalBlast, lowComplexityFilter,
                         evalHmmer, hitLimit, scoreCutoff, aligner) = orthoArgs
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
@@ -212,7 +212,7 @@ def run_hamstr(args):
                     os.path.abspath(
                         '%s/%s/%s.fa' % (searchpath,search_taxon,search_taxon))):
                 hamstr_jobs.append([
-                    seqName, hmmpath, blastpath, searchpath, outpath,
+                    seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
                     evalHmmer, hitLimit, scoreCutoff,
                     evalBlast, lowComplexityFilter,
@@ -225,14 +225,14 @@ def run_hamstr(args):
             print(
                 'WARNING: %s taxa cannot be found at %s\n%s'
                 % (len(ignored_taxa), searchpath, ignored_taxa))
-    ### get search taxa from searchpath (genome_dir)
+    ### get search taxa from searchpath (searchTaxa_dir)
     else:
         for search_taxon in general_fn.read_dir(searchpath):
             if os.path.exists(
                     os.path.abspath(
                         '%s/%s/%s.fa' % (searchpath,search_taxon,search_taxon))):
                 hamstr_jobs.append([
-                    seqName, hmmpath, blastpath, searchpath, outpath,
+                    seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
                     evalHmmer, hitLimit, scoreCutoff,
                     evalBlast, lowComplexityFilter,

@@ -34,9 +34,9 @@ import fdog.libs.orthosearch as ortho_fn
 
 ##### FUNCTIONS RELATED TO CORE COMPILATION #####
 
-def get_core_taxa_ids(coreTaxa, blastpath):
+def get_core_taxa_ids(coreTaxa, corepath):
     """ Get taxonomy IDs for core taxa
-    Either from blast_dir, or from user input list (--coreTaxa)
+    Either from coreTaxa_dir, or from user input list (--coreTaxa)
     Return dictionary {taxID:<TaxName>@<TaxID>@Ver}
     """
     tax_ids = {}
@@ -50,7 +50,7 @@ def get_core_taxa_ids(coreTaxa, blastpath):
         for core_taxon in core_taxa:
             if not os.path.exists(
                     os.path.abspath(
-                        '%s/%s/%s.phr' % (blastpath,core_taxon,core_taxon))):
+                        '%s/%s/%s.phr' % (corepath,core_taxon,core_taxon))):
                 ignored_taxa.append(core_taxon)
             else:
                 id = core_taxon.split('@')[1]
@@ -59,14 +59,14 @@ def get_core_taxa_ids(coreTaxa, blastpath):
         if len(ignored_taxa) > 0:
             print(
                 'WARNING: %s taxa cannot be found at %s\n%s'
-                % (len(ignored_taxa), blastpath, ignored_taxa))
+                % (len(ignored_taxa), corepath, ignored_taxa))
     else:
-        tax_ids = general_fn.get_ids_from_folder(blastpath, 'blast_dir')
+        tax_ids = general_fn.get_ids_from_folder(corepath, 'coreTaxa_dir')
     return(tax_ids)
 
 
 def initiate_core_files(
-        seqFile, seqName, refspec, seed_id, hmmpath, weightpath, aligner, fasOff):
+        seqFile, seqName, refspec, seed_id, hmmpath, annopath, aligner, fasOff):
     hmm_dir = '%s/%s/hmm_dir' % (hmmpath, seqName)
     Path(hmm_dir).mkdir(parents = True, exist_ok = True)
     aln_file = '%s/%s/hmm_dir/%s.aln' % (hmmpath, seqName, seqName)
@@ -85,7 +85,7 @@ def initiate_core_files(
     seed_json = ''
     if not fasOff == True:
         seed_json = fas_fn.get_anno_fas(
-            seqName, refspec, seed_id, str(fa.seq), hmmpath, weightpath)
+            seqName, refspec, seed_id, str(fa.seq), hmmpath, annopath)
     return(aln_file, fa_file, hmm_file, seed_json)
 
 
@@ -116,7 +116,7 @@ def validate_candidate(args):
     (cand_score, cand_seq, curr_cand, curr_aln_score,
                         curr_candi_score, fas_dict) = variable_args
     (cand_taxid, ortho_id, ortho_seq, next_node, first_cand) = cand_args
-    (fasOff, seqName, seed_json, spec, seq_id, seq, hmmpath, weightpath) = calc_fas_args
+    (fasOff, seqName, seed_json, spec, seq_id, seq, hmmpath, annopath) = calc_fas_args
 
     if first_cand == True:
         threshold = 0
@@ -158,7 +158,7 @@ def compile_core(args):
     """ Core compilation """
     (seqFile, seqName, refspec, seed_id, coreArgs, pathArgs, orthoArgs, otherArgs, debug) = args
     (minDist, maxDist, coreSize, coreTaxa, distDeviation, alnStrategy, fasOff) = coreArgs
-    (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherArgs
     aligner = orthoArgs[-1]
     otherArgs.insert(0, 'NA')
@@ -173,14 +173,14 @@ def compile_core(args):
     output_fn.print_debug(debugCore, 'Min & Max-rank', '%s\t%s' % (min_rank, max_rank))
 
     ### create taxonomy tree from list of core tax
-    tax_ids = get_core_taxa_ids(coreTaxa, blastpath)
+    tax_ids = get_core_taxa_ids(coreTaxa, corepath)
     tree = ncbi.get_topology(tax_ids.keys(), intermediate_nodes = True)
     if debugCore:
         print(tree)
 
     ### INITIATE FA, ALN, HMM [and anno FAS] FILE FOR SEED
     (aln_file, fa_file, hmm_file, seed_json) = initiate_core_files(
-        seqFile, seqName, refspec, seed_id, hmmpath, weightpath, aligner, fasOff)
+        seqFile, seqName, refspec, seed_id, hmmpath, annopath, aligner, fasOff)
 
     ### get list of taxa within min and max rank of refspec
     node_dict = tree_fn.get_leaves_dict(
@@ -300,7 +300,7 @@ def compile_core(args):
                                 first_cand = False
                             calc_fas_args = (fasOff, seqName, seed_json,
                                 tax_ids[leaf], ortho[0].split('|')[-2],
-                                ortho[1] ,hmmpath, weightpath)
+                                ortho[1] ,hmmpath, annopath)
                             cand_args = (leaf, ortho[0][0:len(ortho[0])-2],
                                 ortho[1], next_node, first_cand)
                             variable_args = (cand_score, cand_seq,
@@ -377,7 +377,7 @@ def compile_core(args):
 def run_compile_core(args):
     (seqFile, seqName, refspec, seed_id, reuseCore, forceCore, coreArgs,
             pathArgs, orthoCoreArgs, otherCoreArgs, debug) = args
-    (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherCoreArgs[-6:]
 
     fdogPath = os.path.realpath(__file__).replace('/libs/corecompile.py','')

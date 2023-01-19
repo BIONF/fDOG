@@ -48,14 +48,14 @@ def get_tool_fas_path():
         sys.exit('ERROR: fas.setup cannot be called!')
 
 
-def get_anno_fas(seqName, spec, seq_id, seq, hmmpath, weightpath):
-    """ Get annotation for a seq_id from existing json file in weightpath """
+def get_anno_fas(seqName, spec, seq_id, seq, hmmpath, annopath):
+    """ Get annotation for a seq_id from existing json file in annopath """
     out_json = '%s/%s/%s_%s.json' % (hmmpath, seqName, spec, seq_id)
     if not os.path.exists(out_json):
         tmp_seed_fa = '%s/%s/%s_%s.fa' % (hmmpath, seqName, seqName, spec)
         with open(tmp_seed_fa, 'w') as tmp_seed_fa_out:
             tmp_seed_fa_out.write('>%s\n%s\n' % (seq_id, seq))
-        spec_anno = '%s/%s.json' % (weightpath, spec)
+        spec_anno = '%s/%s.json' % (annopath, spec)
         try:
             anno_dict = annoFas.extractAnno(tmp_seed_fa, spec_anno)
             anno_dict['clan'] = annoFas.getClans(
@@ -97,21 +97,21 @@ def calc_fas_cand(args):
     """ Calculate FAS score for a ortholog candidate against seed
     Ortholog candidate defined by spec, seq_id and seq
     """
-    (fasOff, seqName, seed_json, spec, seq_id, seq, hmmpath, weightpath) = args
+    (fasOff, seqName, seed_json, spec, seq_id, seq, hmmpath, annopath) = args
     if not fasOff == True:
-        query_json = get_anno_fas(seqName, spec, seq_id, seq, hmmpath, weightpath)
+        query_json = get_anno_fas(seqName, spec, seq_id, seq, hmmpath, annopath)
         fas_score = calc_pairwise_fas(seed_json, query_json, seqName, hmmpath)
     else:
         fas_score = 1
     return(fas_score)
 
 
-def calc_fas_multi (input_fa, outpath, weightpath, cpus):
+def calc_fas_multi (input_fa, outpath, annopath, cpus):
     """ Calculate pairwise FAS scores for all orthologs vs seed protein
     input_fa is the default <seqName>.extended.fa output file of fDOG
     Output will be <seqName>_forward.
     """
-    fasCmd = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (input_fa, weightpath, cpus)
+    fasCmd = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (input_fa, annopath, cpus)
     try:
         subprocess.call([fasCmd], shell = True)
         if os.path.exists(outpath + '/tmp'):

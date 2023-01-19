@@ -62,12 +62,12 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath):
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
     otherCoreArgs_bkp = otherCoreArgs
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
-    (outpath, hmmpath, blastpath, searchpath, weightpath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     for seed in seeds:
         seqFile = ('%s/%s' % (inFol, seed))
         seqName = get_seed_name(seed)
         if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
-            seed_id = prepare_fn.identify_seed_id(seqFile, refspec, blastpath, debug)
+            seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug)
             core_compilation_jobs.append([seqFile, seqName, refspec, seed_id,
                         reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
                         otherCoreArgs, debug])
@@ -135,9 +135,9 @@ def main():
     optional_paths = parser.add_argument_group('Non-default directory options')
     optional_paths.add_argument('--outpath', help='Output directory', action='store', default='')
     optional_paths.add_argument('--hmmpath', help='Path for the core ortholog directory', action='store', default='')
-    optional_paths.add_argument('--blastpath', help='Path for the blastDB directory', action='store', default='')
+    optional_paths.add_argument('--corepath', help='Path for the core taxa directory', action='store', default='')
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
-    optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
+    optional_paths.add_argument('--annopath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
     optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     core_options = parser.add_argument_group('Core compilation options')
@@ -216,9 +216,9 @@ def main():
     # path arguments
     outpath = os.path.abspath(args.outpath)
     hmmpath = args.hmmpath
-    blastpath = args.blastpath
+    corepath = args.corepath
     searchpath = args.searchpath
-    weightpath = args.weightpath
+    annopath = args.annopath
     pathFile = args.pathFile
 
     # core compilation arguments
@@ -279,10 +279,10 @@ def main():
 
     begin = time.time()
     ##### Check and group parameters
-    (inFol, hmmpath, blastpath, searchpath, weightpath) = prepare_fn.check_input(
+    (inFol, hmmpath, corepath, searchpath, annopath) = prepare_fn.check_input(
                     [inFol, refspec, outpath, hmmpath,
-                    blastpath, searchpath, weightpath, pathFile])
-    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
+                    corepath, searchpath, annopath, pathFile])
+    pathArgs = [outpath, hmmpath, corepath, searchpath, annopath]
 
     if not fasOff:
         check_fas = fas_fn.check_fas_executable()
@@ -335,7 +335,7 @@ def main():
                     exit('ERROR: Taxon group "%s" invalid!' % group)
                 ### create taxonomy tree from list of search taxa
                 searchTaxa = []
-                tax_ids = core_fn.get_core_taxa_ids(coreTaxa, blastpath)
+                tax_ids = core_fn.get_core_taxa_ids(coreTaxa, corepath)
 
                 for tax_id in tax_ids.keys():
                     check = tree_fn.check_taxon_group(group_id[group][0], tax_id, ncbi)
@@ -377,7 +377,7 @@ def main():
                 sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
             if os.path.exists(finalFa):
                 start = time.time()
-                fas_fn.calc_fas_multi(finalFa, outpath, weightpath, cpus)
+                fas_fn.calc_fas_multi(finalFa, outpath, annopath, cpus)
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
                 multiLog.write('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))

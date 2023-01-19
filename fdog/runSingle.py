@@ -47,9 +47,9 @@ def main():
     optional_paths = parser.add_argument_group('Non-default directory options')
     optional_paths.add_argument('--outpath', help='Output directory', action='store', default='')
     optional_paths.add_argument('--hmmpath', help='Path for the core ortholog directory', action='store', default='')
-    optional_paths.add_argument('--blastpath', help='Path for the blastDB directory', action='store', default='')
+    optional_paths.add_argument('--corepath', help='Path for the core taxa directory', action='store', default='')
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
-    optional_paths.add_argument('--weightpath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
+    optional_paths.add_argument('--annopath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
     optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     core_options = parser.add_argument_group('Core compilation options')
@@ -127,9 +127,9 @@ def main():
     # path arguments
     outpath = os.path.abspath(args.outpath)
     hmmpath = args.hmmpath
-    blastpath = args.blastpath
+    corepath = args.corepath
     searchpath = args.searchpath
-    weightpath = args.weightpath
+    annopath = args.annopath
     pathFile = args.pathFile
 
     # core compilation arguments
@@ -193,10 +193,10 @@ def main():
         fdogPath = os.path.realpath(__file__).replace('/runSingle.py','')
         seqFile = '%s/data/infile.fa' % fdogPath
 
-    (seqFile, hmmpath, blastpath, searchpath, weightpath) = prepare_fn.check_input(
+    (seqFile, hmmpath, corepath, searchpath, annopath) = prepare_fn.check_input(
                     [seqFile, refspec, outpath, hmmpath,
-                    blastpath, searchpath, weightpath, pathFile])
-    pathArgs = [outpath, hmmpath, blastpath, searchpath, weightpath]
+                    corepath, searchpath, annopath, pathFile])
+    pathArgs = [outpath, hmmpath, corepath, searchpath, annopath]
 
     if not fasOff:
         check_fas = fas_fn.check_fas_executable()
@@ -204,7 +204,7 @@ def main():
             sys.exit('ERROR: FAS is not executable! You still can use fDOG with --fasOff!')
 
     ##### Identify seed ID from refspec genome
-    seed_id = prepare_fn.identify_seed_id(seqFile, refspec, blastpath, debug)
+    seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug)
     print('Identified seed ID: %s' % seed_id)
 
 
@@ -239,7 +239,7 @@ def main():
                 exit('ERROR: Taxon group "%s" invalid!' % group)
             ### create taxonomy tree from list of search taxa
             searchTaxa = []
-            tax_ids = core_fn.get_core_taxa_ids(coreTaxa, blastpath)
+            tax_ids = core_fn.get_core_taxa_ids(coreTaxa, corepath)
 
             for tax_id in tax_ids.keys():
                 check = tree_fn.check_taxon_group(group_id[group][0], tax_id, ncbi)
@@ -268,7 +268,7 @@ def main():
                 sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
             if os.path.exists(finalOutfile):
                 start = time.time()
-                fas_fn.calc_fas_multi(finalOutfile, outpath, weightpath, cpus)
+                fas_fn.calc_fas_multi(finalOutfile, outpath, annopath, cpus)
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
         else:

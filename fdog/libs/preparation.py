@@ -29,8 +29,8 @@ import fdog.libs.output as output_fn
 ##### FUNCTIONS FOR DATA/INPUT PREPARATION #####
 
 def parsing_paths(args):
-    """ Getting path to hmm core set, blast_dir, genome_dir and weight_dir"""
-    (pathFile, outpath, hmmpath, blastpath, searchpath, weightpath) = args
+    """ Getting path to hmm core set, coreTaxa_dir, searchTaxa_dir and annotation_dir"""
+    (pathFile, outpath, hmmpath, corepath, searchpath, annopath) = args
     ### get fdog and data path
     data_path = ''
     fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py','')
@@ -55,41 +55,41 @@ def parsing_paths(args):
         hmmpath = outpath + '/core_orthologs'
         Path(hmmpath).mkdir(parents = True, exist_ok = True)
 
-    if blastpath == '':
-        blastpath = data_path + '/blast_dir'
+    if corepath == '':
+        corepath = data_path + '/coreTaxa_dir'
         if data_path == 'config':
             try:
-                blastpath = cfg['blastpath']
+                corepath = cfg['corepath']
             except:
-                sys.exit('blastpath not found in %s' % pathFile)
+                sys.exit('corepath not found in %s' % pathFile)
     if searchpath == '':
-        searchpath = data_path + '/genome_dir'
+        searchpath = data_path + '/searchTaxa_dir'
         if data_path == 'config':
             try:
                 searchpath = cfg['searchpath']
             except:
                 sys.exit('searchpath not found in %s' % pathFile)
-    if weightpath == '':
-        weightpath = data_path + '/weight_dir'
+    if annopath == '':
+        annopath = data_path + '/annotation_dir'
         if data_path == 'config':
             try:
-                weightpath = cfg['weightpath']
+                annopath = cfg['annopath']
             except:
-                sys.exit('weightpath not found in %s' % pathFile)
-    return(hmmpath, blastpath, searchpath, weightpath)
+                sys.exit('annopath not found in %s' % pathFile)
+    return(hmmpath, corepath, searchpath, annopath)
 
 
 def check_input(args):
-    (seqFile, refspec, outpath, hmmpath, blastpath,
-        searchpath, weightpath, pathFile) = args
+    (seqFile, refspec, outpath, hmmpath, corepath,
+        searchpath, annopath, pathFile) = args
     fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py','')
     # create output directory
     Path(outpath).mkdir(parents = True, exist_ok = True)
     Path(hmmpath).mkdir(parents = True, exist_ok = True)
     # check path existing
-    hmmpath, blastpath, searchpath, weightpath = parsing_paths(
-        [pathFile, outpath, hmmpath, blastpath, searchpath, weightpath])
-    for path in [hmmpath, blastpath, searchpath, weightpath]:
+    hmmpath, corepath, searchpath, annopath = parsing_paths(
+        [pathFile, outpath, hmmpath, corepath, searchpath, annopath])
+    for path in [hmmpath, corepath, searchpath, annopath]:
         general_fn.check_file_exist(path)
     # check for seqFile
     if not os.path.exists(os.path.abspath(seqFile)):
@@ -102,13 +102,13 @@ def check_input(args):
     else:
         seqFile = os.path.abspath(seqFile)
     # check refspec
-    if not os.path.exists(os.path.abspath(blastpath+'/'+refspec)):
-        exit('Reference taxon %s not found in %s' % (refspec, blastpath))
-    return (seqFile, hmmpath, blastpath, searchpath, weightpath)
+    if not os.path.exists(os.path.abspath(corepath+'/'+refspec)):
+        exit('Reference taxon %s not found in %s' % (refspec, corepath))
+    return (seqFile, hmmpath, corepath, searchpath, annopath)
 
 
-def identify_seed_id(seqFile, refspec, blastpath, debug):
-    refspec_db = '%s/%s/%s' % (blastpath, refspec, refspec)
+def identify_seed_id(seqFile, refspec, corepath, debug):
+    refspec_db = '%s/%s/%s' % (corepath, refspec, refspec)
     # first check if input seed ID existiert in refspec genome
     refspec_fa = fasta_fn.read_fasta('%s.fa' % refspec_db)
     seed_fa = SeqIO.parse(open(seqFile),'fasta')

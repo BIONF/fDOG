@@ -135,12 +135,10 @@ def download_data(dataPath, force):
     """ Downloade pre-calculated fDOG data """
     data_fdog_file = "data_HaMStR-2019c.tar.gz"
     checksum_data = "1748371655 621731824 $data_fdog_file"
-    Path('%s/genome_dir' % dataPath).mkdir(parents = True, exist_ok = True)
-    genome_path = '%s/genome_dir' % dataPath
-    blast_path = '%s/genome_dir' % dataPath
-    weight_path = '%s/genome_dir' % dataPath
-    for i in [genome_path, blast_path, weight_path]:
-        general_fn.check_file_exist(i)
+
+    genome_path = '%s/searchTaxa_dir' % dataPath
+    Path(genome_path).mkdir(parents = True, exist_ok = True)
+
     if len(general_fn.read_dir(genome_path)) < 1 or force:
         data_url = 'https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo'
         if os.path.exists(data_fdog_file) and force:
@@ -151,7 +149,11 @@ def download_data(dataPath, force):
             shutil.unpack_archive(data_fdog_file, dataPath, 'gztar')
         except:
             sys.exit('\033[91mERROR: Cannot extract %s to %s!\033[0m' % (data_fdog_file, dataPath))
-        check_cmd = 'fdog.checkData -g %s/genome_dir -b %s/blast_dir -w %s/weight_dir' % (dataPath, dataPath, dataPath)
+        if 'genome_dir' in general_fn.read_dir(dataPath):
+            os.rename('%s/genome_dir' % dataPath, '%s/searchTaxa_dir' % dataPath)
+            os.rename('%s/blast_dir' % dataPath, '%s/coreTaxa_dir' % dataPath)
+            os.rename('%s/weight_dir' % dataPath, '%s/annotation_dir' % dataPath)
+        check_cmd = 'fdog.checkData -s %s/searchTaxa_dir -c %s/coreTaxa_dir -a %s/annotation_dir --reblast' % (dataPath, dataPath, dataPath)
         try:
             print('Checking downloaded data...')
             subprocess.run([check_cmd], stdout = subprocess.DEVNULL, check = True, shell = True)

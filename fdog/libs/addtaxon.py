@@ -42,14 +42,14 @@ def check_conflict_opts(replace, delete):
 
 
 def create_folders(outPath, spec_name, coreTaxa, noAnno):
-    """ Create genome_dir, blast_dir and weight_dir in output folder """
-    Path(outPath + '/genome_dir').mkdir(parents = True, exist_ok = True)
-    genome_path = outPath + '/genome_dir/' + spec_name
+    """ Create searchTaxa_dir, coreTaxa_dir and annotation_dir in output folder """
+    Path(outPath + '/searchTaxa_dir').mkdir(parents = True, exist_ok = True)
+    genome_path = outPath + '/searchTaxa_dir/' + spec_name
     Path(genome_path).mkdir(parents = True, exist_ok = True)
     if coreTaxa:
-        Path(outPath + '/blast_dir').mkdir(parents = True, exist_ok = True)
+        Path(outPath + '/coreTaxa_dir').mkdir(parents = True, exist_ok = True)
     if not noAnno:
-        Path(outPath + '/weight_dir').mkdir(parents = True, exist_ok = True)
+        Path(outPath + '/annotation_dir').mkdir(parents = True, exist_ok = True)
     return(genome_path)
 
 
@@ -61,7 +61,7 @@ def generate_spec_name(tax_id, name, ver):
 
 
 def create_genome(args):
-    """ Create fa and fai in genome_dir """
+    """ Create fa and fai in searchTaxa_dir """
     (faIn, genome_path, spec_name, force, replace, delete) = args
     ### load fasta seq
     in_seq = SeqIO.to_dict((SeqIO.parse(open(faIn), 'fasta')))
@@ -137,12 +137,12 @@ def create_genome(args):
 def create_blastdb(args):
     """ Create blastdb for a given fasta genome_file """
     (outPath, spec_name, genome_file, force, silent) = args
-    blast_path = '%s/blast_dir/%s' % (outPath, spec_name)
+    blast_path = '%s/coreTaxa_dir/%s' % (outPath, spec_name)
     if (not os.path.exists(os.path.abspath('%s/%s.phr' % (blast_path, spec_name)))) or force:
         blast_fn.make_blastdb([spec_name, genome_file, outPath, silent])
         ### make symlink to fasta files
-        fa_in_genome = "../../genome_dir/%s/%s.fa" % (spec_name, spec_name)
-        fai_in_genome = "../../genome_dir/%s/%s.fa.fai" % (spec_name, spec_name)
+        fa_in_genome = "../../searchTaxa_dir/%s/%s.fa" % (spec_name, spec_name)
+        fai_in_genome = "../../searchTaxa_dir/%s/%s.fa.fai" % (spec_name, spec_name)
         fa_in_blast = "%s/%s.fa" % (blast_path, spec_name)
         fai_in_blast = "%s/%s.fa.fai" % (blast_path, spec_name)
         if not os.path.exists(fa_in_blast):
@@ -155,7 +155,7 @@ def create_blastdb(args):
 
 def create_annoFile(outPath, genome_file, cpus, force):
     """ Create annotation json for a given genome_file """
-    annoCmd = 'fas.doAnno -i %s -o %s --cpus %s' % (genome_file, outPath+'/weight_dir', cpus)
+    annoCmd = 'fas.doAnno -i %s -o %s --cpus %s' % (genome_file, outPath+'/annotation_dir', cpus)
     if force:
         annoCmd = annoCmd + " --force"
     try:

@@ -4,10 +4,10 @@
 # Copyright (C) 2022 Vinh Tran
 #
 #  This script is used to prepare data for fdog.
-#  For each given genome FASTA file, It will create a folder within genome_dir
+#  For each given genome FASTA file, It will create a folder within searchTaxa_dir
 #  with the naming scheme of fdog ([Species acronym]@[NCBI ID]@[Proteome version]
-#  e.g HUMAN@9606@3), a annotation file in JSON format in weight_dir and
-#  a blast DB in blast_dir folder (optional).
+#  e.g HUMAN@9606@3), a annotation file in JSON format in annotation_dir and
+#  a blast DB in coreTaxa_dir folder (optional).
 #
 #  This script is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -43,7 +43,7 @@ def main():
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
     optional.add_argument('-n', '--name', help='Acronym name of input taxon', action='store', default='', type=str)
     optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default='', type=str)
-    optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in blast_dir folder)', action='store_true', default=False)
+    optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in coreTaxa_dir folder)', action='store_true', default=False)
     optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using fas.doAnno', action='store_true', default=False)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = available cores - 1', action='store', default=0, type=int)
     optional.add_argument('--replace', help='Replace special characters in sequences by "X"', action='store_true', default=False)
@@ -84,31 +84,31 @@ def main():
 
     ### remove old folder if force is set
     if force == True:
-        if os.path.exists(outPath + '/genome_dir/' + spec_name):
-            shutil.rmtree(outPath + '/genome_dir/' + spec_name)
-        if os.path.exists(outPath + '/blast_dir/' + spec_name):
-            shutil.rmtree(outPath + '/blast_dir/' + spec_name)
+        if os.path.exists(outPath + '/searchTaxa_dir/' + spec_name):
+            shutil.rmtree(outPath + '/searchTaxa_dir/' + spec_name)
+        if os.path.exists(outPath + '/coreTaxa_dir/' + spec_name):
+            shutil.rmtree(outPath + '/coreTaxa_dir/' + spec_name)
 
     ### initiate paths
     genome_path = add_taxon_fn.create_folders(outPath, spec_name, coreTaxa, noAnno)
 
-    ### create file in genome_dir
+    ### create file in searchTaxa_dir
     print('Parsing FASTA file...')
     genome_file = add_taxon_fn.create_genome([faIn, genome_path, spec_name, force, replace, delete])
-    out_msg = 'Output for %s can be found in %s within genome_dir'  % (spec_name, outPath)
+    out_msg = 'Output for %s can be found in %s within searchTaxa_dir'  % (spec_name, outPath)
 
     ### create blast db
     if coreTaxa:
         print('\nCreating Blast DB...')
         add_taxon_fn.create_blastdb([outPath, spec_name, genome_file, force, False])
-        out_msg = '%s, blast_dir' % out_msg
+        out_msg = '%s, coreTaxa_dir' % out_msg
 
     ### create annotation
     if not noAnno:
         add_taxon_fn.create_annoFile(outPath, genome_file, cpus, force)
-        if os.path.exists('%s/weight_dir/tmp' % outPath):
-            shutil.rmtree('%s/weight_dir/tmp' % outPath)
-        out_msg = '%s, weight_dir' % out_msg
+        if os.path.exists('%s/annotation_dir/tmp' % outPath):
+            shutil.rmtree('%s/annotation_dir/tmp' % outPath)
+        out_msg = '%s, annotation_dir' % out_msg
 
     print('\n==> %s' % out_msg)
 
