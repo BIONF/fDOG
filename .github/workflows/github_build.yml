@@ -48,7 +48,7 @@ jobs:
         mkdir seeds
         path=$(fdog.setup -d ./ --getSourcepath); a="1 2 3"; for i in ${a[@]}; do cp $path/data/infile.fa seeds/$i.fa; done
         fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasOff --searchTaxa PARTE@5888@3,THAPS@35128@3
-        head /home/runner/work/fDOG/fDOG/dt/search_taxa/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
+        head /home/runner/work/fDOG/fDOG/dt/searchTaxa_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
         fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
         ls
     - name: Deploy
