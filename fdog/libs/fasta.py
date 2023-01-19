@@ -62,3 +62,15 @@ def check_long_seq(fa_file):
         if len(fa.seq) > 12000:
             return(1)
     return(0)
+
+
+def remove_dup(fa_file):
+    """ Remove duplicated sequences (filter by headers) """
+    tmp = {}
+    fa_seq = SeqIO.parse(open(fa_file),'fasta')
+    for fa in fa_seq:
+        if not fa.id in tmp:
+            tmp[fa.id] = fa.seq
+    with open(fa_file, 'w') as out:
+        for id, seq in tmp.items():
+            out.write('>%s\n%s\n' % (id, seq))

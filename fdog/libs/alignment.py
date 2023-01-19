@@ -58,7 +58,7 @@ def do_align(aligner, fa_file):
         return(aln_seq)
     except:
         sys.exit(
-            'ERROR: Error doing alignment with %s for %s' % (aligner, fa_file))
+            'ERROR: Error doing alignment with %s for %s\n%s' % (aligner, fa_file, align_cline))
 
 
 def calc_Kimura_dist(aln_dict, id_1, id_2, debug):

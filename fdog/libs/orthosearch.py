@@ -114,6 +114,7 @@ def hamstr(args):
                                     best_blast_hit, refspec_seqs.fetch(best_blast_hit)
                                 )
                             )
+                        fasta_fn.remove_dup(aln_fa)
                         aln_seq = align_fn.do_align(aligner, aln_fa)
                         output_fn.print_debug(
                             debug, 'Alignment for checking co-ortholog ref', aln_seq)
