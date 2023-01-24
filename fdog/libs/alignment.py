@@ -75,7 +75,10 @@ def calc_Kimura_dist(aln_dict, id_1, id_2, debug):
                 if a == b:
                     matches +=1
                 total += 1
-        D = 1 - (matches/total)
+        if not total == 0:
+            D = 1 - (matches/total)
+        else:
+            D = 1
         output_fn.print_debug(
             debug, 'Kimura distance',
             'kimura = round(- (math.log( 1 - %s - (0.2 * (%s ** 2)))), 5)' % (D, D))

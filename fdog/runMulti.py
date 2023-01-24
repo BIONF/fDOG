@@ -60,7 +60,6 @@ def get_seed_name(seedFile):
 def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff):
     core_compilation_jobs = []
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
-    otherCoreArgs_bkp = otherCoreArgs
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     for seed in seeds:
