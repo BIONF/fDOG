@@ -21,6 +21,7 @@ import shutil
 from pathlib import Path
 from ete3 import NCBITaxa
 from Bio import SeqIO
+import time
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fasta as fasta_fn
@@ -380,6 +381,7 @@ def run_compile_core(args):
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherCoreArgs[-6:]
 
+    begin = time.time()
     fdogPath = os.path.realpath(__file__).replace('/libs/corecompile.py','')
     align_fn.check_fasta36_executable(fdogPath)
 
@@ -402,3 +404,5 @@ def run_compile_core(args):
     if compile_core_check == 1:
         compile_core([seqFile, seqName, refspec, seed_id, coreArgs, pathArgs,
                     orthoCoreArgs, otherCoreArgs[-6:], debug])
+    end = time.time()
+    return([seqName, '{:5.3f}s'.format(end - begin)])

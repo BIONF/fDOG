@@ -107,7 +107,7 @@ def check_input(args):
     return (seqFile, hmmpath, corepath, searchpath, annopath)
 
 
-def identify_seed_id(seqFile, refspec, corepath, debug):
+def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
     refspec_db = '%s/%s/%s' % (corepath, refspec, refspec)
     # first check if input seed ID existiert in refspec genome
     refspec_fa = fasta_fn.read_fasta('%s.fa' % refspec_db)
@@ -124,5 +124,8 @@ def identify_seed_id(seqFile, refspec, corepath, debug):
     for hit in blast_out['hits']:
         if blast_out['hits'][hit]['align_len'] == blast_out['query_len']:
             return(hit)
+        elif abs(int(blast_out['hits'][hit]['align_len']) - int(blast_out['query_len'])) < 10:
+            output_fn.print_stdout(silentOff, 'WARNING: Found seed sequence shorter than input!')
+            return(hit)
         else:
-            sys.exit('ERROR: Cannot find seed sequence in genome of reference species!')
+            sys.exit('ERROR: Cannot find seed sequence in genome of reference species for %s!' % blast_out['query'])

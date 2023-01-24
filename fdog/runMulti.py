@@ -57,7 +57,7 @@ def get_seed_name(seedFile):
     return(seqName)
 
 
-def compile_core(core_options, other_options, seeds, inFol, cpus, outpath):
+def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff):
     core_compilation_jobs = []
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
     otherCoreArgs_bkp = otherCoreArgs
@@ -67,28 +67,37 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath):
         seqFile = ('%s/%s' % (inFol, seed))
         seqName = get_seed_name(seed)
         if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
-            seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug)
+            seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
             core_compilation_jobs.append([seqFile, seqName, refspec, seed_id,
                         reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
                         otherCoreArgs, debug])
     if len(core_compilation_jobs) > 0:
         pool = mp.Pool(cpus)
-        coreOut = ''
+        core_runtime = []
         for _ in tqdm(pool.imap_unordered(core_fn.run_compile_core, core_compilation_jobs), total=len(core_compilation_jobs)):
-            pass
+            core_runtime.append(_)
         pool.close()
         pool.join()
+        out = []
+        for r in core_runtime:
+            out.append('\t'.join(r))
+        return(out)
 
 
 def search_ortholog(options, seeds, inFol, cpu, outpath):
     (orthoArgs, otherArgs, pathArgs, refspec) = options
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
+    ortho_runtime = []
     for seed in seeds:
+        begin = time.time()
         seqFile = [inFol + '/' + seed]
         seqName = get_seed_name(seed)
         if not os.path.exists('%s/%s.extended.fa' % (outpath, seqName)) or force == True:
             hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
             output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
+            end = time.time()
+            ortho_runtime.append('%s\t%s' % (seqName, '{:5.3f}s'.format(end - begin)))
+    return(ortho_runtime)
 
 
 def join_outputs(outpath, jobName, seeds, keep, silentOff):
@@ -310,11 +319,14 @@ def main():
         otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
         core_options = [coreArgs, orthoCoreArgs, otherCoreArgs]
         other_options = [refspec, reuseCore, forceCore, pathArgs, debug]
-        compile_core(core_options, other_options, seeds, inFol, cpus, outpath)
+        core_runtime = compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff)
         end = time.time()
         multi_core_time = '{:5.3f}'.format(end-start)
-        print('==> Ortholog search finished in %ss\n' % multi_core_time)
-        multiLog.write('==> Core compilation finished in %ss\n' % multi_core_time)
+        print('==> Core compilation finished in %ss\n' % multi_core_time)
+        if len(core_runtime) > 1:
+            multiLog.write('==> Core compilation finished in %ss\n%s\n' % (multi_core_time, '\n'.join(core_runtime)))
+        else:
+            multiLog.write('==> Core compilation finished in %ss\n' % multi_core_time)
     else:
         if not os.path.exists(hmmpath):
             sys.exit('--reuseCore was set, but no core orthologs found in %s! You could use --hmmpath to manually specify the core ortholog directory.' % outpath)
@@ -357,11 +369,11 @@ def main():
                         lowComplexityFilter, evalHmmer, hitLimit, scoreCutoff, aligner]
             otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
             ortho_options = [orthoArgs, otherArgs, pathArgs, refspec]
-            search_ortholog(ortho_options, seeds, inFol, cpus, outpath)
+            ortho_runtime = search_ortholog(ortho_options, seeds, inFol, cpus, outpath)
             end = time.time()
             multi_ortho_time = '{:5.3f}'.format(end-start)
             print('==> Ortholog search finished in %ss\n' % multi_ortho_time)
-            multiLog.write('==> Ortholog search finished in %ss\n' % multi_ortho_time)
+            multiLog.write('==> Ortholog search finished in %ss\n%s\n' % (multi_ortho_time, '\n'.join(ortho_runtime)))
             ### join output
             print('Joining single outputs...')
             start = time.time()

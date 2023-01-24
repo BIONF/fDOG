@@ -19,6 +19,7 @@ import os
 from Bio import SeqIO
 import multiprocessing as mp
 from tqdm import tqdm
+import time
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fasta as fasta_fn

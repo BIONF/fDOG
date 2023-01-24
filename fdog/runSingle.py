@@ -204,12 +204,12 @@ def main():
             sys.exit('ERROR: FAS is not executable! You still can use fDOG with --fasOff!')
 
     ##### Identify seed ID from refspec genome
-    seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug)
+    seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
     print('Identified seed ID: %s' % seed_id)
 
 
     ##### DO CORE COMPILATION
-    start = time.time()
+    # start = time.time()
     coreArgs = [minDist, maxDist, coreSize, coreTaxa, distDeviation,
                 alnStrategy, fasOff]
     orthoCoreArgs = [CorecheckCoorthologsOff, rbh, True, evalBlast,
@@ -217,10 +217,10 @@ def main():
                     scoreCutoff, aligner] # rep = True
     otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
     print('Compiling core set for %s' % seqName)
-    core_fn.run_compile_core([seqFile, seqName, refspec, seed_id, reuseCore,
+    core_runtime = core_fn.run_compile_core([seqFile, seqName, refspec, seed_id, reuseCore,
         forceCore, coreArgs, pathArgs, orthoCoreArgs, otherCoreArgs, debug])
-    end = time.time()
-    print('==> Core compilation finished in ' + '{:5.3f}s'.format(end - start))
+    # end = time.time()
+    print('==> Core compilation finished in %s' % core_runtime[1])
 
 
     ##### DO ORTHOLOG SEARCH USING CORE HMM (HAMSTR)
