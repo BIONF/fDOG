@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-# Copyright (C) 2020 Vinh Tran
+# Copyright (C) 2022 Vinh Tran
 #
 #  This script is used to merge all output files (.extended.fa, .phyloprofile,
 #  _forward.domains, _reverse.domains) in a given directory into one file each.
@@ -21,6 +21,7 @@ import os
 from os import listdir as ldir
 import argparse
 import yaml
+from pkg_resources import get_distribution
 
 def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
     settings = dict(
@@ -33,9 +34,10 @@ def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
     with open('%s.config.yml' % (out), 'w') as outfile:
         yaml.dump(settings, outfile, default_flow_style = False)
 
+
 def main():
-    version = '0.1.0'
-    parser = argparse.ArgumentParser(description='You are running fdog.mergeOutput version ' + str(version) + '.')
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     parser.add_argument('-i', '--input',
                         help='Input directory, where all single output (.extended.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
                         action='store', default='', required=True)
