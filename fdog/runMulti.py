@@ -62,6 +62,8 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silen
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    begin = time.time()
+    print('Preparing core compilation jobs...')
     for seed in seeds:
         seqFile = ('%s/%s' % (inFol, seed))
         seqName = get_seed_name(seed)
@@ -70,6 +72,8 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silen
             core_compilation_jobs.append([seqFile, seqName, refspec, seed_id,
                         reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
                         otherCoreArgs, debug])
+    end = time.time()
+    print('==> Preparing finished in %s\n' % '{:5.3f}s'.format(end - begin))
     if len(core_compilation_jobs) > 0:
         pool = mp.Pool(cpus)
         core_runtime = []
@@ -300,11 +304,12 @@ def main():
     ### START
     Path(outpath).mkdir(parents=True, exist_ok=True)
     multiLog = open(outpath + '/' + jobName + '_log.txt', "w")
-    fdogStart = time.time()
-    seeds = get_sorted_files(inFol)
+
     print('PID %s - Jobname %s'% (str(os.getpid()), jobName))
     multiLog.write('PID %s - Jobname %s\n'% (str(os.getpid()), jobName))
-
+    seeds = get_sorted_files(inFol)
+    end = time.time()
+    print('==> Sort seed files finished in ' + '{:5.3f}s'.format(end - begin))
 
     ##### DO CORE COMPILATION
     if reuseCore == False:
