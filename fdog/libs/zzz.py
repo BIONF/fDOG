@@ -22,6 +22,7 @@ import ssl
 import urllib.request
 import yaml
 import time
+import pickle
 
 
 ##### GENERAL FUNCTIONS FOR FILES, FOLDERS AND GENERAL VARIABLES #####
@@ -146,3 +147,15 @@ def join_2lists(first_list, second_list):
     in_second_but_not_in_first = in_second - in_first
     out = first_list + list(in_second_but_not_in_first)
     return(out)
+
+
+def save_pyobj(obj, out_file):
+    """ Save a python object to out_file """
+    with open(out_file, 'wb') as obj_out:
+        pickle.dump(obj, obj_out)
+
+
+def read_pyobj_file(in_file):
+    """ Read a python object from an in_file """
+    with open(in_file, 'rb') as obj_file:
+        return(pickle.load(obj_file))

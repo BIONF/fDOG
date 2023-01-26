@@ -57,23 +57,29 @@ def get_seed_name(seedFile):
     return(seqName)
 
 
-def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff):
+def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff, jobName):
     core_compilation_jobs = []
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     begin = time.time()
     print('Preparing core compilation jobs...')
-    for seed in seeds:
-        seqFile = ('%s/%s' % (inFol, seed))
-        seqName = get_seed_name(seed)
-        if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
-            seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
-            core_compilation_jobs.append([seqFile, seqName, refspec, seed_id,
-                        reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
-                        otherCoreArgs, debug])
+    core_job_file = '%s/%s_core_jobs.list' % (outpath, jobName)
+    if os.path.exists(core_job_file) and os.stat(core_job_file).st_size > 0:
+        print('... file contains jobs found (%s)' % core_job_file)
+        core_compilation_jobs = general_fn.read_pyobj_file(core_job_file)
+    else:
+        for seed in seeds:
+            seqFile = ('%s/%s' % (inFol, seed))
+            seqName = get_seed_name(seed)
+            if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
+                seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
+                core_compilation_jobs.append([seqFile, seqName, refspec, seed_id,
+                            reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
+                            otherCoreArgs, debug])
+        general_fn.save_pyobj(core_compilation_jobs, core_job_file)
     end = time.time()
-    print('==> Preparing finished in %s\n' % '{:5.3f}s'.format(end - begin))
+    print('==> %s jobs will be run. Preparing finished in %s' % (len(core_compilation_jobs), '{:5.3f}s'.format(end - begin)))
     if len(core_compilation_jobs) > 0:
         pool = mp.Pool(cpus)
         core_runtime = []
@@ -95,6 +101,7 @@ def search_ortholog(options, seeds, inFol, cpu, outpath):
         begin = time.time()
         seqFile = [inFol + '/' + seed]
         seqName = get_seed_name(seed)
+        print('... %s' % seqName)
         if not os.path.exists('%s/%s.extended.fa' % (outpath, seqName)) or force == True:
             hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
             output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
@@ -323,7 +330,7 @@ def main():
         otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
         core_options = [coreArgs, orthoCoreArgs, otherCoreArgs]
         other_options = [refspec, reuseCore, forceCore, pathArgs, debug]
-        core_runtime = compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff)
+        core_runtime = compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff, jobName)
         end = time.time()
         multi_core_time = '{:5.3f}'.format(end-start)
         print('==> Core compilation finished in %ss\n' % multi_core_time)
