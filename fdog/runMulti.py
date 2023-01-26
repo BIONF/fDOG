@@ -57,11 +57,26 @@ def get_seed_name(seedFile):
     return(seqName)
 
 
+def create_core_jobs(args):
+    (seed, core_options, other_options, inFol, outpath, silentOff) = args
+    (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
+    (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
+    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    seqFile = ('%s/%s' % (inFol, seed))
+    seqName = get_seed_name(seed)
+    if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
+        seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
+        return([seqFile, seqName, refspec, seed_id,
+                    reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
+                    otherCoreArgs, debug])
+
+
 def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff, jobName):
     core_compilation_jobs = []
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    pool = mp.Pool(cpus)
     begin = time.time()
     print('Preparing core compilation jobs...')
     core_job_file = '%s/%s_core_jobs.list' % (outpath, jobName)
@@ -69,19 +84,15 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silen
         print('... file contains jobs found (%s)' % core_job_file)
         core_compilation_jobs = general_fn.read_pyobj_file(core_job_file)
     else:
+        prepare_jobs = []
         for seed in seeds:
-            seqFile = ('%s/%s' % (inFol, seed))
-            seqName = get_seed_name(seed)
-            if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
-                seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
-                core_compilation_jobs.append([seqFile, seqName, refspec, seed_id,
-                            reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
-                            otherCoreArgs, debug])
+            prepare_jobs.append([seed, core_options, other_options, inFol, outpath, silentOff])
+        for _ in tqdm(pool.imap_unordered(create_core_jobs, prepare_jobs), total=len(prepare_jobs)):
+            core_compilation_jobs.append(_)
         general_fn.save_pyobj(core_compilation_jobs, core_job_file)
     end = time.time()
     print('==> %s jobs will be run. Preparing finished in %s' % (len(core_compilation_jobs), '{:5.3f}s'.format(end - begin)))
     if len(core_compilation_jobs) > 0:
-        pool = mp.Pool(cpus)
         core_runtime = []
         for _ in tqdm(pool.imap_unordered(core_fn.run_compile_core, core_compilation_jobs), total=len(core_compilation_jobs)):
             core_runtime.append(_)
