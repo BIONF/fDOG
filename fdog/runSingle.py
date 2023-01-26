@@ -204,9 +204,12 @@ def main():
             sys.exit('ERROR: FAS is not executable! You still can use fDOG with --fasOff!')
 
     ##### Identify seed ID from refspec genome
-    seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
+    if reuseCore:
+        core_fa = '%s/%s/%s.fa' % (hmmpath, seqName, seqName)
+        seed_id = prepare_fn.get_seed_id_from_fa(core_fa, refspec)
+    else:
+        seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
     print('Identified seed ID: %s' % seed_id)
-
 
     ##### DO CORE COMPILATION
     # start = time.time()
@@ -245,8 +248,7 @@ def main():
                 check = tree_fn.check_taxon_group(group_id[group][0], tax_id, ncbi)
                 if check == True:
                     searchTaxa.append(tax_ids[tax_id])
-            if debugCore:
-                print(searchTaxa)
+                output_fn.print_debug(debugCore, 'Search taxa', searchTaxa)
             if len(searchTaxa) == 0:
                 exit('ERROR: No taxon found within %s taxonomy group!' % group)
             else:

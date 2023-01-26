@@ -107,7 +107,18 @@ def check_input(args):
     return (seqFile, hmmpath, corepath, searchpath, annopath)
 
 
+def get_seed_id_from_fa(core_fa, refspec):
+    """ Get seed ID from core ortholog fasta file
+    (used if --reuseCore option is specified)
+    """
+    core_seqs = SeqIO.to_dict((SeqIO.parse(open(core_fa), 'fasta')))
+    core_ids = core_seqs.keys()
+    seed_id = [s for s in core_ids if refspec in s][0].split('|')[-1]
+    return(seed_id)
+
+
 def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
+    """ Identify seed ID in reference protein set using BLAST """
     refspec_db = '%s/%s/%s' % (corepath, refspec, refspec)
     # first check if input seed ID existiert in refspec genome
     refspec_fa = fasta_fn.read_fasta('%s.fa' % refspec_db)

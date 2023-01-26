@@ -26,6 +26,7 @@ import fdog.libs.fasta as fasta_fn
 import fdog.libs.blast as blast_fn
 import fdog.libs.hmm as hmm_fn
 import fdog.libs.alignment as align_fn
+import fdog.libs.preparation as prepare_fn
 import fdog.libs.output as output_fn
 
 
@@ -197,9 +198,7 @@ def run_hamstr(args):
     hamstr_jobs = []
     ### get ref seqID
     core_fa = '%s/%s/%s.fa' % (hmmpath, seqName, seqName)
-    core_seqs = SeqIO.to_dict((SeqIO.parse(open(core_fa), 'fasta')))
-    core_ids = core_seqs.keys()
-    seed_id = [s for s in core_ids if refspec in s][0].split('|')[-1]
+    seed_id = prepare_fn.get_seed_id_from_fa(core_fa, refspec)
 
     ### get search taxa from user defined list (as a file or directly a list)
     if not searchTaxa == '':
