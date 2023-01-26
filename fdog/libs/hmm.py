@@ -25,7 +25,7 @@ import pyhmmer
 
 def create_hmm(aln_file, out_file):
     """ Create hmm file for an alinment file """
-    hmmbuild_cmd = 'hmmbuild %s %s' % (out_file, aln_file)
+    hmmbuild_cmd = 'hmmbuild --amino %s %s' % (out_file, aln_file)
     try:
         subprocess.run(
             [hmmbuild_cmd], shell = True,

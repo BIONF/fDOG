@@ -127,50 +127,13 @@ def write_faChecked(fa_file):
 
 def check_fasta(args):
     """ Check fasta file in searchTaxa_dir and coreTaxa_dir """
-    # taxon_list = []
-    # for fd in general_fn.read_dir(checkDir):
-    #     taxon = fd
-    #     check_valid_folder_name('%s/%s' % (checkDir, taxon))
-    #     for file in listdir('%s/%s' % (checkDir, taxon)):
-    #         if file.endswith('.fa'):
-    #             fa_file = '%s/%s/%s' % (checkDir, taxon, file)
-    #             if os.path.islink(fa_file):
-    #                 fa_file = os.path.realpath(fa_file)
-    #             general_fn.check_file_exist(fa_file)
-    #             checkfa_file = check_valid_fasta(fa_file)
-    #             taxon_list.append(taxon)
-    #             if not os.path.exists('%s.checked' % fa_file):
-    #                 print(taxon)
-    #                 if list(checkfa_file.keys())[0] == 'notFasta':
-    #                     sys.exit('*** ERROR: %s does not look like a fasta file!' % fa_file)
-    #                 elif list(checkfa_file.keys())[0] == 'longHeader':
-    #                     sys.exit('*** ERROR: %s contains long headers! E.g. %s' % (fa_file, list(checkfa_file.values())[0]))
-    #                 elif list(checkfa_file.keys())[0] == 'space':
-    #                     sys.exit('*** ERROR: %s contains spaces/tabs!' % fa_file)
-    #                 elif list(checkfa_file.keys())[0] == 'multiLine':
-    #                     if not concat:
-    #                         print('*** ERROR: %s contains multiple-line sequences!' % fa_file)
-    #                         sys.exit('Please use "--concat" with "--replace" or "--delete" to join them into single lines')
-    #                     else:
-    #                         rewrite_seqs(fa_file, replace, delete)
-    #                 elif list(checkfa_file.keys())[0] == 'ok':
-    #                     if not (delete or replace):
-    #                         check_valid_seqs(fa_file)
-    #                     else:
-    #                         rewrite_seqs(fa_file, replace, delete)
-    #                 write_faChecked(fa_file)
-    #             if not os.path.exists('%s.fai' % fa_file):
-    #                 fasta_fn.read_fasta(fa_file)
-    # return(taxon_list)
     (taxon, file, checkDir, replace, delete, concat) = args
     fa_file = '%s/%s/%s' % (checkDir, taxon, file)
     if os.path.islink(fa_file):
         fa_file = os.path.realpath(fa_file)
     general_fn.check_file_exist(fa_file)
     checkfa_file = check_valid_fasta(fa_file)
-    # taxon_list.append(taxon)
     if not os.path.exists('%s.checked' % fa_file):
-        print(taxon)
         if list(checkfa_file.keys())[0] == 'notFasta':
             sys.exit('*** ERROR: %s does not look like a fasta file!' % fa_file)
         elif list(checkfa_file.keys())[0] == 'longHeader':

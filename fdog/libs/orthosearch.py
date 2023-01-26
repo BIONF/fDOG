@@ -46,7 +46,7 @@ def hamstr(args):
     ### (00) Parse input files
     hmm_file = '%s/%s/hmm_dir/%s.hmm' % (hmmpath, seqName, seqName)
     refspec_db = '%s/%s/%s' % (corepath, refspec, refspec)
-    refspec_fa = '%s/%s/%s.fa' % (searchpath, refspec, refspec)
+    refspec_fa = '%s/%s/%s.fa' % (corepath, refspec, refspec)
     search_fa = '%s/%s/%s.fa' % (searchpath, search_taxon, search_taxon)
     ### (000) Adapt parameters
     if rbh == True:
@@ -260,7 +260,7 @@ def run_hamstr(args):
                     hamstr_out = {**hamstr_out, **_}
 
     ### Get seed seq
-    refspec_fa = '%s/%s/%s.fa' % (searchpath, refspec, refspec)
+    refspec_fa = '%s/%s/%s.fa' % (corepath, refspec, refspec)
     refspec_seqs = fasta_fn.read_fasta(refspec_fa)
     seed_id_mod = '%s|%s|%s|1' % (seqName, refspec, seed_id)
     seed_seq = refspec_seqs.fetch(seed_id)
