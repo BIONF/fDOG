@@ -372,7 +372,7 @@ def compile_core(args):
         output_fn.print_stdout(
             silentOff,
             'WARNING: Only %s/%s orthologs in the core group' \
-            % (len(added_taxa), coreSize))
+            % (len(added_taxa) + 1, coreSize))
 
 
 def run_compile_core(args):

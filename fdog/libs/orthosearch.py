@@ -85,7 +85,7 @@ def hamstr(args):
             with open(hmm_hit_fa, 'w') as hmm_fa_out:
                 hmm_fa_out.write('>%s\n%s' % (hmm_hit, search_seqs.fetch(hmm_hit)))
             blast_xml = blast_fn.do_blastsearch(
-                    hmm_hit_fa, refspec_db, evalBlast, lowComplexityFilter)
+                    hmm_hit_fa, refspec_db, evalBlast = evalBlast, lowComplexityFilter = lowComplexityFilter)
             blast_out = blast_fn.parse_blast_xml(blast_xml)
             output_fn.print_debug(debug, 'BLAST hits', blast_out)
             if noCleanup == False:

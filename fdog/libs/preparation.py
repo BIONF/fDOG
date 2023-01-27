@@ -130,7 +130,7 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
         except:
             output_fn.print_debug(debug, 'Identify seed ID', 'Input seed ID not found!')
     # otherwise, perform blast search
-    blast_xml = blast_fn.do_blastsearch(seqFile, refspec_db)
+    blast_xml = blast_fn.do_blastsearch(seqFile, refspec_db, evalBlast = 0.001)
     blast_out = blast_fn.parse_blast_xml(blast_xml)
     for hit in blast_out['hits']:
         if blast_out['hits'][hit]['align_len'] == blast_out['query_len']:

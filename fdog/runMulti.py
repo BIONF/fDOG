@@ -66,9 +66,12 @@ def create_core_jobs(args):
     seqName = get_seed_name(seed)
     if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
         seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
-        return([seqFile, seqName, refspec, seed_id,
-                    reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
-                    otherCoreArgs, debug])
+        if not seed_id == 'None':
+            return([seqFile, seqName, refspec, seed_id,
+                        reuseCore, forceCore, coreArgs, pathArgs, orthoCoreArgs,
+                        otherCoreArgs, debug])
+        else:
+            print(f'WARNING: Cannot identify seed ID for {seqFile}!')
 
 
 def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff, jobName):
