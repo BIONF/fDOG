@@ -244,7 +244,7 @@ def main():
     if resetData:
         if os.path.exists(dataPath):
             print('fDOG data found in %s will be deleted! Enter to continue.' % dataPath)
-            if query_yes_no(''):
+            if general_fn.query_yes_no(''):
                 shutil.rmtree(dataPath)
 
     Path(dataPath).mkdir(parents = True, exist_ok = True)
