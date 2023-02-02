@@ -54,6 +54,7 @@ def create_folders(outPath, spec_name, coreTaxa, noAnno):
 
 
 def generate_spec_name(tax_id, name, ver):
+    """ Create species name with the format <ABBR_NAME>@<NCBI_TAXID>@<VER> """
     if name == "":
         ncbi_name = tree_fn.check_tax_id(tax_id)
         name = tree_fn.abbr_ncbi_name(ncbi_name)

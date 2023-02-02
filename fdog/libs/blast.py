@@ -72,6 +72,7 @@ def parse_blast_xml(blast_output):
 
 
 def make_blastdb(args):
+    """ Make blastDB in coreTaxa_dir (for fdog.addTaxon and fdog.addTaxa) """
     (specName, specFile, outPath, silent) = args
     blastCmd = 'makeblastdb -dbtype prot -in %s -out %s/coreTaxa_dir/%s/%s' % (specFile, outPath, specName, specName)
     if silent == True:

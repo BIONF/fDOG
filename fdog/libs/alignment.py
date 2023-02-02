@@ -31,6 +31,7 @@ import fdog.libs.output as output_fn
 ##### FUNCTIONS RELATED TO SEQ ALIGNMENT #####
 
 def check_fasta36_executable(fdogPath):
+    """ Check if FASTA36 installed in fdogPath """
     try:
         fasta36_cmd = '%s/bin/aligner/bin/ggsearch36' % fdogPath
         subprocess.check_output(fasta36_cmd, shell = True, stderr = subprocess.STDOUT)
