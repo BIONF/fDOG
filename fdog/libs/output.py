@@ -89,4 +89,4 @@ def hamstr_2_profile(fa_file):
             pp.write('geneID\tncbiID\torthoID\n')
             for id in list(fa.keys()):
                 tmp = id.split('|')
-                pp.write('%s\t%s\t%s\n' % (tmp[0], tmp[1], id))
+                pp.write('%s\tncbi%s\t%s\n' % (tmp[0], tmp[1].split('@')[1], id))

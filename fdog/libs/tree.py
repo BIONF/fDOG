@@ -68,6 +68,8 @@ def check_common_ancestor(ref_id, ancestor, minDist, maxDist, ncbi):
     """
     ref_lineage = ncbi.get_lineage(ref_id)
     (min_ref, max_ref) = get_rank_range(ref_lineage, minDist, maxDist, ncbi)
+    if not ancestor in ref_lineage:
+        return(0)
     ancestor_index = len(ref_lineage) - ref_lineage.index(ancestor) - 1
     if list(min_ref.values())[0] <= ancestor_index <= list(max_ref.values())[0]:
         return(1)

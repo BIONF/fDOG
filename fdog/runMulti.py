@@ -107,7 +107,7 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silen
         return(out)
 
 
-def search_ortholog(options, seeds, inFol, cpu, outpath):
+def search_ortholog(options, seeds, inFol, outpath):
     (orthoArgs, otherArgs, pathArgs, refspec) = options
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
     ortho_runtime = []
@@ -394,7 +394,7 @@ def main():
                         lowComplexityFilter, evalHmmer, hitLimit, scoreCutoff, aligner]
             otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
             ortho_options = [orthoArgs, otherArgs, pathArgs, refspec]
-            ortho_runtime = search_ortholog(ortho_options, seeds, inFol, cpus, outpath)
+            ortho_runtime = search_ortholog(ortho_options, seeds, inFol, outpath)
             end = time.time()
             multi_ortho_time = '{:5.3f}'.format(end-start)
             print('==> Ortholog search finished in %ss\n' % multi_ortho_time)

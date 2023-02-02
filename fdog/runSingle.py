@@ -222,7 +222,6 @@ def main():
     print('Compiling core set for %s' % seqName)
     core_runtime = core_fn.run_compile_core([seqFile, seqName, refspec, seed_id, reuseCore,
         forceCore, coreArgs, pathArgs, orthoCoreArgs, otherCoreArgs, debug])
-    # end = time.time()
     print('==> Core compilation finished in %s' % core_runtime[1])
 
 

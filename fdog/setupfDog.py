@@ -131,7 +131,7 @@ def check_dependencies(fdogPath):
     return(missing)
 
 
-def download_data(dataPath, force):
+def download_data(dataPath, resetData):
     """ Downloade pre-calculated fDOG data """
     data_fdog_file = "data_HaMStR-2019c.tar.gz"
     checksum_data = "1748371655 621731824 $data_fdog_file"
@@ -139,9 +139,9 @@ def download_data(dataPath, force):
     genome_path = '%s/searchTaxa_dir' % dataPath
     Path(genome_path).mkdir(parents = True, exist_ok = True)
 
-    if len(general_fn.read_dir(genome_path)) < 1 or force:
+    if len(general_fn.read_dir(genome_path)) < 1 or resetData:
         data_url = 'https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo'
-        if os.path.exists(data_fdog_file) and force:
+        if os.path.exists(data_fdog_file) and resetData:
             os.remove(data_fdog_file)
         general_fn.download_file(data_url, data_fdog_file)
         try:
@@ -174,13 +174,15 @@ def main():
     optional.add_argument('--getSourcepath', help='Get path to installed fdog package', action='store_true', default=False)
     optional.add_argument('--getDatapath', help='Get fDOG default data path', action='store_true', default=False)
     optional.add_argument('--woFAS', help='Do not install FAS (https://github.com/BIONF/FAS)', action='store_true', default=False)
-    optional.add_argument('--force', help='Force overwrite fDOG data', action='store_true', default=False)
+    optional.add_argument('--force', help='Force installing', action='store_true', default=False)
+    optional.add_argument('--resetData', help='Re-download precalculated fDOG data', action='store_true', default=False)
 
     ### parse arguments
     args = parser.parse_args()
     dataPath = args.dataPath
     woFAS = args.woFAS
     force = args.force
+    resetData = args.resetData
 
 
     ### get install path
@@ -238,12 +240,15 @@ def main():
 
     ### download pre-calculated data
     print('*** Downloading precalculated data...')
-    if force:
+    ### Remove data if resetData is used
+    if resetData:
         if os.path.exists(dataPath):
-            print('WARNING: %s will be deleted!' % dataPath)
-            shutil.rmtree(dataPath)
+            print('fDOG data found in %s will be deleted! Enter to continue.' % dataPath)
+            if query_yes_no(''):
+                shutil.rmtree(dataPath)
+
     Path(dataPath).mkdir(parents = True, exist_ok = True)
-    download_data(dataPath, force)
+    download_data(dataPath, resetData)
 
     ### create pathconfig file
     if os.path.exists(pathconfig_file):

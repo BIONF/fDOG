@@ -34,6 +34,40 @@ def create_hmm(aln_file, out_file):
         sys.exit('ERROR: Error running hmmbuild %s' % hmmbuild_cmd)
 
 
+def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10):
+    """ Sort HMM hits
+    Keep only n hits (n =< hitLimit), and hits that are not less than
+    best_hit_domain_score * (100 - scoreCutoff) / 100
+    Input hmm_hits is a pyhmmer.plan7.topHits object
+    """
+    best_score = 0
+    score_dict = {}
+    for hit in hmm_hits:
+        if len(hit.domains) > 0:
+            domain_score = hit.domains[0].score
+            hit_id = hit.domains[0].hit.name.decode('ASCII')
+            if domain_score > best_score:
+                best_score = domain_score
+            if domain_score >= best_score/100*(100-scoreCutoff):
+                if domain_score not in score_dict:
+                    score_dict[domain_score] = [hit_id]
+                else:
+                    score_dict[domain_score].append(hit_id)
+
+    hmm_cand = {}
+    n = 1
+    score_dict = {
+        key:val for key, val in score_dict.items() \
+        if key >= best_score/100*(100-scoreCutoff)
+    }
+    for score in sorted(score_dict):
+        if n < hitLimit:
+            for id in score_dict[score]:
+                hmm_cand[id] = score
+                n += 1
+    return(hmm_cand)
+
+
 def do_hmmsearch(
         hmm_file, search_fa, evalHmmer = 0.00001, scoreCutoff = 10,
         hitLimit = 10, cpus = os.cpu_count()):
@@ -52,13 +86,14 @@ def do_hmmsearch(
             for hits in pyhmmer.hmmsearch(
                     hmm_file, sequences, E = evalHmmer, cpus = cpus):
                 if len(hits) > 0:
-                    n = 0
-                    for hit in hits:
-                        if hit.score >= hits[0].score/100*(100-scoreCutoff):
-                            if n < hitLimit:
-                                hmm_hits[hit.name.decode('ASCII')] = (
-                                    hit.evalue,hit.score)
-                                n += 1
+                    hmm_hits = sort_hmm_hits(hits, hitLimit, scoreCutoff)
+                    # n = 0
+                    # for hit in hits:
+                    #     if hit.score >= hits[0].score/100*(100-scoreCutoff):
+                    #         if n < hitLimit:
+                    #             hmm_hits[hit.name.decode('ASCII')] = (
+                    #                 hit.evalue,hit.score)
+                    #             n += 1
         except:
             sys.exit(
                 'ERROR: Error running hmmsearch for %s agains %s'

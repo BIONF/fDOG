@@ -242,10 +242,10 @@ def run_hamstr(args):
                 ])
 
     ### do ortholog search
+    hamstr_out = {}
     if len(hamstr_jobs) > 0:
         output_fn.print_stdout(
                 silentOff, 'Ortholog search for %s taxa...' % len(hamstr_jobs))
-        hamstr_out = {}
         if debug == True or silentOff == True or len(hamstr_jobs) == 1:
             for job in hamstr_jobs:
                 tmp_out = hamstr(job)

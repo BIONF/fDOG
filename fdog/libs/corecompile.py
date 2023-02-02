@@ -258,7 +258,19 @@ def compile_core(args):
                         debugCore, '',
                         '-Current_candi_score: %s' % curr_candi_score)
                     ### compare taxonomy rank with previous added taxon
-                    ### process only if this leaf is within min and max rank
+                    ### ignore if this leaf closer to the refspec than to
+                    ### previous added taxon
+                    ancestor_to_ref = tree_fn.get_ancestor(refspec_id, leaf, ncbi)
+                    check_ancestor_to_ref = tree_fn.check_common_ancestor(
+                            previous_added_taxon, list(ancestor_to_ref.keys())[0],
+                            minDist, maxDist, ncbi)
+                    if check_ancestor_to_ref == 0:
+                        ignored_taxa.append(leaf)
+                        output_fn.print_debug(
+                            debugCore, '',
+                            '-Closer to refspec than previous added taxon!')
+                        continue
+                    ### continue process only if this leaf is within min and max rank
                     ### of the previous added taxon
                     ancestor = tree_fn.get_ancestor(previous_added_taxon, leaf, ncbi)
                     check_ancestor = tree_fn.check_common_ancestor(

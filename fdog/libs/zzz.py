@@ -159,3 +159,25 @@ def read_pyobj_file(in_file):
     """ Read a python object from an in_file """
     with open(in_file, 'rb') as obj_file:
         return(pickle.load(obj_file))
+
+
+def query_yes_no(question, default='yes'):
+    valid = {'yes': True, 'y': True, 'ye': True,
+             'no': False, 'n': False}
+    if default is None:
+        prompt = ' [y/n] '
+    elif default == 'yes':
+        prompt = ' [Y/n] '
+    elif default == 'no':
+        prompt = ' [y/N] '
+    else:
+        raise ValueError('invalid default answer: "%s"' % default)
+    while True:
+        choice = sys.stdin.readline().rstrip().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write('Please respond with "yes" or "no" '
+                             '(or "y" or "n").\n')
