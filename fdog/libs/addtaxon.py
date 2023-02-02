@@ -140,7 +140,7 @@ def create_blastdb(args):
     (outPath, spec_name, genome_file, force, silent) = args
     blast_path = '%s/coreTaxa_dir/%s' % (outPath, spec_name)
     if (not os.path.exists(os.path.abspath('%s/%s.phr' % (blast_path, spec_name)))) or force:
-        blast_fn.make_blastdb([spec_name, genome_file, outPath, silent])
+        blast_fn.make_blastdb([spec_name, genome_file, outPath, '', '', silent])
         ### make symlink to fasta files
         fa_in_genome = "../../searchTaxa_dir/%s/%s.fa" % (spec_name, spec_name)
         fai_in_genome = "../../searchTaxa_dir/%s/%s.fa.fai" % (spec_name, spec_name)

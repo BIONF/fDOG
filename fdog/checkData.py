@@ -18,6 +18,7 @@
 
 import sys
 import os
+import errno
 import argparse
 from os import listdir
 from os.path import isfile, join
@@ -175,25 +176,29 @@ def run_check_fasta(checkDir, replace, delete, concat):
 
 def check_blastdb(args):
     """ Check for outdated blastdb """
-    (query, taxon, coreTaxa_dir) = args
+    (query, taxon, coreTaxa_dir, searchTaxa_dir) = args
     blast_db = '%s/%s/%s' % (coreTaxa_dir, taxon, taxon)
     try:
         blastp_cline = NcbiblastpCommandline(query = query, db = blast_db)
         stdout, stderr = blastp_cline()
     except:
         return([query, blast_db])
-    if not os.path.exists('%s/%s/%s.fa.fai' % (coreTaxa_dir, taxon, taxon)):
-        fai_in_genome = "../../searchTaxa_dir/%s/%s.fa.fai" % (taxon, taxon)
-        fai_in_blast = "%s/%s/%s.fa.fai" % (coreTaxa_dir, taxon, taxon)
-        os.symlink(fai_in_genome, fai_in_blast)
+    try:
+        os.remove('%s/%s/%s.fa.fai' % (coreTaxa_dir, taxon, taxon))
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+    fai_in_genome = "%s/%s/%s.fa.fai" % (searchTaxa_dir, taxon, taxon)
+    fai_in_blast = "%s/%s/%s.fa.fai" % (coreTaxa_dir, taxon, taxon)
+    os.symlink(fai_in_genome, fai_in_blast)
 
 
-def run_check_blastdb(coreTaxa_dir, fdogPath):
+def run_check_blastdb(coreTaxa_dir, searchTaxa_dir, fdogPath):
     """ Run check_blastdb fn """
     query = '%s/data/infile.fa' % fdogPath
     jobs = []
     for fd in general_fn.read_dir(coreTaxa_dir):
-        jobs.append([query, fd, coreTaxa_dir])
+        jobs.append([query, fd, coreTaxa_dir, searchTaxa_dir])
     cpus = mp.cpu_count()-1
     pool = mp.Pool(cpus)
     out = []
@@ -216,10 +221,10 @@ def create_blastdb(args):
         shutil.rmtree(blast_path)
         ### Redo blastdb
         Path(blast_path).mkdir(parents = True, exist_ok = True)
-        blast_fn.make_blastdb([taxon, fa_file, outPath, True])
+        blast_fn.make_blastdb([taxon, fa_file, outPath, coreTaxa_dir, searchTaxa_dir, True])
         ### make symlink to fasta files
-        fa_in_genome = "../../searchTaxa_dir/%s/%s.fa" % (taxon, taxon)
-        fai_in_genome = "../../searchTaxa_dir/%s/%s.fa.fai" % (taxon, taxon)
+        fa_in_genome = "%s/%s/%s.fa" % (searchTaxa_dir, taxon, taxon)
+        fai_in_genome = "%s/%s/%s.fa.fai" % (searchTaxa_dir, taxon, taxon)
         fa_in_blast = "%s/%s.fa" % (blast_path, taxon)
         fai_in_blast = "%s/%s.fa.fai" % (blast_path, taxon)
         if not os.path.exists(fa_in_blast):
@@ -326,6 +331,7 @@ def main():
     parser.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
     parser.add_argument('--concat', help='Concatenate multiple-line sequences into single-line', action='store_true', default=False)
     parser.add_argument('--reblast', help='Re-create blast databases', action='store_true', default=False)
+    # parser.add_argument('--updateJson', help='Update annotation json file to FAS >=1.16', action='store_true', default=False)
 
     ### get arguments
     args = parser.parse_args()
@@ -337,6 +343,7 @@ def main():
     delete = args.delete
     concat = args.concat
     reblast = args.reblast
+    # updateJson = args.updateJson
 
     checkOptConflict(concat, replace, delete)
     caution = 0
@@ -374,7 +381,7 @@ def main():
             print('All old BlastDBs have been updated!')
     print('=> Checking %s...' % coreTaxa_dir)
     blastTaxa = run_check_fasta(coreTaxa_dir, replace, delete, concat)
-    check_blast = run_check_blastdb(coreTaxa_dir, fdogPath)
+    check_blast = run_check_blastdb(coreTaxa_dir, searchTaxa_dir, fdogPath)
 
     if not check_blast[0] == 1:
         print('*** ERROR: Version incompatible between BlastDB and BLAST program!')
@@ -391,6 +398,8 @@ def main():
         print('NOTE: You still can run fdog without FAS using the option "-fasoff"')
         caution = 1
     run_check_complete_anno(annotation_dir, searchTaxa_dir)
+    # if updateJson:
+    #     run_update_anno(annotation_dir, searchTaxa_dir)
 
     # ### check ncbi IDs
     print('=> Checking NCBI taxonomy IDs...')

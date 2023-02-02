@@ -72,16 +72,22 @@ def parse_blast_xml(blast_output):
 
 
 def make_blastdb(args):
-    """ Make blastDB in coreTaxa_dir (for fdog.addTaxon and fdog.addTaxa) """
-    (specName, specFile, outPath, silent) = args
-    blastCmd = 'makeblastdb -dbtype prot -in %s -out %s/coreTaxa_dir/%s/%s' % (specFile, outPath, specName, specName)
+    """ Make blastDB in coreTaxa_dir
+    for fdog.addTaxon, fdog.addTaxa and fdog.checkData
+    """
+    (specName, specFile, outPath, coreTaxa_dir, searchTaxa_dir, silent) = args
+    if not coreTaxa_dir:
+        coreTaxa_dir = '%s/coreTaxa_dir' % outPath
+    if not searchTaxa_dir:
+        searchTaxa_dir = '%s/searchTaxa_dir' % outPath
+    blastCmd = 'makeblastdb -dbtype prot -in %s -out %s/%s/%s' % (specFile, coreTaxa_dir, specName, specName)
     if silent == True:
         blastCmd = blastCmd + '> /dev/null 2>&1'
     try:
         subprocess.call([blastCmd], shell = True)
     except:
         sys.exit('Problem with running %s' % blastCmd)
-    fileInGenome = "../../searchTaxa_dir/%s/%s.fa" % (specName, specName)
-    fileInBlast = "%s/coreTaxa_dir/%s/%s.fa" % (outPath, specName, specName)
+    fileInGenome = "%s/%s/%s.fa" % (searchTaxa_dir, specName, specName)
+    fileInBlast = "%s/%s/%s.fa" % (coreTaxa_dir, specName, specName)
     if not os.path.exists(fileInBlast):
         os.symlink(fileInGenome, fileInBlast)
