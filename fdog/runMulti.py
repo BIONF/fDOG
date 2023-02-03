@@ -111,16 +111,18 @@ def search_ortholog(options, seeds, inFol, outpath):
     (orthoArgs, otherArgs, pathArgs, refspec) = options
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
     ortho_runtime = []
+    n = 1
     for seed in seeds:
         begin = time.time()
         seqFile = [inFol + '/' + seed]
         seqName = get_seed_name(seed)
-        print('... %s' % seqName)
+        print('... %s (%s / %s)' % (seqName, n, len(seeds)))
         if not os.path.exists('%s/%s.extended.fa' % (outpath, seqName)) or force == True:
             hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
             output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
             end = time.time()
             ortho_runtime.append('%s\t%s' % (seqName, '{:5.3f}s'.format(end - begin)))
+        n += 1
     return(ortho_runtime)
 
 

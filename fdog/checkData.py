@@ -183,14 +183,23 @@ def check_blastdb(args):
         stdout, stderr = blastp_cline()
     except:
         return([query, blast_db])
-    try:
-        os.remove('%s/%s/%s.fa.fai' % (coreTaxa_dir, taxon, taxon))
-    except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise
     fai_in_genome = "%s/%s/%s.fa.fai" % (searchTaxa_dir, taxon, taxon)
     fai_in_blast = "%s/%s/%s.fa.fai" % (coreTaxa_dir, taxon, taxon)
-    os.symlink(fai_in_genome, fai_in_blast)
+    # check if fai_in_blast is a valid symlink
+    if os.path.islink(fai_in_blast):
+        if not os.path.exists(os.readlink(fai_in_blast)):
+            if os.path.exists(fai_in_genome):
+                try:
+                    os.remove('%s/%s/%s.fa.fai' % (coreTaxa_dir, taxon, taxon))
+                except OSError as e:
+                    if e.errno != errno.ENOENT:
+                        raise
+                os.symlink(fai_in_genome, fai_in_blast)
+    # or that file doesn't exist
+    else:
+        if not os.path.exists(fai_in_blast):
+            if os.path.exists(fai_in_genome):
+                os.symlink(fai_in_genome, fai_in_blast)
 
 
 def run_check_blastdb(coreTaxa_dir, searchTaxa_dir, fdogPath):
@@ -263,8 +272,12 @@ def check_complete_anno(args):
     """ Check if an annotation is complete
     I.e. if it contains annotation for all proteins of a species
     """
-    (gf,jf, annotation_dir) = args
+    (gf,jf, annotation_dir, updateJson) = args
     cmd = 'fas.checkAnno -s %s -a %s -o %s' % (gf, jf, annotation_dir)
+    if updateJson:
+        cmd = '%s --update' % cmd
+    print(cmd)
+    sys.exit()
     try:
         subprocess.call([cmd], shell = True, stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
@@ -273,7 +286,7 @@ def check_complete_anno(args):
         sys.exit()
 
 
-def run_check_complete_anno(annotation_dir, searchTaxa_dir):
+def run_check_complete_anno(annotation_dir, searchTaxa_dir, coreTaxa_dir, updateJson):
     """ Run check_complete_anno fn """
     all_anno = [f for f in listdir(annotation_dir) if isfile(join(annotation_dir, f))]
     jobs = []
@@ -282,12 +295,16 @@ def run_check_complete_anno(annotation_dir, searchTaxa_dir):
         # print('...check annotations for %s' % tax)
         jf = '%s/%s.json' % (annotation_dir, tax)
         gf = '%s/%s/%s.fa' % (searchTaxa_dir, tax, tax)
-        jobs.append([gf,jf, annotation_dir])
+        if not os.path.exists(gf):
+            gf = '%s/%s/%s.fa' % (coreTaxa_dir, tax, tax)
+        jobs.append([gf,jf, annotation_dir, updateJson])
     cpus = mp.cpu_count()-1
     pool = mp.Pool(cpus)
     out = []
-    for _ in tqdm(pool.imap_unordered(check_complete_anno, jobs), total=len(jobs)):
-        out.append(_)
+    for i in jobs:
+        check_complete_anno(i)
+    # for _ in tqdm(pool.imap_unordered(check_complete_anno, jobs), total=len(jobs)):
+    #     out.append(_)
     return None
 
 
@@ -316,11 +333,6 @@ def check_missing_ncbiID(taxon_list):
     return(missing_taxa.keys(), dup_taxa)
 
 
-def run_check_missing_ncbiID():
-    """ Run check_missing_ncbiID fn """
-    pass
-
-
 def main():
     version = get_distribution('fdog').version
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
@@ -331,7 +343,7 @@ def main():
     parser.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
     parser.add_argument('--concat', help='Concatenate multiple-line sequences into single-line', action='store_true', default=False)
     parser.add_argument('--reblast', help='Re-create blast databases', action='store_true', default=False)
-    # parser.add_argument('--updateJson', help='Update annotation json file to FAS >=1.16', action='store_true', default=False)
+    parser.add_argument('--updateJson', help='Update annotation json file to FAS >=1.16', action='store_true', default=False)
 
     ### get arguments
     args = parser.parse_args()
@@ -343,7 +355,7 @@ def main():
     delete = args.delete
     concat = args.concat
     reblast = args.reblast
-    # updateJson = args.updateJson
+    updateJson = args.updateJson
 
     checkOptConflict(concat, replace, delete)
     caution = 0
@@ -369,7 +381,7 @@ def main():
 
     ### check searchTaxa_dir
     print('=> Checking %s...' % searchTaxa_dir)
-    genomeTaxa = run_check_fasta(searchTaxa_dir, replace, delete, concat)
+    search_taxa = run_check_fasta(searchTaxa_dir, replace, delete, concat)
 
     ### check coreTaxa_dir
     if reblast:
@@ -380,7 +392,7 @@ def main():
         else:
             print('All old BlastDBs have been updated!')
     print('=> Checking %s...' % coreTaxa_dir)
-    blastTaxa = run_check_fasta(coreTaxa_dir, replace, delete, concat)
+    core_taxa = run_check_fasta(coreTaxa_dir, replace, delete, concat)
     check_blast = run_check_blastdb(coreTaxa_dir, searchTaxa_dir, fdogPath)
 
     if not check_blast[0] == 1:
@@ -391,19 +403,17 @@ def main():
 
     ### check annotation_dir
     print('=> Checking %s...' % annotation_dir)
-    missing_anno = check_missing_json(annotation_dir, general_fn.join_2lists(genomeTaxa, blastTaxa))
+    missing_anno = check_missing_json(annotation_dir, general_fn.join_2lists(search_taxa, core_taxa))
     if len(missing_anno) > 0:
         print('\033[92m*** WARNING: Annotation files not found for:\033[0m')
         print(*missing_anno, sep = "\n")
         print('NOTE: You still can run fdog without FAS using the option "-fasoff"')
         caution = 1
-    run_check_complete_anno(annotation_dir, searchTaxa_dir)
-    # if updateJson:
-    #     run_update_anno(annotation_dir, searchTaxa_dir)
+    run_check_complete_anno(annotation_dir, searchTaxa_dir, coreTaxa_dir, updateJson)
 
-    # ### check ncbi IDs
+    ### check ncbi IDs
     print('=> Checking NCBI taxonomy IDs...')
-    missing_taxa, dup_taxa = check_missing_ncbiID(general_fn.join_2lists(genomeTaxa, blastTaxa))
+    missing_taxa, dup_taxa = check_missing_ncbiID(general_fn.join_2lists(search_taxa, core_taxa))
     if (len(missing_taxa) > 0):
         print('\033[92m*** WARNING: Taxa not found in current local NCBI taxonomy database:\033[0m')
         print(*missing_taxa, sep = "\n")

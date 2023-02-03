@@ -43,17 +43,22 @@ def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10):
     best_score = 0
     score_dict = {}
     for hit in hmm_hits:
+        best_domain_score = 0
+        best_domain_hit = ''
         if len(hit.domains) > 0:
-            domain_score = hit.domains[0].score
-            hit_id = hit.domains[0].hit.name.decode('ASCII')
-            if domain_score > best_score:
-                best_score = domain_score
-            if domain_score >= best_score/100*(100-scoreCutoff):
-                if domain_score not in score_dict:
-                    score_dict[domain_score] = [hit_id]
+            # get domain with best score for this hit
+            for i in hit.domains:
+                if i.score > best_domain_score:
+                    best_domain_score = i.score
+                    best_domain_hit = i.hit.name.decode('ASCII')
+            # add hit to score_dict with increasing domain score 
+            if best_domain_score > best_score:
+                best_score = best_domain_score
+            if best_domain_score >= best_score/100*(100-scoreCutoff):
+                if best_domain_score not in score_dict:
+                    score_dict[best_domain_score] = [best_domain_hit]
                 else:
-                    score_dict[domain_score].append(hit_id)
-
+                    score_dict[best_domain_score].append(best_domain_hit)
     hmm_cand = {}
     n = 1
     score_dict = {
@@ -87,13 +92,6 @@ def do_hmmsearch(
                     hmm_file, sequences, E = evalHmmer, cpus = cpus):
                 if len(hits) > 0:
                     hmm_hits = sort_hmm_hits(hits, hitLimit, scoreCutoff)
-                    # n = 0
-                    # for hit in hits:
-                    #     if hit.score >= hits[0].score/100*(100-scoreCutoff):
-                    #         if n < hitLimit:
-                    #             hmm_hits[hit.name.decode('ASCII')] = (
-                    #                 hit.evalue,hit.score)
-                    #             n += 1
         except:
             sys.exit(
                 'ERROR: Error running hmmsearch for %s agains %s'
