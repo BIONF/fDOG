@@ -41,6 +41,9 @@ def main():
     required.add_argument('-f', '--fasta', help='FASTA file of input taxon', action='store', default='', required=True)
     required.add_argument('-i', '--taxid', help='Taxonomy ID of input taxon', action='store', default='', required=True, type=int)
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
+    optional.add_argument('--searchpath', help='Path to search taxa folder (e.g. fdog_data/searchTaxa_dir)', action='store', default='')
+    optional.add_argument('--corepath', help='Path to core taxa folder (e.g. fdog_data/coreTaxa_dir)', action='store', default='')
+    optional.add_argument('--annopath', help='Path to annotation folder (e.g. fdog_data/annotation_dir)', action='store', default='')
     optional.add_argument('-n', '--name', help='Acronym name of input taxon', action='store', default='', type=str)
     optional.add_argument('-v', '--verProt', help='Proteome version', action='store', default='', type=str)
     optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in coreTaxa_dir folder)', action='store_true', default=False)
@@ -56,14 +59,9 @@ def main():
     faIn = args.fasta
     taxId = str(args.taxid)
     outPath = args.outPath
-    if outPath == '':
-        fdogPath = os.path.realpath(__file__).replace('/addTaxon.py','')
-        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
-        if not os.path.exists(pathconfigFile):
-            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-        with open(pathconfigFile) as f:
-            outPath = f.readline().strip()
-    outPath = os.path.abspath(outPath)
+    searchpath = args.searchpath
+    corepath = args.corepath
+    annopath = args.annopath
     name = args.name.upper()
     ver = str(args.verProt)
     if ver == '':
@@ -82,33 +80,36 @@ def main():
     spec_name = add_taxon_fn.generate_spec_name(taxId, name, ver)
     print('Species name\t%s' % spec_name)
 
+    ### get paths
+    (outPath, searchpath, corepath, annopath) = add_taxon_fn.get_paths(outPath, searchpath, corepath, annopath)
+
     ### remove old folder if force is set
     if force == True:
-        if os.path.exists(outPath + '/searchTaxa_dir/' + spec_name):
-            shutil.rmtree(outPath + '/searchTaxa_dir/' + spec_name)
-        if os.path.exists(outPath + '/coreTaxa_dir/' + spec_name):
-            shutil.rmtree(outPath + '/coreTaxa_dir/' + spec_name)
+        if os.path.exists('%s/%s' % (searchpath, spec_name)):
+            shutil.rmtree('%s/%s' % (searchpath, spec_name))
+        if os.path.exists('%s/%s' % (corepath, spec_name)):
+            shutil.rmtree('%s/%s' % (corepath, spec_name))
 
     ### initiate paths
-    genome_path = add_taxon_fn.create_folders(outPath, spec_name, coreTaxa, noAnno)
+    genome_path = add_taxon_fn.create_folders(searchpath, corepath, annopath, spec_name, coreTaxa, noAnno)
 
     ### create file in searchTaxa_dir
     print('Parsing FASTA file...')
     genome_file = add_taxon_fn.create_genome([faIn, genome_path, spec_name, force, replace, delete])
-    out_msg = 'Output for %s can be found in %s within searchTaxa_dir'  % (spec_name, outPath)
+    out_msg = 'Output for %s can be found in %s'  % (spec_name, searchpath)
 
     ### create blast db
     if coreTaxa:
         print('\nCreating Blast DB...')
-        add_taxon_fn.create_blastdb([outPath, spec_name, genome_file, force, False])
-        out_msg = '%s, coreTaxa_dir' % out_msg
+        add_taxon_fn.create_blastdb([searchpath, corepath, outPath, spec_name, genome_file, force, False])
+        out_msg = '%s, %s' % (out_msg, corepath)
 
     ### create annotation
     if not noAnno:
-        add_taxon_fn.create_annoFile(outPath, genome_file, cpus, force)
-        if os.path.exists('%s/annotation_dir/tmp' % outPath):
-            shutil.rmtree('%s/annotation_dir/tmp' % outPath)
-        out_msg = '%s, annotation_dir' % out_msg
+        add_taxon_fn.create_annoFile(annopath, genome_file, cpus, force)
+        if os.path.exists('%s/tmp' % annopath):
+            shutil.rmtree('%s/tmp' % annopath)
+        out_msg = '%s, %s' % (out_msg, annopath)
 
     print('\n==> %s' % out_msg)
 

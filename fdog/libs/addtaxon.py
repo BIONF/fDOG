@@ -41,15 +41,36 @@ def check_conflict_opts(replace, delete):
             sys.exit('*** ERROR: only one option can be choose between "--replace" and "--delete"')
 
 
-def create_folders(outPath, spec_name, coreTaxa, noAnno):
+def get_paths(outPath, searchpath, corepath, annopath):
+    """ Get path to searchTaxa_dir, coreTaxa_dir and annotation_dir """
+    if outPath == '':
+        fdogPath = os.path.realpath(__file__).replace('/addTaxon.py','')
+        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
+        if not os.path.exists(pathconfigFile):
+            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        with open(pathconfigFile) as f:
+            outPath = f.readline().strip()
+    outPath = os.path.abspath(outPath)
+    if not searchpath:
+        searchpath = outPath + '/searchTaxa_dir/'
+    searchpath = os.path.abspath(searchpath)
+    if not corepath:
+        corepath = outPath + '/coreTaxa_dir/'
+    corepath = os.path.abspath(corepath)
+    if not annopath:
+        annopath = outPath + '/annotation_dir/'
+    annopath = os.path.abspath(annopath)
+    return(outPath, searchpath, corepath, annopath)
+
+def create_folders(searchpath, corepath, annopath, spec_name, coreTaxa, noAnno):
     """ Create searchTaxa_dir, coreTaxa_dir and annotation_dir in output folder """
-    Path(outPath + '/searchTaxa_dir').mkdir(parents = True, exist_ok = True)
-    genome_path = outPath + '/searchTaxa_dir/' + spec_name
+    Path(searchpath).mkdir(parents = True, exist_ok = True)
+    genome_path = '%s/%s' %  (searchpath, spec_name)
     Path(genome_path).mkdir(parents = True, exist_ok = True)
     if coreTaxa:
-        Path(outPath + '/coreTaxa_dir').mkdir(parents = True, exist_ok = True)
+        Path(corepath).mkdir(parents = True, exist_ok = True)
     if not noAnno:
-        Path(outPath + '/annotation_dir').mkdir(parents = True, exist_ok = True)
+        Path(annopath).mkdir(parents = True, exist_ok = True)
     return(genome_path)
 
 
@@ -137,13 +158,13 @@ def create_genome(args):
 
 def create_blastdb(args):
     """ Create blastdb for a given fasta genome_file """
-    (outPath, spec_name, genome_file, force, silent) = args
-    blast_path = '%s/coreTaxa_dir/%s' % (outPath, spec_name)
+    (searchpath, corepath, outPath, spec_name, genome_file, force, silent) = args
+    blast_path = '%s/%s' % (corepath, spec_name)
     if (not os.path.exists(os.path.abspath('%s/%s.phr' % (blast_path, spec_name)))) or force:
-        blast_fn.make_blastdb([spec_name, genome_file, outPath, '', '', silent])
+        blast_fn.make_blastdb([spec_name, genome_file, outPath, corepath, searchpath, silent])
         ### make symlink to fasta files
-        fa_in_genome = "../../searchTaxa_dir/%s/%s.fa" % (spec_name, spec_name)
-        fai_in_genome = "../../searchTaxa_dir/%s/%s.fa.fai" % (spec_name, spec_name)
+        fa_in_genome = "%s/%s/%s.fa" % (searchpath, spec_name, spec_name)
+        fai_in_genome = "%s/%s/%s.fa.fai" % (searchpath, spec_name, spec_name)
         fa_in_blast = "%s/%s.fa" % (blast_path, spec_name)
         fai_in_blast = "%s/%s.fa.fai" % (blast_path, spec_name)
         if not os.path.exists(fa_in_blast):
@@ -154,9 +175,9 @@ def create_blastdb(args):
         print('Blast DB already exists!')
 
 
-def create_annoFile(outPath, genome_file, cpus, force):
+def create_annoFile(annopath, genome_file, cpus, force):
     """ Create annotation json for a given genome_file """
-    annoCmd = 'fas.doAnno -i %s -o %s --cpus %s' % (genome_file, outPath+'/annotation_dir', cpus)
+    annoCmd = 'fas.doAnno -i %s -o %s --cpus %s' % (genome_file, annopath, cpus)
     if force:
         annoCmd = annoCmd + " --force"
     try:

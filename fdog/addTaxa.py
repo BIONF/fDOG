@@ -75,6 +75,9 @@ def main():
                             help='Tab-delimited text file containing <fasta_file_name>tab<taxonID>tab<taxonName>tab<genome_version>. The last 2 columns are optional.',
                             action='store', default='', required=True)
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
+    optional.add_argument('--searchpath', help='Path to search taxa folder (e.g. fdog_data/searchTaxa_dir)', action='store', default='')
+    optional.add_argument('--corepath', help='Path to core taxa folder (e.g. fdog_data/coreTaxa_dir)', action='store', default='')
+    optional.add_argument('--annopath', help='Path to annotation folder (e.g. fdog_data/annotation_dir)', action='store', default='')
     optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in coreTaxa_dir folder)', action='store_true', default=False)
     optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using fas.doAnno', action='store_true', default=False)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = available cores - 1', action='store', default=0, type=int)
@@ -88,14 +91,9 @@ def main():
     mapping = args.mapping
     general_fn.check_file_exist(mapping)
     outPath = args.outPath
-    if outPath == '':
-        fdogPath = os.path.realpath(__file__).replace('/addTaxon.py','')
-        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
-        if not os.path.exists(pathconfigFile):
-            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-        with open(pathconfigFile) as f:
-            outPath = f.readline().strip()
-    outPath = os.path.abspath(outPath)
+    searchpath = args.searchpath
+    corepath = args.corepath
+    annopath = args.annopath
     noAnno = args.noAnno
     coreTaxa = args.coreTaxa
     cpus = args.cpus
@@ -111,7 +109,8 @@ def main():
     name_dict = parse_map_file(mapping, folIn)
 
     ### initiate paths
-    Path(outPath + '/searchTaxa_dir').mkdir(parents = True, exist_ok = True)
+    (outPath, searchpath, corepath, annopath) = add_taxon_fn.get_paths(outPath, searchpath, corepath, annopath)
+    Path(searchpath).mkdir(parents = True, exist_ok = True)
 
     ### create file in searchTaxa_dir [and coreTaxa_dir]
     genome_jobs = []
@@ -119,18 +118,18 @@ def main():
     for f in name_dict:
         spec_name = name_dict[f]
         ## remove old folder if force is set
-        if force:
-            if os.path.exists(outPath + '/searchTaxa_dir/' + spec_name):
-                shutil.rmtree(outPath + '/searchTaxa_dir/' + spec_name)
-            if os.path.exists(outPath + '/coreTaxa_dir/' + spec_name):
-                shutil.rmtree(outPath + '/coreTaxa_dir/' + spec_name)
+        if force == True:
+            if os.path.exists('%s/%s' % (searchpath, spec_name)):
+                shutil.rmtree('%s/%s' % (searchpath, spec_name))
+            if os.path.exists('%s/%s' % (corepath, spec_name)):
+                shutil.rmtree('%s/%s' % (corepath, spec_name))
         ## create jobs
-        genome_path = '%s/searchTaxa_dir/%s' % (outPath, spec_name)
+        genome_path = '%s/%s' % (searchpath, spec_name)
         Path(genome_path).mkdir(parents = True, exist_ok = True)
         genome_jobs.append([f, genome_path, spec_name, force, replace, delete])
         if coreTaxa:
             genome_file = '%s/%s.fa' % (genome_path, spec_name)
-            blast_jobs.append([outPath, spec_name, genome_file, force, True])
+            blast_jobs.append([searchpath, corepath, outPath, spec_name, genome_file, force, True])
     pool = mp.Pool(cpus)
 
     print('Parsing genome for %s species...' % len(genome_jobs))
@@ -138,24 +137,24 @@ def main():
     for _ in tqdm(pool.imap_unordered(add_taxon_fn.create_genome, genome_jobs),
             total=len(genome_jobs)):
         genome_out.append(_)
-    out_msg = 'Output for %s can be found in %s within searchTaxa_dir'  % (spec_name, outPath)
+    out_msg = 'Output for %s can be found in %s'  % (spec_name, searchpath)
     if len(blast_jobs) > 0:
         print('\nCreating Blast DB for %s species...' % len(blast_jobs))
         blast_out = []
         for _ in tqdm(pool.imap_unordered(add_taxon_fn.create_blastdb, blast_jobs),
                 total=len(blast_jobs)):
             blast_out.append(_)
-        out_msg = '%s, coreTaxa_dir' % out_msg
+        out_msg = '%s, %s' % (out_msg, corepath)
 
     ### create annotation
     if not noAnno:
-        Path(outPath + '/annotation_dir').mkdir(parents = True, exist_ok = True)
+        Path(annopath).mkdir(parents = True, exist_ok = True)
         for f in name_dict:
-            genome_file = '%s/searchTaxa_dir/%s/%s.fa' % (outPath, name_dict[f], name_dict[f])
-            add_taxon_fn.create_annoFile(outPath, genome_file, cpus, force)
-        if os.path.exists('%s/annotation_dir/tmp' % outPath):
-            shutil.rmtree('%s/annotation_dir/tmp' % outPath)
-        out_msg = '%s, annotation_dir' % out_msg
+            genome_file = '%s/%s/%s.fa' % (searchpath, name_dict[f], name_dict[f])
+            add_taxon_fn.create_annoFile(annopath, genome_file, cpus, force)
+        if os.path.exists('%s/tmp' % annopath):
+            shutil.rmtree('%s/tmp' % annopath)
+        out_msg = '%s, %s' % (out_msg, annopath)
 
     end = time.time()
     print('==> Adding %s taxa finished in %s'  % (len(name_dict), '{:5.3f}s'.format(end - start)))
