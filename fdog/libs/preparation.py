@@ -34,48 +34,44 @@ def parsing_paths(args):
     ### get fdog and data path
     data_path = ''
     fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py','')
-    pathconfig_file = fdog_path + '/bin/pathconfig.txt'
-    # pathconfig_file = '/home/vinh/anaconda3/envs/test_fas/lib/python3.9/site-packages/fdog/bin/pathconfig.txt' ######################################  REMOVE THIS
-    if not os.path.exists(pathconfig_file):
+    pathconfigFile = fdog_path + '/bin/pathconfig.yml'
+    if not os.path.exists(pathconfigFile):
         sys.exit(
             'No pathconfig.txt found at %s. Please run fdog.setup '
             + '(https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).'
-            % pathconfig_file)
-    if pathFile == '':
-        with open(pathconfig_file) as f:
-            data_path = f.readline().strip()
-    else:
-        cfg = general_fn.load_config(pathFile)
-        try:
-            data_path = cfg['dataPath']
-        except:
-            data_path = 'config'
+            % pathconfigFile)
+
+    if pathFile:
+        pathconfigFile = os.path.abspath(pathFile)
+
+    cfg = general_fn.load_config(pathconfigFile)
+    try:
+        data_path = cfg['dataPath']
+    except:
+        data_path = os.getcwd()
 
     if hmmpath == '':
         hmmpath = outpath + '/core_orthologs'
         Path(hmmpath).mkdir(parents = True, exist_ok = True)
 
     if corepath == '':
-        corepath = data_path + '/coreTaxa_dir'
-        if data_path == 'config':
-            try:
-                corepath = cfg['corepath']
-            except:
-                sys.exit('corepath not found in %s' % pathFile)
+        try:
+            corepath = cfg['corepath']
+        except:
+            corepath = data_path + '/coreTaxa_dir'
+        general_fn.check_file_exist(corepath)
     if searchpath == '':
-        searchpath = data_path + '/searchTaxa_dir'
-        if data_path == 'config':
-            try:
-                searchpath = cfg['searchpath']
-            except:
-                sys.exit('searchpath not found in %s' % pathFile)
+        try:
+            searchpath = cfg['searchpath']
+        except:
+            searchpath = data_path + '/searchTaxa_dir'
+        general_fn.check_file_exist(searchpath)
     if annopath == '':
-        annopath = data_path + '/annotation_dir'
-        if data_path == 'config':
-            try:
-                annopath = cfg['annopath']
-            except:
-                sys.exit('annopath not found in %s' % pathFile)
+        try:
+            annopath = cfg['annopath']
+        except:
+            annopath = data_path + '/annotation_dir'
+        general_fn.check_file_exist(annopath)
     return(hmmpath, corepath, searchpath, annopath)
 
 

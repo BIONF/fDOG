@@ -77,6 +77,7 @@ def create_core_jobs(args):
 def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silentOff, jobName):
     core_compilation_jobs = []
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
+    (cpus, debugCore, silentOff, noCleanup, force, append) = otherCoreArgs
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     pool = mp.Pool(cpus)
@@ -97,8 +98,13 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silen
     print('==> %s jobs will be run. Preparing finished in %s' % (len(core_compilation_jobs), '{:5.3f}s'.format(end - begin)))
     if len(core_compilation_jobs) > 0:
         core_runtime = []
-        for _ in tqdm(pool.imap_unordered(core_fn.run_compile_core, core_compilation_jobs), total=len(core_compilation_jobs)):
-            core_runtime.append(_)
+        if debugCore == True or silentOff == True or len(core_compilation_jobs) == 1:
+            for job in core_compilation_jobs:
+                tmp_out = core_fn.run_compile_core(job)
+                core_runtime.append(tmp_out)
+        else:
+            for _ in tqdm(pool.imap_unordered(core_fn.run_compile_core, core_compilation_jobs), total=len(core_compilation_jobs)):
+                core_runtime.append(_)
         pool.close()
         pool.join()
         out = []

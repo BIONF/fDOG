@@ -47,14 +47,28 @@ def get_source_path():
 
 def get_data_path(fdogPath):
     """ Get path of fDOG data """
-    pathconfigFile = fdogPath + '/bin/pathconfig.txt'
+    pathconfigFile = fdogPath + '/bin/pathconfig.yml'
     if not os.path.exists(pathconfigFile):
-        sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        sys.exit('No pathconfig.yml found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
     else:
-        with open(pathconfigFile) as f:
-            dataPath = f.readline().strip()
-            print(dataPath)
-    sys.exit()
+        cfg = general_fn.load_config(pathconfigFile)
+        try:
+            dataPath = cfg['datapath']
+        except:
+            try:
+                corepath = cfg['corepath']
+            except:
+                pass
+            try:
+                searchpath = cfg['searchpath']
+            except:
+                pass
+            try:
+                annopath = cfg['annopath']
+            except:
+                pass
+            dataPath = 'Core taxa: %s\nSearch taxa: %s\nAnnotations: %s' % (corepath, searchpath, annopath)
+        return(dataPath)
 
 
 def install_fas(woFAS):
@@ -165,6 +179,19 @@ def download_data(dataPath, resetData):
         print('fDOG data found at %s' % dataPath)
 
 
+def write_pathconfig(fdogPath, dataPath):
+    """ Write data directories to pathconfig file """
+    Path('%s/bin' % fdogPath).mkdir(parents = True, exist_ok = True)
+    pathconfigFile = '%s/bin/pathconfig.yml' % fdogPath
+    if os.path.exists(pathconfigFile):
+        os.remove(pathconfigFile)
+    with open(pathconfigFile, 'w') as cf:
+        cf.write('datapath: \'%s\'\n' % dataPath)
+        cf.write('corepath: \'%s/coreTaxa_dir\'\n' % dataPath)
+        cf.write('searchpath: \'%s/searchTaxa_dir\'\n' % dataPath)
+        cf.write('annopath: \'%s/annotation_dir\'\n' % dataPath)
+
+
 def main():
     version = get_distribution('fdog').version
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
@@ -179,7 +206,7 @@ def main():
 
     ### parse arguments
     args = parser.parse_args()
-    dataPath = args.dataPath
+    dataPath = os.path.abspath(args.dataPath)
     woFAS = args.woFAS
     force = args.force
     resetData = args.resetData
@@ -193,12 +220,14 @@ def main():
 
     ### get data path
     if args.getDatapath:
-        get_data_path(fdogPath)
+        dataPath = get_data_path(fdogPath)
+        print(dataPath)
+        sys.exit()
 
     ### check if pathconfig file exists
-    pathconfig_file = '%s/bin/pathconfig.txt' % fdogPath
+    pathconfigFile = '%s/bin/pathconfig.txt' % fdogPath
     demo_cmd = 'fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3'
-    if os.path.exists(pathconfig_file) and not force:
+    if os.path.exists(pathconfigFile) and not force:
         check_fas = 1
         if not woFAS:
             check_fas = fas_fn.check_fas_executable()
@@ -251,10 +280,7 @@ def main():
     download_data(dataPath, resetData)
 
     ### create pathconfig file
-    if os.path.exists(pathconfig_file):
-        os.remove(pathconfig_file)
-    with open(pathconfig_file, 'w') as cf:
-        cf.write(dataPath)
+    write_pathconfig(fdogPath, dataPath)
 
     print('\033[96m==> FINISHED! fDOG data can be found at %s\033[0m' % dataPath)
     print('You can test fDOG using the following command:\n%s' % demo_cmd)

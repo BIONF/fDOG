@@ -273,11 +273,9 @@ def check_complete_anno(args):
     I.e. if it contains annotation for all proteins of a species
     """
     (gf,jf, annotation_dir, updateJson) = args
-    cmd = 'fas.checkAnno -s %s -a %s -o %s' % (gf, jf, annotation_dir)
+    cmd = 'fas.checkAnno -s %s -a %s -o %s --noAnno' % (gf, jf, annotation_dir)
     if updateJson:
         cmd = '%s --update' % cmd
-    print(cmd)
-    sys.exit()
     try:
         subprocess.call([cmd], shell = True, stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
@@ -333,47 +331,38 @@ def check_missing_ncbiID(taxon_list):
     return(missing_taxa.keys(), dup_taxa)
 
 
-def main():
-    version = get_distribution('fdog').version
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
-    parser.add_argument('-s', '--searchTaxa_dir', help='Path to search taxa directory (e.g. fdog_dataPath/searchTaxa_dir)', action='store', default='')
-    parser.add_argument('-c', '--coreTaxa_dir', help='Path to blastDB directory (e.g. fdog_dataPath/coreTaxa_dir)', action='store', default='')
-    parser.add_argument('-a', '--annotation_dir', help='Path to feature annotation directory (e.g. fdog_dataPath/annotation_dir)', action='store', default='')
-    parser.add_argument('--replace', help='Replace special characters in sequences by "X"', action='store_true', default=False)
-    parser.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
-    parser.add_argument('--concat', help='Concatenate multiple-line sequences into single-line', action='store_true', default=False)
-    parser.add_argument('--reblast', help='Re-create blast databases', action='store_true', default=False)
-    parser.add_argument('--updateJson', help='Update annotation json file to FAS >=1.16', action='store_true', default=False)
-
-    ### get arguments
-    args = parser.parse_args()
-
-    searchTaxa_dir = args.searchTaxa_dir
-    coreTaxa_dir = args.coreTaxa_dir
-    annotation_dir = args.annotation_dir
-    replace = args.replace
-    delete = args.delete
-    concat = args.concat
-    reblast = args.reblast
-    updateJson = args.updateJson
-
+def run_check(args):
+    (searchTaxa_dir, coreTaxa_dir, annotation_dir, replace, delete, concat, reblast, updateJson) = args
     checkOptConflict(concat, replace, delete)
     caution = 0
 
     ### get fdog dir and assign searchTaxa_dir, coreTaxa_dir, annotation_dir if not given
     fdogPath = os.path.realpath(__file__).replace('/checkData.py','')
     if not searchTaxa_dir or not coreTaxa_dir or not annotation_dir:
-        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
+        pathconfigFile = fdogPath + '/bin/pathconfig.yml'
         if not os.path.exists(pathconfigFile):
-            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-        with open(pathconfigFile) as f:
-            dataPath = f.readline().strip()
+            sys.exit('No pathconfig.yml found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        cfg = general_fn.load_config(pathconfigFile)
+        try:
+            dataPath = cfg['dataPath']
+        except:
+            dataPath = os.getcwd()
+
         if not searchTaxa_dir:
-            searchTaxa_dir = dataPath + "/searchTaxa_dir"
+            try:
+                searchTaxa_dir = cfg['searchpath']
+            except:
+                searchTaxa_dir = dataPath + '/searchTaxa_dir'
         if not coreTaxa_dir:
-            coreTaxa_dir = dataPath + "/coreTaxa_dir"
+            try:
+                coreTaxa_dir = cfg['corepath']
+            except:
+                coreTaxa_dir = dataPath + "/coreTaxa_dir"
         if not annotation_dir:
-            annotation_dir = dataPath + "/annotation_dir"
+            try:
+                annotation_dir = cfg['annopath']
+            except:
+                annotation_dir = dataPath + "/annotation_dir"
 
     searchTaxa_dir = os.path.abspath(searchTaxa_dir)
     coreTaxa_dir = os.path.abspath(coreTaxa_dir)
@@ -424,12 +413,39 @@ def main():
         print(*dup_taxa, sep = "\n")
         print('==> NOTE: This could lead to some conflicts!')
         caution = 1
-
     print('---------------------------------')
+    return(caution)
+
+def main():
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    parser.add_argument('-s', '--searchTaxa_dir', help='Path to search taxa directory (e.g. fdog_dataPath/searchTaxa_dir)', action='store', default='')
+    parser.add_argument('-c', '--coreTaxa_dir', help='Path to blastDB directory (e.g. fdog_dataPath/coreTaxa_dir)', action='store', default='')
+    parser.add_argument('-a', '--annotation_dir', help='Path to feature annotation directory (e.g. fdog_dataPath/annotation_dir)', action='store', default='')
+    parser.add_argument('--replace', help='Replace special characters in sequences by "X"', action='store_true', default=False)
+    parser.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
+    parser.add_argument('--concat', help='Concatenate multiple-line sequences into single-line', action='store_true', default=False)
+    parser.add_argument('--reblast', help='Re-create blast databases', action='store_true', default=False)
+    parser.add_argument('--updateJson', help='Update annotation json file to FAS >=1.16', action='store_true', default=False)
+
+    ### get arguments
+    args = parser.parse_args()
+
+    searchTaxa_dir = args.searchTaxa_dir
+    coreTaxa_dir = args.coreTaxa_dir
+    annotation_dir = args.annotation_dir
+    replace = args.replace
+    delete = args.delete
+    concat = args.concat
+    reblast = args.reblast
+    updateJson = args.updateJson
+
+    caution = run_check([searchTaxa_dir, coreTaxa_dir, annotation_dir, replace, delete, concat, reblast, updateJson])
     if caution == 1:
         print('==> Done! Data are ready to use WITH CAUTION!')
     else:
         print('==> Done! Data are ready to use!')
+
 
 if __name__ == '__main__':
     main()

@@ -81,7 +81,8 @@ def main():
     print('Species name\t%s' % spec_name)
 
     ### get paths
-    (outPath, searchpath, corepath, annopath) = add_taxon_fn.get_paths(outPath, searchpath, corepath, annopath)
+    fdogPath = os.path.realpath(__file__).replace('/addTaxon.py','')
+    (outPath, searchpath, corepath, annopath) = add_taxon_fn.get_paths(outPath, fdogPath, searchpath, corepath, annopath)
 
     ### remove old folder if force is set
     if force == True:

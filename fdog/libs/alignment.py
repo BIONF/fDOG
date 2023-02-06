@@ -35,9 +35,14 @@ def check_fasta36_executable(fdogPath):
     try:
         fasta36_cmd = '%s/bin/aligner/bin/ggsearch36' % fdogPath
         subprocess.check_output(fasta36_cmd, shell = True, stderr = subprocess.STDOUT)
-        return('%s/bin/aligner/' % fdogPath)
-    except subprocess.CalledProcessError as e:
-        sys.exit('\033[91mERROR: FASTA36 at %s/bin/aligner/bin/ not executable!\033[0m' % fdogPath)
+        return('%s/bin/aligner/bin/' % fdogPath)
+    except:
+        try:
+            which_fasta36 = subprocess.run(
+                'which fasta36', shell = True, capture_output = True, check = True)
+            return(which_fasta36.stdout.decode().strip().replace('fasta36',''))
+        except subprocess.CalledProcessError as e:
+            sys.exit('\033[91mERROR: FASTA36 not found!\033[0m')
 
 
 def do_align(aligner, fa_file):
@@ -98,15 +103,17 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
     """
     fdog_path = os.path.realpath(__file__).replace('/libs/alignment.py','')
     fasta36_options = '%s %s -s BP62 -m 9 -d 0 -z -1 -E 100' % (fa1, fa2)
+    fdog_path = os.path.realpath(__file__).replace('/libs/alignment.py','')
+    fasta36_bin = check_fasta36_executable(fdog_path)
     if aln_strategy == 'global':
-        fasta36_cmd = '%s/bin/aligner/bin/ggsearch36 %s' \
-                                % (fdog_path, fasta36_options)
+        fasta36_cmd = '%s/ggsearch36 %s' \
+                                % (fasta36_bin, fasta36_options)
     elif aln_strategy == 'glocal':
-        fasta36_cmd = '%s/bin/aligner/bin/glsearch36 %s' \
-                                % (fdog_path, fasta36_options)
+        fasta36_cmd = '%s/glsearch36 %s' \
+                                % (fasta36_bin, fasta36_options)
     else:
-        fasta36_cmd = '%s/bin/aligner/bin/ssearch36 %s' \
-                                % (fdog_path, fasta36_options)
+        fasta36_cmd = '%s/ssearch36 %s' \
+                                % (fasta36_bin, fasta36_options)
     output_fn.print_debug(
         debugCore, 'ALN SCORE',
         'Calculate aln score using FASTA36: %s' % fasta36_cmd)

@@ -55,6 +55,15 @@ def read_dir(dir):
     return(out_dirs)
 
 
+def load_config(config_file):
+    """ Load a YAML file and return as a dictionary """
+    with open(config_file, 'r') as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+
 def download_progress(count, block_size, total_size):
     global start_time
     if count == 0:
@@ -114,15 +123,6 @@ def get_ids_from_folder(folder, type):
         if not id in tax_ids:
             tax_ids[id] = name
     return(tax_ids)
-
-
-def load_config(config_file):
-    """ Load a YAML file and return as a dictionary """
-    with open(config_file, 'r') as stream:
-        try:
-            return yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
 
 
 def matching_elements(dictionary, search_string):

@@ -26,7 +26,7 @@ with open("README.md", "r") as input:
 
 setup(
     name="fdog",
-    version="0.1.5",
+    version="0.1.6",
     python_requires='>=3.7.0',
     description="Feature-aware Directed OrtholoG search tool",
     long_description=long_description,
@@ -54,6 +54,7 @@ setup(
                             "fdog.addTaxon = fdog.addTaxon:main",
                             "fdog.addTaxa = fdog.addTaxa:main",
                             "fdog.showTaxa = fdog.showTaxa:main",
+                            "fdog.setPaths = fdog.setPaths:main",
                             "fdog.mergeOutput = fdog.mergeOutput:main",
                             "fdog.uninstall = fdog.removefDog:main",
                             "fdog.assembly = fdog.fDOGassembly:main",

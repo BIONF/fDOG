@@ -330,7 +330,7 @@ def compile_core(args):
                                 output_fn.print_debug(
                                     debugCore, '',
                                     '-Max score achieved! Stop this node!')
-                        else:
+                        elif not len(hamstr_out) > 1 and len(cand_seq) == 0:
                             ignored_taxa.append(leaf)
                             output_fn.print_debug(
                                 debugCore, '',
@@ -392,7 +392,6 @@ def run_compile_core(args):
             pathArgs, orthoCoreArgs, otherCoreArgs, debug) = args
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherCoreArgs[-6:]
-
     begin = time.time()
     fdogPath = os.path.realpath(__file__).replace('/libs/corecompile.py','')
     align_fn.check_fasta36_executable(fdogPath)

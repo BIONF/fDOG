@@ -33,23 +33,37 @@ def getNcbiName(taxonName):
 def getTaxa():
     # get data path
     fdogPath = os.path.realpath(__file__).replace('/showTaxa.py','')
-    pathconfigFile = fdogPath + '/bin/pathconfig.txt'
+    pathconfigFile = fdogPath + '/bin/pathconfig.yml'
     if not os.path.exists(pathconfigFile):
-        sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        sys.exit('No pathconfig.yml found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
     with open(pathconfigFile) as f:
-        dataPath = f.readline().strip()
+        cfg = general_fn.load_config(pathconfigFile)
+        try:
+            dataPath = cfg['datapath']
+        except:
+            dataPath = 'several places!'
+        try:
+            corepath = cfg['corepath']
+        except:
+            corepath = data_path + '/coreTaxa_dir'
+        general_fn.check_file_exist(corepath)
+        try:
+            searchpath = cfg['searchpath']
+        except:
+            searchpath = data_path + '/searchTaxa_dir'
+        general_fn.check_file_exist(searchpath)
 
     # print taxa in coreTaxa_dir
     print('##### Data found at %s' % dataPath)
     print('\n##### Taxa in the core sets, which can be used as reference species #####\n')
-    for taxon in sorted(os.listdir(dataPath + '/coreTaxa_dir/')):
-        if os.path.isdir(dataPath + '/coreTaxa_dir/' + taxon):
+    for taxon in sorted(os.listdir(corepath)):
+        if os.path.isdir('%s/%s' (corepath, taxon)):
             print('%s\t%s' % (taxon, getNcbiName(taxon)))
 
     # print taxa in searchTaxa_dir
     print('\n##### Search taxa. in which you can search orthologs #####\n')
-    for taxon in sorted(os.listdir(dataPath + '/searchTaxa_dir/')):
-        if os.path.isdir(dataPath + '/searchTaxa_dir/' + taxon):
+    for taxon in sorted(os.listdir(searchpath)):
+        if os.path.isdir('%s/%s' (searchpath, taxon)):
             print('%s\t%s' % (taxon, getNcbiName(taxon)))
 
 

@@ -20,6 +20,7 @@ import os
 import subprocess
 import pyhmmer
 
+import fdog.libs.output as output_fn
 
 ##### FUNCTIONS RELATED TO HMM #####
 
@@ -34,16 +35,19 @@ def create_hmm(aln_file, out_file):
         sys.exit('ERROR: Error running hmmbuild %s' % hmmbuild_cmd)
 
 
-def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10):
+def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10, debug = False):
     """ Sort HMM hits
     Keep only n hits (n =< hitLimit), and hits that are not less than
     best_hit_domain_score * (100 - scoreCutoff) / 100
     Input hmm_hits is a pyhmmer.plan7.topHits object
     """
-    best_score = 0
+    best_score = -9999 # some "best" domains still have negative score!
+    cutoff = ''
     score_dict = {}
+    ori_hits = {}
     for hit in hmm_hits:
-        best_domain_score = 0
+        ori_hits[hit.name.decode('ASCII')] = len(hit.domains)
+        best_domain_score = -9999 #hit.domains[0].score
         best_domain_hit = ''
         if len(hit.domains) > 0:
             # get domain with best score for this hit
@@ -51,19 +55,23 @@ def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10):
                 if i.score > best_domain_score:
                     best_domain_score = i.score
                     best_domain_hit = i.hit.name.decode('ASCII')
-            # add hit to score_dict with increasing domain score 
+            # add hit to score_dict with increasing domain score
             if best_domain_score > best_score:
                 best_score = best_domain_score
-            if best_domain_score >= best_score/100*(100-scoreCutoff):
+            cutoff = best_score/100*(100-scoreCutoff)
+            if best_score < 0:
+                cutoff = best_score/100*(100+scoreCutoff)
+            if best_domain_score >= cutoff:
                 if best_domain_score not in score_dict:
                     score_dict[best_domain_score] = [best_domain_hit]
                 else:
                     score_dict[best_domain_score].append(best_domain_hit)
+    output_fn.print_debug(debug, 'All HMM hits', ori_hits)
     hmm_cand = {}
     n = 1
     score_dict = {
         key:val for key, val in score_dict.items() \
-        if key >= best_score/100*(100-scoreCutoff)
+        if key >= cutoff
     }
     for score in sorted(score_dict):
         if n < hitLimit:
@@ -75,7 +83,7 @@ def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10):
 
 def do_hmmsearch(
         hmm_file, search_fa, evalHmmer = 0.00001, scoreCutoff = 10,
-        hitLimit = 10, cpus = os.cpu_count()):
+        hitLimit = 10, cpus = os.cpu_count(), debug = False):
     """ Perform hmmsearch for a hmm file vs a multiple fasta file
     Return a dictionary of hits and their e-value and bit-score
     Only "top" hits are returned. The cutoff is defined by
@@ -91,8 +99,8 @@ def do_hmmsearch(
             for hits in pyhmmer.hmmsearch(
                     hmm_file, sequences, E = evalHmmer, cpus = cpus):
                 if len(hits) > 0:
-                    hmm_hits = sort_hmm_hits(hits, hitLimit, scoreCutoff)
-        except:
+                    hmm_hits = sort_hmm_hits(hits, hitLimit, scoreCutoff, debug)
+        except :
             sys.exit(
                 'ERROR: Error running hmmsearch for %s agains %s'
                 % (hmm_file, search_fa))

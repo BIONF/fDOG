@@ -25,6 +25,7 @@ import re
 from datetime import datetime
 from collections import OrderedDict
 
+import fdog.libs.zzz as general_fn
 import fdog.libs.blast as blast_fn
 import fdog.libs.fasta as fasta_fn
 import fdog.libs.tree as tree_fn
@@ -41,15 +42,29 @@ def check_conflict_opts(replace, delete):
             sys.exit('*** ERROR: only one option can be choose between "--replace" and "--delete"')
 
 
-def get_paths(outPath, searchpath, corepath, annopath):
+def get_paths(outPath, fdogPath, searchpath, corepath, annopath):
     """ Get path to searchTaxa_dir, coreTaxa_dir and annotation_dir """
     if outPath == '':
-        fdogPath = os.path.realpath(__file__).replace('/addTaxon.py','')
-        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
+        pathconfigFile = fdogPath + '/bin/pathconfig.yml'
         if not os.path.exists(pathconfigFile):
-            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-        with open(pathconfigFile) as f:
-            outPath = f.readline().strip()
+            sys.exit('No pathconfig.yml found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        cfg = general_fn.load_config(pathconfigFile)
+        try:
+            outPath = cfg['dataPath']
+        except:
+            try:
+                corepath = cfg['corepath']
+            except:
+                pass
+            try:
+                searchpath = cfg['searchpath']
+            except:
+                pass
+            try:
+                annopath = cfg['annopath']
+            except:
+                pass
+
     outPath = os.path.abspath(outPath)
     if not searchpath:
         searchpath = outPath + '/searchTaxa_dir/'

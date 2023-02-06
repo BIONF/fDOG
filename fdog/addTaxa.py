@@ -109,7 +109,8 @@ def main():
     name_dict = parse_map_file(mapping, folIn)
 
     ### initiate paths
-    (outPath, searchpath, corepath, annopath) = add_taxon_fn.get_paths(outPath, searchpath, corepath, annopath)
+    fdogPath = os.path.realpath(__file__).replace('/addTaxa.py','')
+    (outPath, searchpath, corepath, annopath) = add_taxon_fn.get_paths(outPath, fdogPath, searchpath, corepath, annopath)
     Path(searchpath).mkdir(parents = True, exist_ok = True)
 
     ### create file in searchTaxa_dir [and coreTaxa_dir]

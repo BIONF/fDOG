@@ -72,8 +72,8 @@ def hamstr(args):
 
     ### (1) Do hmmsearch for query hmm against search taxon fasta
     hmm_hits = hmm_fn.do_hmmsearch(
-            hmm_file, search_fa, evalHmmer, scoreCutoff, hitLimit, cpus)
-    output_fn.print_debug(debug, 'HMM hits', hmm_hits)
+            hmm_file, search_fa, evalHmmer, scoreCutoff, hitLimit, cpus, debug)
+    output_fn.print_debug(debug, 'Sorted HMM hits', hmm_hits)
     ### (2) Read fasta file of refspec and search taxon
     refspec_seqs = fasta_fn.read_fasta(refspec_fa)
     search_seqs = fasta_fn.read_fasta(search_fa)
