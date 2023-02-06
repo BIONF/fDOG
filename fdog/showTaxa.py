@@ -19,6 +19,7 @@ import sys
 import os
 from ete3 import NCBITaxa
 
+import fdog.libs.zzz as general_fn
 
 def getNcbiName(taxonName):
     ncbi = NCBITaxa()
