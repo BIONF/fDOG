@@ -46,25 +46,25 @@ def getTaxa():
         try:
             corepath = cfg['corepath']
         except:
-            corepath = data_path + '/coreTaxa_dir'
+            corepath = dataPath + '/coreTaxa_dir'
         general_fn.check_file_exist(corepath)
         try:
             searchpath = cfg['searchpath']
         except:
-            searchpath = data_path + '/searchTaxa_dir'
+            searchpath = dataPath + '/searchTaxa_dir'
         general_fn.check_file_exist(searchpath)
 
     # print taxa in coreTaxa_dir
     print('##### Data found at %s' % dataPath)
     print('\n##### Taxa in the core sets, which can be used as reference species #####\n')
     for taxon in sorted(os.listdir(corepath)):
-        if os.path.isdir('%s/%s' (corepath, taxon)):
+        if os.path.isdir(f'{corepath}/{taxon}'):
             print('%s\t%s' % (taxon, getNcbiName(taxon)))
 
     # print taxa in searchTaxa_dir
     print('\n##### Search taxa. in which you can search orthologs #####\n')
     for taxon in sorted(os.listdir(searchpath)):
-        if os.path.isdir('%s/%s' (searchpath, taxon)):
+        if os.path.isdir(f'{searchpath}/{taxon}'):
             print('%s\t%s' % (taxon, getNcbiName(taxon)))
 
 
