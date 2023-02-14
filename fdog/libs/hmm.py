@@ -73,7 +73,7 @@ def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10, debug = False):
         key:val for key, val in score_dict.items() \
         if key >= cutoff
     }
-    for score in sorted(score_dict):
+    for score in sorted(score_dict, reverse = True):
         if n < hitLimit:
             for id in score_dict[score]:
                 hmm_cand[id] = score
