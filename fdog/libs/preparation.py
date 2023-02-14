@@ -37,9 +37,8 @@ def parsing_paths(args):
     pathconfigFile = fdog_path + '/bin/pathconfig.yml'
     if not os.path.exists(pathconfigFile):
         sys.exit(
-            'No pathconfig.txt found at %s. Please run fdog.setup '
-            + '(https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).'
-            % pathconfigFile)
+            f'No pathconfig.txt found at {pathconfigFile}. Please run fdog.setup '
+            + '(https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
 
     if pathFile:
         pathconfigFile = os.path.abspath(pathFile)

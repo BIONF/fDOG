@@ -225,7 +225,7 @@ def main():
         sys.exit()
 
     ### check if pathconfig file exists
-    pathconfigFile = '%s/bin/pathconfig.txt' % fdogPath
+    pathconfigFile = '%s/bin/pathconfig.yml' % fdogPath
     demo_cmd = 'fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3'
     if os.path.exists(pathconfigFile) and not force:
         check_fas = 1
