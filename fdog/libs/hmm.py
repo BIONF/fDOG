@@ -68,11 +68,12 @@ def sort_hmm_hits(hmm_hits, hitLimit = 10, scoreCutoff = 10, debug = False):
                     score_dict[best_domain_score].append(best_domain_hit)
     output_fn.print_debug(debug, 'All HMM hits', ori_hits)
     hmm_cand = {}
-    n = 1
+    n = 0
     score_dict = {
         key:val for key, val in score_dict.items() \
         if key >= cutoff
     }
+    output_fn.print_debug(debug, 'Candidate HMM hits', score_dict)
     for score in sorted(score_dict, reverse = True):
         if n < hitLimit:
             for id in score_dict[score]:

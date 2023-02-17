@@ -231,6 +231,7 @@ def compile_core(args):
                 if not leaf == refspec_id and \
                         not leaf in added_taxa and \
                         not leaf in ignored_taxa:
+                    output_fn.print_debug(debugCore, '','')
                     output_fn.print_debug(
                         debugCore, '',
                         'Leaf %s - %s' % (leaf, tax_ids[leaf]))
