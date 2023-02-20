@@ -332,7 +332,7 @@ def main():
 
     ### START
     Path(outpath).mkdir(parents=True, exist_ok=True)
-    multiLog = open(outpath + '/' + jobName + '_log.txt', "w")
+    multiLog = open(outpath + '/' + jobName + '_runtime.txt', "w")
 
     print('PID %s - Jobname %s'% (str(os.getpid()), jobName))
     multiLog.write('PID %s - Jobname %s\n'% (str(os.getpid()), jobName))
