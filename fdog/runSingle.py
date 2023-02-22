@@ -86,10 +86,10 @@ def main():
                                 action='store_true', default=False)
     ortho_options.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blast search on. Default: False',
                                 action='store_true', default=False)
-    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.00001',
-                                action='store', default=0.00005, type=float)
-    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.00001',
-                                action='store', default=0.00005, type=float)
+    ortho_options.add_argument('--evalBlast', help='E-value cut-off for the Blast search. Default: 0.0001',
+                                action='store', default=0.0001, type=float)
+    ortho_options.add_argument('--evalHmmer', help='E-value cut-off for the HMM search. Default: 0.0001',
+                                action='store', default=0.0001, type=float)
     ortho_options.add_argument('--hitLimit', help='number of hits of the initial pHMM based search that should be evaluated via a reverse search. Default: 10',
                                 action='store', default=10, type=int)
     ortho_options.add_argument('--scoreCutoff', help='Define the percent range of the hmms core of the best hit up to which a candidate of the hmmsearch will be subjected for further evaluation. Default: 10',
@@ -215,9 +215,9 @@ def main():
     # start = time.time()
     coreArgs = [minDist, maxDist, coreSize, coreTaxa, distDeviation,
                 alnStrategy, fasOff]
-    orthoCoreArgs = [CorecheckCoorthologsOff, rbh, True, evalBlast,
-                    lowComplexityFilter, evalHmmer, coreHitLimit,
-                    scoreCutoff, aligner] # rep = True
+    orthoCoreArgs = [CorecheckCoorthologsOff, rbh, True, evalBlast/10,
+                    lowComplexityFilter, evalHmmer/10, coreHitLimit,
+                    scoreCutoff, aligner] # rep = True; e-value cutoff is 10x more stringent than from ortho search
     otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
     print('Compiling core set for %s' % seqName)
     core_runtime = core_fn.run_compile_core([seqFile, seqName, refspec, seed_id, reuseCore,

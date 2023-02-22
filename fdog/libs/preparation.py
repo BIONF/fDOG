@@ -113,7 +113,11 @@ def get_seed_id_from_fa(core_fa, refspec):
 
 
 def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
-    """ Identify seed ID in reference protein set using BLAST """
+    """ Identify seed ID in reference protein set using BLAST
+    If the header of the seed fasta seq if found in the refspec proteome, then
+    if can be directly used. Otherwise do blast search. If the return blast hit
+    is longer/shorter than the seed sequence by 10 amino acids, fDOG will stop
+    """
     refspec_db = '%s/%s/%s' % (corepath, refspec, refspec)
     # first check if input seed ID existiert in refspec genome
     refspec_fa = fasta_fn.read_fasta('%s.fa' % refspec_db)
@@ -131,7 +135,7 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
         if blast_out['hits'][hit]['align_len'] == blast_out['query_len']:
             return(hit)
         elif abs(int(blast_out['hits'][hit]['align_len']) - int(blast_out['query_len'])) < 10:
-            output_fn.print_stdout(silentOff, 'WARNING: Found seed sequence shorter than input!')
+            output_fn.print_stdout(silentOff, 'WARNING: Found seed sequence shorter/longer than input!')
             return(hit)
         else:
             sys.exit('ERROR: Cannot find seed sequence in genome of reference species for %s!' % blast_out['query'])
