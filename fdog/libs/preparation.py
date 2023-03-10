@@ -19,6 +19,7 @@ import sys
 import os
 from pathlib import Path
 from Bio import SeqIO
+from Bio.Blast.Applications import NcbiblastpCommandline
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fasta as fasta_fn
@@ -90,7 +91,7 @@ def check_input(args):
     if not os.path.exists(os.path.abspath(seqFile)):
         if not os.path.exists(fdog_path + '/data/' + seqFile):
             sys.exit(
-                '%s not found in %s or %s'
+                'ERROR: %s not found in %s or %s'
                 % (seqFile, os.getcwd(), fdog_path + '/data/'))
         else:
             seqFile = fdog_path + '/data/' + seqFile
@@ -98,8 +99,23 @@ def check_input(args):
         seqFile = os.path.abspath(seqFile)
     # check refspec
     if not os.path.exists(os.path.abspath(corepath+'/'+refspec)):
-        exit('Reference taxon %s not found in %s' % (refspec, corepath))
+        exit('ERROR: Reference taxon %s not found in %s' % (refspec, corepath))
     return (seqFile, hmmpath, corepath, searchpath, annopath)
+
+
+def check_blast_version(corepath, refspec):
+    """ Check if blast DBs in corepath is compatible with blastp version """
+    fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py','')
+    query = fdog_path + '/data/infile.fa'
+    blast_db = '%s/%s/%s' % (corepath, refspec, refspec)
+    try:
+        blastp_cline = NcbiblastpCommandline(
+            query = query, db = blast_db)
+        stdout, stderr = blastp_cline()
+    except:
+        sys.exit(
+            'ERROR: Error running blast (probably conflict with BLAST DBs versions)\n%s'
+            % (NcbiblastpCommandline(query = query, db = blast_db)))
 
 
 def get_seed_id_from_fa(core_fa, refspec):

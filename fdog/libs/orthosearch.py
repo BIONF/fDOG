@@ -244,6 +244,8 @@ def run_hamstr(args):
     ### do ortholog search
     hamstr_out = {}
     if len(hamstr_jobs) > 0:
+        if cpus > len(hamstr_jobs):
+            cpus = len(hamstr_jobs)
         output_fn.print_stdout(
                 silentOff, 'Ortholog search for %s taxa...' % len(hamstr_jobs))
         if debug == True or silentOff == True or len(hamstr_jobs) == 1:

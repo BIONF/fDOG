@@ -332,7 +332,7 @@ def check_missing_ncbiID(taxon_list):
 
 
 def run_check(args):
-    (searchTaxa_dir, coreTaxa_dir, annotation_dir, replace, delete, concat, reblast, updateJson) = args
+    (searchTaxa_dir, coreTaxa_dir, annotation_dir, replace, delete, concat, reblast, updateJson, ignoreAnno) = args
     checkOptConflict(concat, replace, delete)
     caution = 0
 
@@ -391,28 +391,29 @@ def run_check(args):
         sys.exit()
 
     ### check annotation_dir
-    print('=> Checking %s...' % annotation_dir)
-    missing_anno = check_missing_json(annotation_dir, general_fn.join_2lists(search_taxa, core_taxa))
-    if len(missing_anno) > 0:
-        print('\033[92m*** WARNING: Annotation files not found for:\033[0m')
-        print(*missing_anno, sep = "\n")
-        print('NOTE: You still can run fdog without FAS using the option "-fasoff"')
-        caution = 1
-    run_check_complete_anno(annotation_dir, searchTaxa_dir, coreTaxa_dir, updateJson)
+    if not ignoreAnno:
+        print('=> Checking %s...' % annotation_dir)
+        missing_anno = check_missing_json(annotation_dir, general_fn.join_2lists(search_taxa, core_taxa))
+        if len(missing_anno) > 0:
+            print('\033[92m*** WARNING: Annotation files not found for:\033[0m')
+            print(*missing_anno, sep = "\n")
+            print('NOTE: You still can run fdog without FAS using the option "-fasoff"')
+            caution = 1
+        run_check_complete_anno(annotation_dir, searchTaxa_dir, coreTaxa_dir, updateJson)
 
-    ### check ncbi IDs
-    print('=> Checking NCBI taxonomy IDs...')
-    missing_taxa, dup_taxa = check_missing_ncbiID(general_fn.join_2lists(search_taxa, core_taxa))
-    if (len(missing_taxa) > 0):
-        print('\033[92m*** WARNING: Taxa not found in current local NCBI taxonomy database:\033[0m')
-        print(*missing_taxa, sep = "\n")
-        print('==> NOTE: You still can run fDOG with those taxa, but they will not be included in the core set compilation!')
-        caution = 1
-    if (len(dup_taxa) > 0):
-        print('\033[92m*** WARNING: These taxa have the same NCBI taxonomy IDs:\033[0m')
-        print(*dup_taxa, sep = "\n")
-        print('==> NOTE: This could lead to some conflicts!')
-        caution = 1
+        ### check ncbi IDs
+        print('=> Checking NCBI taxonomy IDs...')
+        missing_taxa, dup_taxa = check_missing_ncbiID(general_fn.join_2lists(search_taxa, core_taxa))
+        if (len(missing_taxa) > 0):
+            print('\033[92m*** WARNING: Taxa not found in current local NCBI taxonomy database:\033[0m')
+            print(*missing_taxa, sep = "\n")
+            print('==> NOTE: You still can run fDOG with those taxa, but they will not be included in the core set compilation!')
+            caution = 1
+        if (len(dup_taxa) > 0):
+            print('\033[92m*** WARNING: These taxa have the same NCBI taxonomy IDs:\033[0m')
+            print(*dup_taxa, sep = "\n")
+            print('==> NOTE: This could lead to some conflicts!')
+            caution = 1
     print('---------------------------------')
     return(caution)
 
@@ -427,6 +428,7 @@ def main():
     parser.add_argument('--concat', help='Concatenate multiple-line sequences into single-line', action='store_true', default=False)
     parser.add_argument('--reblast', help='Re-create blast databases', action='store_true', default=False)
     parser.add_argument('--updateJson', help='Update annotation json file to FAS >=1.16', action='store_true', default=False)
+    parser.add_argument('--ignoreAnno', help='Do not check annotations', action='store_true', default=False)
 
     ### get arguments
     args = parser.parse_args()
@@ -439,8 +441,9 @@ def main():
     concat = args.concat
     reblast = args.reblast
     updateJson = args.updateJson
+    ignoreAnno = args.ignoreAnno
 
-    caution = run_check([searchTaxa_dir, coreTaxa_dir, annotation_dir, replace, delete, concat, reblast, updateJson])
+    caution = run_check([searchTaxa_dir, coreTaxa_dir, annotation_dir, replace, delete, concat, reblast, updateJson, ignoreAnno])
     if caution == 1:
         print('==> Done! Data are ready to use WITH CAUTION!')
     else:

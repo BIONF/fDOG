@@ -198,6 +198,8 @@ def main():
                     corepath, searchpath, annopath, pathFile])
     pathArgs = [outpath, hmmpath, corepath, searchpath, annopath]
 
+    prepare_fn.check_blast_version(corepath, refspec)
+
     if not fasOff:
         check_fas = fas_fn.check_fas_executable()
         if check_fas == 0:

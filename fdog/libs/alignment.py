@@ -21,8 +21,6 @@ import subprocess
 import math
 import re
 from Bio import SeqIO
-from Bio.Align.Applications import MuscleCommandline
-from Bio.Align.Applications import MafftCommandline
 from io import StringIO
 
 import fdog.libs.fasta as fasta_fn
@@ -45,26 +43,61 @@ def check_fasta36_executable(fdogPath):
             sys.exit('\033[91mERROR: FASTA36 not found!\033[0m')
 
 
+def get_muscle_version(aligner):
+    """ Check muscle version (3.8 or 5.1)
+    Return v3 for v3.8, otherwise v5
+    """
+    cmd = 'muscle -version'
+    try:
+        out = subprocess.run(cmd, shell = True, capture_output = True, check = True)
+        if 'v3.8' in out.stdout.decode():
+            return('v3')
+        else:
+            return('v5')
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("Command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+        sys.exit('\033[91mERROR: Error running command\n%s\033[0m' % cmd)
+
+
 def do_align(aligner, fa_file):
     """ Do alignment using MUSCLE or MAFFT for a multiple fasta file
     Return a dictionary (SeqIO object) containing seq IDs and aligned sequences
     Note: if any input seq is longer than 12.000 aa/nt, only MAFFT can be used
     """
-    if fasta_fn.check_long_seq(fa_file) == 1:
-        aligner = 'mafft-linsi'
+    input_fa = SeqIO.to_dict((SeqIO.parse(open(fa_file), 'fasta')))
+    if len(input_fa) == 1:
+        return(input_fa)
+    out_file = fa_file.replace('@', '_')
     if aligner == 'muscle':
-        align_cline = MuscleCommandline(input = fa_file)
+        if get_muscle_version(aligner) == 'v3':
+            if fasta_fn.check_long_seq(fa_file) == 1:
+                aligner = 'mafft-linsi'
+            else:
+                aligner = 'muscle_v3'
+        else:
+            aligner = 'muscle_v5'
+
+    align_cline = ''
+    if aligner == 'muscle_v3':
+        align_cline = 'muscle -in %s' % fa_file
+    elif aligner == 'muscle_v5':
+        align_cline = 'muscle -align %s -output %s.muscle.out' % (fa_file, out_file)
     else:
-        align_cline = MafftCommandline(
-            input = fa_file, localpair = True, maxiterate = 1000)
+        align_cline = 'mafft --localpair --maxiterate 1000 %s' % fa_file
     try:
-        stdout, stderr = align_cline()
-        aln_io = StringIO(stdout)
-        aln_seq = SeqIO.to_dict((SeqIO.parse(aln_io,'fasta')))
-        return(aln_seq)
-    except:
+        aln_out = subprocess.run([align_cline], shell = True, capture_output = True, check = True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("Command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
         sys.exit(
-            'ERROR: Error doing alignment with %s for %s\n%s' % (aligner, fa_file, align_cline))
+            'ERROR: Error doing alignment with %s for %s' % (aligner, fa_file))
+
+    if aligner == 'muscle_v5':
+        aln_seq = SeqIO.to_dict((SeqIO.parse(open('%s.muscle.out' % out_file), 'fasta')))
+        os.remove('%s.muscle.out' % out_file)
+    else:
+        aln_io = StringIO(aln_out.stdout.decode().strip())
+        aln_seq = SeqIO.to_dict((SeqIO.parse(aln_io,'fasta')))
+    return(aln_seq)
 
 
 def calc_Kimura_dist(aln_dict, id_1, id_2, debug):
@@ -94,7 +127,7 @@ def calc_Kimura_dist(aln_dict, id_1, id_2, debug):
             kimura = 999
         return(kimura)
     else:
-        sys.exit('%s or %s not found in %s!' % (id_1, id_2, aln_dict))
+        sys.exit('ERROR: %s or %s not found in %s!' % (id_1, id_2, aln_dict))
 
 
 def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
@@ -121,7 +154,7 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
         fasta36_out = subprocess.run(
                 [fasta36_cmd], shell = True, capture_output = True, check = True)
     except:
-        sys.exit('Error running FASTA36\n%s' % fasta36_out)
+        sys.exit('ERROR: Error running FASTA36\n%s' % fasta36_cmd)
     # returns score for genes in fa2
     aln_score = {}
     cand_dict = SeqIO.to_dict((SeqIO.parse(open(fa2), 'fasta')))

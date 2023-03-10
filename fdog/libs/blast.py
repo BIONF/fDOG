@@ -40,8 +40,10 @@ def do_blastsearch(
         return(stdout)
     except:
         sys.exit(
-            'ERROR: Error running blastp search for %s against %s'
-            % (query, blast_db))
+            'ERROR: Error running blastp search for %s against %s\n%s'
+            % (query, blast_db, NcbiblastpCommandline(
+                query = query, db = blast_db, evalue = evalBlast, seg = filter,
+                max_target_seqs = 10, outfmt = 5)))
 
 
 def parse_blast_xml(blast_output):
