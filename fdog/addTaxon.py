@@ -109,7 +109,8 @@ def main():
     if not noAnno:
         add_taxon_fn.create_annoFile(annopath, genome_file, cpus, force)
         if os.path.exists('%s/tmp' % annopath):
-            shutil.rmtree('%s/tmp' % annopath)
+            if not os.listdir('%s/tmp' % annopath):
+                shutil.rmtree('%s/tmp' % annopath)
         out_msg = '%s, %s' % (out_msg, annopath)
 
     print('\n==> %s' % out_msg)
