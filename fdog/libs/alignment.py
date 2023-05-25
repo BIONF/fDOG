@@ -67,7 +67,9 @@ def do_align(aligner, fa_file):
     input_fa = SeqIO.to_dict((SeqIO.parse(open(fa_file), 'fasta')))
     if len(input_fa) == 1:
         return(input_fa)
-    out_file = fa_file.replace('@', '_')
+    # parse output file name (otherwise cause troubles for muscle_v5)
+    out_file = fa_file.split('/')[-1].replace('@', '_')
+    # check muscle version
     if aligner == 'muscle':
         if get_muscle_version(aligner) == 'v3':
             if fasta_fn.check_long_seq(fa_file) == 1:
@@ -76,7 +78,7 @@ def do_align(aligner, fa_file):
                 aligner = 'muscle_v3'
         else:
             aligner = 'muscle_v5'
-
+    # create alignment command and run
     align_cline = ''
     if aligner == 'muscle_v3':
         align_cline = 'muscle -in %s' % fa_file

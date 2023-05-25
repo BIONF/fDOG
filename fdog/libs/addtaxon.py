@@ -158,14 +158,16 @@ def create_genome(args):
         if len(id_dict) > 0:
             mapping_file = '%s.mapping' % genome_file
             with open(mapping_file, 'w') as mp:
-                for o,n in id_dict.items():
-                    mp.write('%s\t%s\n' % (o,n))
+                for id in in_seq:
+                    if id in id_dict:
+                        mp.write(f'{id}\t{id_dict[id]}\n')
+                    else:
+                        mp.write(f'{id}\t{id}\n')
             if pipe == 1:
                 print('\033[94mWARNING: Sequence IDs contain pipe(s). They will be replaced by "_"!\033[0m')
             if long_id == 'yes':
-                print('\033[94mWARNING: Some headers longer than 80 characters have been automatically shortened. Please check the %s.mapping file for details!\033[0m' % genome_file)
-            if pipe == 1:
-                print('\033[94mWARNING: Please check the %s file for details!\033[0m' % mapping_file)
+                print('\033[94mWARNING: Some headers longer than 80 characters have been automatically shortened.\033[0m')
+            print('\033[94mPlease check the %s file for details!\033[0m' % mapping_file)
     else:
         print(genome_path + '/' + spec_name + '.fa already exists!')
     return(genome_file)
