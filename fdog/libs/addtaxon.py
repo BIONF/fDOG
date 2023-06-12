@@ -130,8 +130,7 @@ def create_genome(args):
                 long_id = 1
                 mod_id_index = mod_id_index + 1
                 id = '%s_%s' % (spec_name.split('@')[1], mod_id_index)
-                if not ori_id in id_dict:
-                    id_dict[ori_id] = id
+                id_dict[ori_id] = id
             ### check if seq contains special characters
             if seq[-1] == '*':
                 seq = seq[:-1]
