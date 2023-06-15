@@ -55,11 +55,12 @@ def append_to_fasta_file(fa_file, new_fa_dict):
                 fa_out.write('>%s\n%s\n' % (id, seq))
 
 
-def check_long_seq(fa_file):
-    """ Check if any sequence longer than 12.000 aa/nt"""
+def check_long_seq(fa_file, max_len):
+    """ Check if any sequence longer than max_len
+    (12.000 aa/nt for muscle v3; 20.000 for muscle v5)"""
     fa_seq = SeqIO.parse(open(fa_file),'fasta')
     for fa in fa_seq:
-        if len(fa.seq) > 12000:
+        if len(fa.seq) > max_len:
             return(1)
     return(0)
 

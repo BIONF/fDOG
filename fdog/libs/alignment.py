@@ -72,12 +72,15 @@ def do_align(aligner, fa_file):
     # check muscle version
     if aligner == 'muscle':
         if get_muscle_version(aligner) == 'v3':
-            if fasta_fn.check_long_seq(fa_file) == 1:
+            if fasta_fn.check_long_seq(fa_file, 12000) == 1:
                 aligner = 'mafft-linsi'
             else:
                 aligner = 'muscle_v3'
         else:
-            aligner = 'muscle_v5'
+            if fasta_fn.check_long_seq(fa_file, 15000) == 1:
+                aligner = 'mafft-linsi'
+            else:
+                aligner = 'muscle_v5'
     # create alignment command and run
     align_cline = ''
     if aligner == 'muscle_v3':
