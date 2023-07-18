@@ -78,111 +78,115 @@ def hamstr(args):
     refspec_seqs = fasta_fn.read_fasta(refspec_fa)
     search_seqs = fasta_fn.read_fasta(search_fa)
     ### (3) Do re-blast search for each hmm hit against refspec
-    for hmm_hit in hmm_hits:
-        if not hmm_hit == seed_id: # only if search taxon == refspec
-            hmm_hit_fa = '%s/hmm_%s_%s_%s.fa' % (
-                                outpath, seqName, search_taxon, hmm_hit)
-            with open(hmm_hit_fa, 'w') as hmm_fa_out:
-                hmm_fa_out.write('>%s\n%s' % (hmm_hit, search_seqs.fetch(hmm_hit)))
-            blast_xml = blast_fn.do_blastsearch(
-                    hmm_hit_fa, refspec_db, evalBlast = evalBlast, lowComplexityFilter = lowComplexityFilter)
-            blast_out = blast_fn.parse_blast_xml(blast_xml)
-            output_fn.print_debug(debug, 'BLAST hits', blast_out)
-            if noCleanup == False:
-                os.remove(hmm_hit_fa)
-            ### (4) check reciprocity
-            ### (4a) if refspec_seq_id == best blast hit
-            if len(blast_out['hits'].keys()) > 0:
-                best_blast_hit = list(blast_out['hits'].keys())[0]
-                if best_blast_hit == hmm_hit and len(blast_out['hits'].keys()) > 1:
-                    best_blast_hit = list(blast_out['hits'].keys())[1]
-                if seed_id == best_blast_hit:
-                    output_fn.print_stdout(
-                        silentOff,
-                        '%s accepted (best blast hit is ref)' % (blast_out['query']))
-                    ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
-                    continue
-                else:
-                    ### (4b) else, check for co-ortholog ref
-                    if checkCoorthologsRefOff == False:
-                        aln_fa = '%s/blast_%s_%s_%s_%s_%s.fa' % (
-                                    outpath, seqName, seed_id, search_taxon,
-                                    hmm_hit, best_blast_hit)
-                        with open(aln_fa, 'w') as aln_fa_out:
-                            aln_fa_out.write(
-                                '>%s\n%s\n>%s\n%s\n>%s\n%s' % (
-                                    seed_id, refspec_seqs.fetch(seed_id),
-                                    hmm_hit, search_seqs.fetch(hmm_hit),
-                                    best_blast_hit, refspec_seqs.fetch(best_blast_hit)
-                                )
-                            )
-                        fasta_fn.remove_dup(aln_fa)
-                        aln_seq = align_fn.do_align(aligner, aln_fa)
-                        output_fn.print_debug(
-                            debug, 'Alignment for checking co-ortholog ref', aln_seq)
-                        br_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, seed_id, debug)
-                        bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, hmm_hit, debug)
-                        output_fn.print_debug(
-                            debug, 'Check if distance blast_vs_ref < blast_vs_hmm',
-                            'd_br = %s; d_bh = %s' % (br_dist, bh_dist))
-                        if noCleanup == False:
-                            os.remove(aln_fa)
-                        if br_dist == bh_dist == 0 or br_dist < bh_dist:
-                            output_fn.print_stdout(
-                                silentOff,
-                                '%s accepted (best blast hit is co-ortholog to ref)'
-                                % (blast_out['query'])
-                            )
-                            ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
-                            continue
-    ### (5) check co-ortholog if more than 1 HMM hits are accepted
-    if len(ortho_candi) == 0:
+    if len(hmm_hits) == 0:
         output_fn.print_stdout(
-            silentOff, 'WARNING: Reciprocity not fulfulled! No ortholog found!')
+            silentOff, 'WARNING: No HMM hit found!')
     else:
-        best_ortho = list(ortho_candi.keys())[0]
-        if not best_ortho == seed_id:
-            ortho_final = fasta_fn.add_seq_to_dict(
-                ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
-                ortho_candi[best_ortho])
-        if rep == False:
-            if len(ortho_candi) > 1:
-                aln_co_fa = '%s/coortho_%s_%s.fa' % (
-                            outpath, seqName, search_taxon)
-                with open(aln_co_fa, 'w') as aln_co_fa_out:
-                    aln_co_fa_out.write(('>%s\n%s\n') %
-                        (seed_id, refspec_seqs.fetch(seed_id)))
-                    for cand in ortho_candi:
-                        aln_co_fa_out.write(('>%s\n%s\n') %
-                            (cand, ortho_candi[cand]))
-                aln_co_seq = align_fn.do_align(aligner, aln_co_fa)
-                output_fn.print_debug(
-                    debug, 'Alignment for checking co-orthologs', aln_co_seq)
+        for hmm_hit in hmm_hits:
+            if not hmm_hit == seed_id: # only if search taxon == refspec
+                hmm_hit_fa = '%s/hmm_%s_%s_%s.fa' % (
+                                    outpath, seqName, search_taxon, hmm_hit)
+                with open(hmm_hit_fa, 'w') as hmm_fa_out:
+                    hmm_fa_out.write('>%s\n%s' % (hmm_hit, search_seqs.fetch(hmm_hit)))
+                blast_xml = blast_fn.do_blastsearch(
+                        hmm_hit_fa, refspec_db, evalBlast = evalBlast, lowComplexityFilter = lowComplexityFilter)
+                blast_out = blast_fn.parse_blast_xml(blast_xml)
+                output_fn.print_debug(debug, 'BLAST hits', blast_out)
                 if noCleanup == False:
-                    os.remove(aln_co_fa)
-                best_dist = align_fn.calc_Kimura_dist(
-                                aln_co_seq, seed_id, best_ortho, debug)
-                for cand in ortho_candi:
-                    if not cand == best_ortho:
-                        candi_dist = align_fn.calc_Kimura_dist(
-                            aln_co_seq, best_ortho, cand, debug)
-                        output_fn.print_debug(
-                            debug,
-                            'Check if distance bestHmm_vs_ref > '
-                            + 'other_vs_bestHmm',
-                            'd_best = %s; d_other = %s'
-                            % (best_dist, candi_dist))
-                        if candi_dist < best_dist:
-                            if not cand == seed_id:
-                                ortho_final = fasta_fn.add_seq_to_dict(
-                                    ortho_final,
-                                    '%s|%s|%s|0' \
-                                        % (seqName, search_taxon, cand),
-                                    ortho_candi[cand])
-        output_fn.print_stdout(
-            silentOff,
-            '=> %s orthologs found: %s'
-            % (len(ortho_final), list(ortho_final.keys())))
+                    os.remove(hmm_hit_fa)
+                ### (4) check reciprocity
+                ### (4a) if refspec_seq_id == best blast hit
+                if len(blast_out['hits'].keys()) > 0:
+                    best_blast_hit = list(blast_out['hits'].keys())[0]
+                    if best_blast_hit == hmm_hit and len(blast_out['hits'].keys()) > 1:
+                        best_blast_hit = list(blast_out['hits'].keys())[1]
+                    if seed_id == best_blast_hit:
+                        output_fn.print_stdout(
+                            silentOff,
+                            '%s accepted (best blast hit is ref)' % (blast_out['query']))
+                        ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
+                        continue
+                    else:
+                        ### (4b) else, check for co-ortholog ref
+                        if checkCoorthologsRefOff == False:
+                            aln_fa = '%s/blast_%s_%s_%s_%s_%s.fa' % (
+                                        outpath, seqName, seed_id, search_taxon,
+                                        hmm_hit, best_blast_hit)
+                            with open(aln_fa, 'w') as aln_fa_out:
+                                aln_fa_out.write(
+                                    '>%s\n%s\n>%s\n%s\n>%s\n%s' % (
+                                        seed_id, refspec_seqs.fetch(seed_id),
+                                        hmm_hit, search_seqs.fetch(hmm_hit),
+                                        best_blast_hit, refspec_seqs.fetch(best_blast_hit)
+                                    )
+                                )
+                            fasta_fn.remove_dup(aln_fa)
+                            aln_seq = align_fn.do_align(aligner, aln_fa)
+                            output_fn.print_debug(
+                                debug, 'Alignment for checking co-ortholog ref', aln_seq)
+                            br_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, seed_id, debug)
+                            bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, hmm_hit, debug)
+                            output_fn.print_debug(
+                                debug, 'Check if distance blast_vs_ref < blast_vs_hmm',
+                                'd_br = %s; d_bh = %s' % (br_dist, bh_dist))
+                            if noCleanup == False:
+                                os.remove(aln_fa)
+                            if br_dist == bh_dist == 0 or br_dist < bh_dist:
+                                output_fn.print_stdout(
+                                    silentOff,
+                                    '%s accepted (best blast hit is co-ortholog to ref)'
+                                    % (blast_out['query'])
+                                )
+                                ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
+                                continue
+        ### (5) check co-ortholog if more than 1 HMM hits are accepted
+        if len(ortho_candi) == 0:
+            output_fn.print_stdout(
+                silentOff, 'WARNING: Reciprocity not fulfulled! No ortholog found!')
+        else:
+            best_ortho = list(ortho_candi.keys())[0]
+            if not best_ortho == seed_id:
+                ortho_final = fasta_fn.add_seq_to_dict(
+                    ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
+                    ortho_candi[best_ortho])
+            if rep == False:
+                if len(ortho_candi) > 1:
+                    aln_co_fa = '%s/coortho_%s_%s.fa' % (
+                                outpath, seqName, search_taxon)
+                    with open(aln_co_fa, 'w') as aln_co_fa_out:
+                        aln_co_fa_out.write(('>%s\n%s\n') %
+                            (seed_id, refspec_seqs.fetch(seed_id)))
+                        for cand in ortho_candi:
+                            aln_co_fa_out.write(('>%s\n%s\n') %
+                                (cand, ortho_candi[cand]))
+                    aln_co_seq = align_fn.do_align(aligner, aln_co_fa)
+                    output_fn.print_debug(
+                        debug, 'Alignment for checking co-orthologs', aln_co_seq)
+                    if noCleanup == False:
+                        os.remove(aln_co_fa)
+                    best_dist = align_fn.calc_Kimura_dist(
+                                    aln_co_seq, seed_id, best_ortho, debug)
+                    for cand in ortho_candi:
+                        if not cand == best_ortho:
+                            candi_dist = align_fn.calc_Kimura_dist(
+                                aln_co_seq, best_ortho, cand, debug)
+                            output_fn.print_debug(
+                                debug,
+                                'Check if distance bestHmm_vs_ref > '
+                                + 'other_vs_bestHmm',
+                                'd_best = %s; d_other = %s'
+                                % (best_dist, candi_dist))
+                            if candi_dist < best_dist:
+                                if not cand == seed_id:
+                                    ortho_final = fasta_fn.add_seq_to_dict(
+                                        ortho_final,
+                                        '%s|%s|%s|0' \
+                                            % (seqName, search_taxon, cand),
+                                        ortho_candi[cand])
+            output_fn.print_stdout(
+                silentOff,
+                '=> %s orthologs found: %s'
+                % (len(ortho_final), list(ortho_final.keys())))
     return(ortho_final)
 
 
