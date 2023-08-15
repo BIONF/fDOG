@@ -320,11 +320,24 @@ def main():
 
     begin = time.time()
     ##### Check and group parameters
+    print('Preparing & Checking...')
     (inFol, hmmpath, corepath, searchpath, annopath) = prepare_fn.check_input(
                     [inFol, refspec, outpath, hmmpath,
                     corepath, searchpath, annopath, pathFile])
     pathArgs = [outpath, hmmpath, corepath, searchpath, annopath]
     prepare_fn.check_blast_version(corepath, refspec)
+
+    (invalid_minDist, invalid_maxDist, suggested_minRank, suggested_maxRank) = prepare_fn.check_ranks_core_taxa(corepath, minDist, maxDist)
+    if len(invalid_minDist) > 0 or len(invalid_maxDist) > 0:
+        print(f'Invalid {minDist} (--minDist) for {len(invalid_minDist)} species:\n{invalid_minDist}')
+        print(f'Invalid {maxDist} (--maxDist) for {len(invalid_maxDist)} species:\n{invalid_maxDist}')
+        if not minDist == "genus" and not maxDist == "kingdom":
+            print(f'Please consider setting --minDist and --maxDist with these valid ranks:\n--minDist {suggested_minRank} --maxDist {suggested_maxRank}')
+            sys.exit()
+        else:
+            print(f'WARNING: --minDist and --maxDist will be automatically changed to {suggested_minRank} and {suggested_maxRank}')
+            minDist = suggested_minRank
+            maxDist = suggested_maxRank
 
     if not fasOff:
         check_fas = fas_fn.check_fas_executable()

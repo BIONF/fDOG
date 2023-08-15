@@ -1,6 +1,6 @@
 blast
 hmmer
-fasta3
+fasta3=36.3.8i
 clustalw
 mafft
-muscle
+muscle=5.1

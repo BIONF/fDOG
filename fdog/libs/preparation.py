@@ -20,11 +20,13 @@ import os
 from pathlib import Path
 from Bio import SeqIO
 from Bio.Blast.Applications import NcbiblastpCommandline
+from ete3 import NCBITaxa
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fasta as fasta_fn
 import fdog.libs.blast as blast_fn
 import fdog.libs.output as output_fn
+import fdog.libs.tree as tree_fn
 
 
 ##### FUNCTIONS FOR DATA/INPUT PREPARATION #####
@@ -117,6 +119,42 @@ def check_blast_version(corepath, refspec):
             'ERROR: Error running blast (probably conflict with BLAST DBs versions)\n%s'
             % (NcbiblastpCommandline(query = query, db = blast_db)))
 
+def check_ranks_core_taxa(corepath, minDist, maxDist):
+    """ Check if all core taxa have a valid minDist and maxDist tax ID
+    Return 2 dictionaries of taxa for invalid minDist and maxDist, where
+    keys is taxon name and value is the next valid rank
+    """
+    invalid_minDist = []
+    invalid_maxDist = []
+    ncbi = NCBITaxa()
+    rank_list = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom']
+    suggest_minIndex = rank_list.index(minDist)
+    suggest_maxIndex = rank_list.index(maxDist)
+    for f in os.listdir(corepath):
+        if os.path.isdir(f'{corepath}/{f}'):
+            id = f.split('@')[1]
+            lineage = ncbi.get_lineage(id)
+            ranks = ncbi.get_rank(lineage)
+            if len(general_fn.matching_elements(ranks, minDist)) < 1:
+                invalid_minDist.append(f)
+                index_minDist = rank_list.index(minDist) + 1
+                while index_minDist < len(rank_list):
+                    if len(general_fn.matching_elements(ranks, rank_list[index_minDist])) > 0:
+                        if index_minDist > suggest_minIndex:
+                            suggest_minIndex = index_minDist
+                        break
+                    index_minDist += 1
+            if len(general_fn.matching_elements(ranks, maxDist)) < 1:
+                invalid_maxDist.append(f)
+                index_maxDist = rank_list.index(maxDist) + 1
+                while index_maxDist < len(rank_list):
+                    if len(general_fn.matching_elements(ranks, rank_list[index_maxDist])) > 0:
+                        if index_maxDist > suggest_maxIndex:
+                            suggest_maxIndex = index_maxDist
+                        break
+                    index_maxDist += 1
+    return(invalid_minDist, invalid_maxDist, rank_list[suggest_minIndex], rank_list[suggest_maxIndex])
+
 
 def get_seed_id_from_fa(core_fa, refspec):
     """ Get seed ID from core ortholog fasta file
@@ -147,11 +185,18 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
     # otherwise, perform blast search
     blast_xml = blast_fn.do_blastsearch(seqFile, refspec_db, evalBlast = 0.001)
     blast_out = blast_fn.parse_blast_xml(blast_xml)
+    if len(blast_out['hits']) < 1:
+        print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species!')
+        print(f'You can check it by running:\nblastp -query {seqFile} -db {corepath}/{refspec}/{refspec} -evalue 0.001 -outfmt 7')
+        sys.exit()
     for hit in blast_out['hits']:
         if blast_out['hits'][hit]['align_len'] == blast_out['query_len']:
+            print("BEST BLAST HIT")
             return(hit)
         elif abs(int(blast_out['hits'][hit]['align_len']) - int(blast_out['query_len'])) < 10:
             output_fn.print_stdout(silentOff, 'WARNING: Found seed sequence shorter/longer than input!')
             return(hit)
         else:
-            sys.exit('ERROR: Cannot find seed sequence in genome of reference species for %s!' % blast_out['query'])
+            print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species!')
+            print(f'You can check it by running:\nblastp -query {seqFile} -db {corepath}/{refspec}/{refspec} -evalue 0.001 -outfmt 7')
+            sys.exit()
