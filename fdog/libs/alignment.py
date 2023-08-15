@@ -22,6 +22,7 @@ import math
 import re
 from Bio import SeqIO
 from io import StringIO
+import random
 
 import fdog.libs.fasta as fasta_fn
 import fdog.libs.output as output_fn
@@ -140,8 +141,9 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
     Return dictionary {gene_id:aln_score}
     """
     fdog_path = os.path.realpath(__file__).replace('/libs/alignment.py','')
-    fa1_filename = fa1.split('/')[-1]
-    fa2_filename = fa1.split('/')[-1]
+    prefix = random.randint(0,99999)
+    fa1_filename = f'{prefix}_{fa1.split("/")[-1]}'
+    fa2_filename = f'{prefix}_{fa1.split("/")[-1]}'
     if os.path.exists(fa1_filename):
         os.remove(fa1_filename)
     if os.path.exists(fa2_filename):
