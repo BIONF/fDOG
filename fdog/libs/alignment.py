@@ -140,14 +140,16 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
     Return dictionary {gene_id:aln_score}
     """
     fdog_path = os.path.realpath(__file__).replace('/libs/alignment.py','')
-    if os.path.exists('fasta36_1.fa'):
-        os.remove('fasta36_1.fa')
-    if os.path.exists('fasta36_2.fa'):
-        os.remove('fasta36_2.fa')
-    os.symlink(fa1, 'fasta36_1.fa')
-    os.symlink(fa2, 'fasta36_2.fa')
+    fa1_filename = fa1.split('/')[-1]
+    fa2_filename = fa1.split('/')[-1]
+    if os.path.exists(fa1_filename):
+        os.remove(fa1_filename)
+    if os.path.exists(fa2_filename):
+        os.remove(fa2_filename)
+    os.symlink(fa1, fa1_filename)
+    os.symlink(fa2, fa2_filename)
     # fasta36_options = '%s %s -s BP62 -m 9 -d 0 -z -1 -E 100' % (fa1, fa2)
-    fasta36_options = 'fasta36_1.fa fasta36_2.fa -s BP62 -m 9 -d 0 -z -1 -E 100'
+    fasta36_options = f'{fa1_filename} {fa2_filename} -s BP62 -m 9 -d 0 -z -1 -E 100'
     fdog_path = os.path.realpath(__file__).replace('/libs/alignment.py','')
     fasta36_bin = check_fasta36_executable(fdog_path)
     if aln_strategy == 'global':
@@ -180,6 +182,6 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
                 if re.search('\(\s+\d+\)', l):
                     l = re.sub(r'\(\s+','(', l)
                 aln_score[gene_id] = aln_score[gene_id] + int(l.split()[2])
-    os.remove('fasta36_1.fa')
-    os.remove('fasta36_2.fa')
+    os.remove(fa1_filename)
+    os.remove(fa2_filename)
     return(aln_score)

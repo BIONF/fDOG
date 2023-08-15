@@ -51,7 +51,7 @@ jobs:
         fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasOff
         mkdir seeds
         path=$(fdog.setup -d ./ --getSourcepath); a="1 2 3"; for i in ${a[@]}; do cp $path/data/infile.fa seeds/$i.fa; done
-        echo "TEST fdog.run with only 2 search taxa"
+        echo "TEST fdogs.run"
         fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasOff --searchTaxa PARTE@5888@3,THAPS@35128@3
         echo "TEST fdog.addTaxon"
         head /home/runner/work/fDOG/fDOG/dt/searchTaxa_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
