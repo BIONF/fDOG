@@ -41,13 +41,19 @@ jobs:
         pwd
         pip install .
         path=$(fdog.setup -d ./ --getSourcepath); for i in $(less $path/data/dependencies.txt); do sudo apt-get install -y -qq $i; done
+        echo "TEST fdog.setup"
         fdog.setup -d /home/runner/work/fDOG/fDOG/dt --woFAS
+        echo "TEST fdog.checkData"
         fdog.checkData -s /home/runner/work/fDOG/fDOG/dt/searchTaxa_dir -c /home/runner/work/fDOG/fDOG/dt/coreTaxa_dir -a /home/runner/work/fDOG/fDOG/dt/annotation_dir --reblast
+        echo "TEST fdog.showTaxa"
         fdog.showTaxa
+        echo "TEST fdog.run"
         fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3 --fasOff
         mkdir seeds
         path=$(fdog.setup -d ./ --getSourcepath); a="1 2 3"; for i in ${a[@]}; do cp $path/data/infile.fa seeds/$i.fa; done
+        echo "TEST fdog.run with only 2 search taxa"
         fdogs.run --seqFolder seeds --jobName test_multi --refspec HUMAN@9606@3 --fasOff --searchTaxa PARTE@5888@3,THAPS@35128@3
+        echo "TEST fdog.addTaxon"
         head /home/runner/work/fDOG/fDOG/dt/searchTaxa_dir/HUMAN@9606@3/HUMAN@9606@3.fa > hm.fa
         fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
         ls

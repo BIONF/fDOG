@@ -140,6 +140,10 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
     Return dictionary {gene_id:aln_score}
     """
     fdog_path = os.path.realpath(__file__).replace('/libs/alignment.py','')
+    if os.path.exists('fasta36_1.fa'):
+        os.remove('fasta36_1.fa')
+    if os.path.exists('fasta36_2.fa'):
+        os.remove('fasta36_2.fa')
     os.symlink(fa1, 'fasta36_1.fa')
     os.symlink(fa2, 'fasta36_2.fa')
     # fasta36_options = '%s %s -s BP62 -m 9 -d 0 -z -1 -E 100' % (fa1, fa2)
