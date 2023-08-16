@@ -108,7 +108,7 @@ def add_all_taxa(pp_file, searchTaxa):
                         first_gene = line.split('\t')[0]
                         for i in missing_taxa:
                             if len(line.split('\t')) == 5:
-                                pp.write(f'{first_gene}\tncbi{i}\tNA\tNA\tNA\n')
+                                pp.write(f'{first_gene}\tncbi{i}\tfdogMA\tNA\tNA\n')
                             else:
-                                pp.write(f'{first_gene}\tncbi{i}\tNA\n')
+                                pp.write(f'{first_gene}\tncbi{i}\tfdogMA\n')
                         break
