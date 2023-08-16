@@ -320,7 +320,7 @@ def main():
 
     begin = time.time()
     ##### Check and group parameters
-    print('Preparing & Checking...')
+    print('##### PREPARING & CHECKING #####')
     (inFol, hmmpath, corepath, searchpath, annopath) = prepare_fn.check_input(
                     [inFol, refspec, outpath, hmmpath,
                     corepath, searchpath, annopath, pathFile])
@@ -356,7 +356,7 @@ def main():
 
     ##### DO CORE COMPILATION
     if reuseCore == False:
-        print('Starting compiling core orthologs...')
+        print('##### COMPILING CORE ORTHOLOG GROUPS #####')
         start = time.time()
         coreArgs = [minDist, maxDist, coreSize, coreTaxa, distDeviation,
                     alnStrategy, fasOff]
@@ -382,7 +382,7 @@ def main():
     ##### DO ORTHOLOG SEARCH USING HMM (HAMSTR)
     finalFa = '%s/%s.extended.fa' % (outpath, jobName)
     if not coreOnly:
-        print('Searching orthologs...')
+        print('##### SEARCHING ORTHOLOGS #####')
         start = time.time()
         if not os.path.exists(finalFa) or force == True:
             ### get list of search taxa
@@ -430,6 +430,7 @@ def main():
 
         ##### DO FINAL FAS CALCULATION
         if not fasOff:
+            print('##### CALCULATING FAS SCORES #####')
             try:
                 fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
             except:
@@ -442,6 +443,13 @@ def main():
                 multiLog.write('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
         else:
             output_fn.hamstr_2_profile(finalFa)
+
+        ##### ADD ALL SEARCH TAXA INTO PhyloProfile OUTPUT
+        pp_file = f'{outpath}/{jobName}.phyloprofile'
+        if not searchTaxa:
+            tmp = general_fn.read_dir(searchpath)
+            searchTaxa = ','.join(tmp)
+        output_fn.add_all_taxa(pp_file, searchTaxa)
 
         end = time.time()
         print('==> fdogs.run finished in ' + '{:5.3f}s'.format(end - begin))

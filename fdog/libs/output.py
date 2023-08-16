@@ -90,3 +90,25 @@ def hamstr_2_profile(fa_file):
             for id in list(fa.keys()):
                 tmp = id.split('|')
                 pp.write('%s\tncbi%s\t%s\n' % (tmp[0], tmp[1].split('@')[1], id))
+
+
+def add_all_taxa(pp_file, searchTaxa):
+    """ Add all "missing" search taxa into phyloprofile file """
+    missing_taxa = [] # missing_taxa = [ncbi_id]
+    for taxon in searchTaxa.split(','):
+        flag = general_fn.search_string_in_file(pp_file, taxon)
+        if flag == 0:
+            missing_taxa.append(taxon.split('@')[1])
+    first_gene = ''
+    if os.path.exists(pp_file):
+        with open(pp_file, 'a') as pp:
+            for line in general_fn.read_file(pp_file):
+                if not line.startswith('geneID'):
+                    if not first_gene:
+                        first_gene = line.split('\t')[0]
+                        for i in missing_taxa:
+                            if len(line.split('\t')) == 5:
+                                pp.write(f'{first_gene}\tncbi{i}\tNA\tNA\tNA\n')
+                            else:
+                                pp.write(f'{first_gene}\tncbi{i}\tNA\n')
+                        break

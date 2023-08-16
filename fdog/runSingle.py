@@ -23,6 +23,7 @@ from ete3 import NCBITaxa
 from pkg_resources import get_distribution
 import time
 
+import fdog.libs.zzz as general_fn
 import fdog.libs.preparation as prepare_fn
 import fdog.libs.orthosearch as ortho_fn
 import fdog.libs.corecompile as core_fn
@@ -189,7 +190,7 @@ def main():
 
     begin = time.time()
     ##### Check and group parameters
-    print('Preparing & Checking...')
+    print('##### PREPARING & CHECKING #####')
     if seqFile == 'infile.fa':
         fdogPath = os.path.realpath(__file__).replace('/runSingle.py','')
         seqFile = '%s/data/infile.fa' % fdogPath
@@ -224,7 +225,7 @@ def main():
         seed_id = prepare_fn.get_seed_id_from_fa(core_fa, refspec)
     else:
         seed_id = prepare_fn.identify_seed_id(seqFile, refspec, corepath, debug, silentOff)
-    print('Identified seed ID: %s' % seed_id)
+    print('==> Identified seed ID: %s' % seed_id)
 
     ##### DO CORE COMPILATION
     # start = time.time()
@@ -234,7 +235,7 @@ def main():
                     lowComplexityFilter, evalHmmer/10, coreHitLimit,
                     scoreCutoff, aligner] # rep = True; e-value cutoff is 10x more stringent than from ortho search
     otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
-    print('Compiling core set for %s' % seqName)
+    print('##### COMPILING CORE SET FOR %s #####' % seqName)
     core_runtime = core_fn.run_compile_core([seqFile, seqName, refspec, seed_id, reuseCore,
         forceCore, coreArgs, pathArgs, orthoCoreArgs, otherCoreArgs, debug])
     print('==> Core compilation finished in %s' % core_runtime[1])
@@ -243,6 +244,7 @@ def main():
     ##### DO ORTHOLOG SEARCH USING CORE HMM (HAMSTR)
     if not coreOnly:
         start = time.time()
+        print('##### SEARCHING ORTHOLOGS #####')
         # check existing output
         finalOutfile = '%s/%s.extended.fa' % (outpath, seqName)
         finalOutfile = os.path.abspath(finalOutfile)
@@ -278,6 +280,7 @@ def main():
 
         ##### DO FINAL FAS CALCULATION
         if not fasOff:
+            print('##### CALCULATING FAS SCORES #####')
             try:
                 fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
             except:
@@ -289,6 +292,13 @@ def main():
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
         else:
             output_fn.hamstr_2_profile(finalOutfile)
+
+        ##### ADD ALL SEARCH TAXA INTO PhyloProfile OUTPUT
+        pp_file = f'{outpath}/{seqName}.phyloprofile'
+        if not searchTaxa:
+            tmp = general_fn.read_dir(searchpath)
+            searchTaxa = ','.join(tmp)
+        output_fn.add_all_taxa(pp_file, searchTaxa)
 
         end = time.time()
         print('==> fdog.run finished in ' + '{:5.3f}s'.format(end - begin))

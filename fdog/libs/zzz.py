@@ -181,3 +181,16 @@ def query_yes_no(question, default='yes'):
         else:
             sys.stdout.write('Please respond with "yes" or "no" '
                              '(or "y" or "n").\n')
+
+
+def search_string_in_file(file, string):
+    """ Search for a string in file
+    Return 0 if not found, 1 if found
+    """
+    flag = 0
+    with open(file, 'r') as fp:
+        for l_no, line in enumerate(fp):
+            if string in line:
+                flag = 1
+                break
+    return(flag)
