@@ -234,6 +234,7 @@ def main():
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--force', help='Overwrite existing ortholog search output files', action='store_true', default=False)
     addtionalIO.add_argument('--forceCore', help='Overwrite existing core set of your sequence', action='store_true', default=False)
+    addtionalIO.add_argument('--notAddingTaxa', help='Do not add all search taxa to phyloprofile output', action='store_true', default=False)
     addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--debug', help='Set this flag to obtain more detailed information about the ortholog search progress', action='store_true', default=False)
@@ -310,6 +311,7 @@ def main():
     debug = args.debug
     debugCore = args.debugCore
     silentOff = args.silentOff
+    notAddingTaxa = args.notAddingTaxa
 
     # others
     aligner = args.aligner
@@ -445,11 +447,12 @@ def main():
             output_fn.hamstr_2_profile(finalFa)
 
         ##### ADD ALL SEARCH TAXA INTO PhyloProfile OUTPUT
-        pp_file = f'{outpath}/{jobName}.phyloprofile'
-        if not searchTaxa:
-            tmp = general_fn.read_dir(searchpath)
-            searchTaxa = ','.join(tmp)
-        output_fn.add_all_taxa(pp_file, searchTaxa)
+        if not notAddingTaxa:
+            pp_file = f'{outpath}/{jobName}.phyloprofile'
+            if not searchTaxa:
+                tmp = general_fn.read_dir(searchpath)
+                searchTaxa = ','.join(tmp)
+            output_fn.add_all_taxa(pp_file, searchTaxa)
 
         end = time.time()
         print('==> fdogs.run finished in ' + '{:5.3f}s'.format(end - begin))
