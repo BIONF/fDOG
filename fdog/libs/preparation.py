@@ -119,8 +119,8 @@ def check_blast_version(corepath, refspec):
             'ERROR: Error running blast (probably conflict with BLAST DBs versions)\n%s'
             % (NcbiblastpCommandline(query = query, db = blast_db)))
 
-def check_ranks_core_taxa(corepath, minDist, maxDist):
-    """ Check if all core taxa have a valid minDist and maxDist tax ID
+def check_ranks_core_taxa(corepath, refspec, minDist, maxDist):
+    """ Check if refspec (or all core taxa) have a valid minDist and maxDist tax ID
     Return 2 dictionaries of taxa for invalid minDist and maxDist, where
     keys is taxon name and value is the next valid rank
     """
@@ -131,28 +131,29 @@ def check_ranks_core_taxa(corepath, minDist, maxDist):
     suggest_minIndex = rank_list.index(minDist)
     suggest_maxIndex = rank_list.index(maxDist)
     for f in os.listdir(corepath):
-        if os.path.isdir(f'{corepath}/{f}'):
-            id = f.split('@')[1]
-            lineage = ncbi.get_lineage(id)
-            ranks = ncbi.get_rank(lineage)
-            if len(general_fn.matching_elements(ranks, minDist)) < 1:
-                invalid_minDist.append(f)
-                index_minDist = rank_list.index(minDist) + 1
-                while index_minDist < len(rank_list):
-                    if len(general_fn.matching_elements(ranks, rank_list[index_minDist])) > 0:
-                        if index_minDist > suggest_minIndex:
-                            suggest_minIndex = index_minDist
-                        break
-                    index_minDist += 1
-            if len(general_fn.matching_elements(ranks, maxDist)) < 1:
-                invalid_maxDist.append(f)
-                index_maxDist = rank_list.index(maxDist) + 1
-                while index_maxDist < len(rank_list):
-                    if len(general_fn.matching_elements(ranks, rank_list[index_maxDist])) > 0:
-                        if index_maxDist > suggest_maxIndex:
-                            suggest_maxIndex = index_maxDist
-                        break
-                    index_maxDist += 1
+        if f == refspec: # remove this if need to check for all core taxa
+            if os.path.isdir(f'{corepath}/{f}'):
+                id = f.split('@')[1]
+                lineage = ncbi.get_lineage(id)
+                ranks = ncbi.get_rank(lineage)
+                if len(general_fn.matching_elements(ranks, minDist)) < 1:
+                    invalid_minDist.append(f)
+                    index_minDist = rank_list.index(minDist) + 1
+                    while index_minDist < len(rank_list):
+                        if len(general_fn.matching_elements(ranks, rank_list[index_minDist])) > 0:
+                            if index_minDist > suggest_minIndex:
+                                suggest_minIndex = index_minDist
+                            break
+                        index_minDist += 1
+                if len(general_fn.matching_elements(ranks, maxDist)) < 1:
+                    invalid_maxDist.append(f)
+                    index_maxDist = rank_list.index(maxDist) + 1
+                    while index_maxDist < len(rank_list):
+                        if len(general_fn.matching_elements(ranks, rank_list[index_maxDist])) > 0:
+                            if index_maxDist > suggest_maxIndex:
+                                suggest_maxIndex = index_maxDist
+                            break
+                        index_maxDist += 1
     return(invalid_minDist, invalid_maxDist, rank_list[suggest_minIndex], rank_list[suggest_maxIndex])
 
 

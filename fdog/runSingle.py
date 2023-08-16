@@ -204,10 +204,12 @@ def main():
 
     prepare_fn.check_blast_version(corepath, refspec)
 
-    (invalid_minDist, invalid_maxDist, suggested_minRank, suggested_maxRank) = prepare_fn.check_ranks_core_taxa(corepath, minDist, maxDist)
+    (invalid_minDist, invalid_maxDist, suggested_minRank, suggested_maxRank) = prepare_fn.check_ranks_core_taxa(corepath, refspec, minDist, maxDist)
     if len(invalid_minDist) > 0 or len(invalid_maxDist) > 0:
-        print(f'Invalid {minDist} (--minDist) for {len(invalid_minDist)} species:\n{invalid_minDist}')
-        print(f'Invalid {maxDist} (--maxDist) for {len(invalid_maxDist)} species:\n{invalid_maxDist}')
+        if len(invalid_minDist) > 0:
+            print(f'Invalid {minDist} (--minDist) for:\t{", ".join(invalid_minDist)}')
+        if len(invalid_maxDist) > 0:
+            print(f'Invalid {maxDist} (--maxDist) for:\t{", ".join(invalid_maxDist)}')
         if not minDist == "genus" and not maxDist == "kingdom":
             print(f'Please consider setting --minDist and --maxDist with these valid ranks:\n--minDist {suggested_minRank} --maxDist {suggested_maxRank}')
             sys.exit()

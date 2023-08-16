@@ -9,14 +9,15 @@
 ### Fixed
 -
 
-## [0.1.22] - 2023.08.16
+## [0.1.23] - 2023.08.16
 
 ### Added
 - Option to NOT adding all search taxa (`--notAddingTaxa`); OFF by default,
 i.e. all search taxa will be present in phyloprofile output
-- Check invalid min-/max rank for core taxa (specified by --minDist and --maxDist).
-If the specified ranks (by default, `--minDist genus` `--maxDist kingdom`) are not available
-for all core taxa, the next valid ranks will be suggested (or automatically applied if default ranks are used)
+- Check invalid min-/max rank for referece species (specified by --minDist and --maxDist).
+If the specified ranks (by default, `--minDist genus` `--maxDist kingdom`) are not available,
+the next valid ranks will be suggested (or automatically applied if default ranks are used)
+- Check if seed sequence cannot be retrieved by blast. Return with the blast command
 
 ### Changed
 -
