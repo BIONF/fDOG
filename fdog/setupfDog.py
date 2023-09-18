@@ -248,7 +248,7 @@ def main():
     ## FAS
     if not woFAS:
         install_fas(woFAS)
-    ## hmmer, blast+, clustalw, mafft, muscle
+    ## hmmer, blast+, clustalw, mafft, muscle, augustus, metaeuk
     missing_tools = check_dependencies(fdogPath)
     if len(missing_tools) > 0:
         if check_conda_env() == True:

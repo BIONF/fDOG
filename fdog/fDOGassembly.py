@@ -361,7 +361,9 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     name_file = candidate_name + ".co"
     output_file = tmp_path + name_file + '.fasta'
     aln_file = tmp_path + name_file + '.aln'
-    genome_dir_path = dataPath + '/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
+    genome_dir_path = dataPath + '/searchTaxa_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
+    if not os.path.exists(genome_dir_path):
+        genome_dir_path = dataPath + '/genome_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
     #print(searchTool)
 
     out = open(output_file, "w")
@@ -424,7 +426,9 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     #print(fasta_path)
     orthologs = []
     #print(seedDic)
-    blast_dir_path = dataPath + "/blast_dir/"
+    blast_dir_path = dataPath + "/coreTaxa_dir/"
+    if not os.path.exists(blast_dir_path):
+        blast_dir_path = dataPath + "/blast_dir"
     if strict != True:
         seed = [fdog_ref_species]
         try:
@@ -866,7 +870,7 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.3'
+    version = '0.1.4'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
