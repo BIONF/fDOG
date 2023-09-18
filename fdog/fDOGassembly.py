@@ -29,6 +29,7 @@ import subprocess
 import time
 import shutil
 import multiprocessing as mp
+import fdog.libs.alignment as align_fn
 
 ########################### functions ##########################################
 def check_path(path):
@@ -380,8 +381,11 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     out.close()
 
     if msaTool == "muscle":
-        os.system("muscle -quiet -in " + output_file + " -out " + aln_file)
-        #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+        if align_fn.get_muscle_version(msaTool) == 'v3':
+            os.system("muscle -quiet -in " + output_file + " -out " + aln_file)
+            #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+        else:
+            os.system("muscle -quiet -align" + output_file + " -out " + aln_file)
         if not os.path.exists(aln_file):
             print("Muscle failed for " + candidate_name + ". Making MSA with Mafft-linsi.")
             os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
@@ -662,7 +666,11 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     f.close()
 
     if msaTool == "muscle":
-        os.system("muscle -quiet -in " + out + " -out " + aln_file)
+        if align_fn.get_muscle_version(msaTool) == 'v3':
+            os.system("muscle -quiet -in " + out + " -out " + aln_file)
+            #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+        else:
+            os.system("muscle -quiet -align" + out + " -out " + aln_file)
     elif msaTool == "mafft-linsi":
         os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file)
 
@@ -791,7 +799,18 @@ def blockProfiles(core_path, group, mode, out):
 
     ######################## paths ################################
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
-    check_path(msa_path)
+    if not os.path.exists(msa_path):
+        fasta_path = core_path + "/" + group +"/"+ group + ".fa"
+        check_path(fasta_path)
+        if msaTool == "muscle":
+            if align_fn.get_muscle_version(msaTool) == 'v3':
+                os.system("muscle -quiet -in " + fasta_path + " -out " + msa_path)
+                #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+            else:
+                os.system("muscle -quiet -align" + fasta_path + " -out " + msa_path)
+        elif msaTool == "mafft-linsi":
+            os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + fasta_path + ' > ' + msa_path)
+
     profile_path = out + "/tmp/" + group + ".prfl"
 
     ######################## block profile #####################################
