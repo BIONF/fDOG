@@ -51,9 +51,8 @@ def makeMSA(out_folder, gene, fasta_file):
     aln_file = out_folder + gene + '.aln'
     if align_fn.get_muscle_version('muscle') == 'v3':
         os.system('muscle -quiet -in %s -out %s' % (fasta_file, aln_file))
-        #print("muscle -quiet -in " + output_file + " -out " + aln_file)
     else:
-        os.system('muscle -quiet -align %s -out %s' % (fasta_file, aln_file))
+        os.system('muscle -align %s -output %s' % (fasta_file, aln_file))
     return aln_file
 
 def makeHMM(out_folder, gene, aln_file):
