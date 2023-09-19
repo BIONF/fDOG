@@ -192,7 +192,6 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
         sys.exit()
     for hit in blast_out['hits']:
         if blast_out['hits'][hit]['align_len'] == blast_out['query_len']:
-            print("BEST BLAST HIT")
             return(hit)
         elif abs(int(blast_out['hits'][hit]['align_len']) - int(blast_out['query_len'])) < 10:
             output_fn.print_stdout(silentOff, 'WARNING: Found seed sequence shorter/longer than input!')
