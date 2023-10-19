@@ -30,6 +30,7 @@ import time
 import shutil
 import multiprocessing as mp
 import fdog.libs.alignment as align_fn
+from tqdm import tqdm
 
 ########################### functions ##########################################
 def check_path(path):
@@ -270,7 +271,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
 def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, db):
     output = open(candidatesOutFile, "w")
     region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
-    region.write("Conting/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
+    region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
 
     for key in regions:
         locations = regions[key]
@@ -284,7 +285,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             region.write(file + "\t" + str(start) + "\t" + str(end) + "\n")
             #metaeuk call
-            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " +  tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
+            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
             #print(cmd)
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
             starting_subprocess(cmd, mode)
@@ -356,10 +357,10 @@ def getSeedInfo(path):
     del seq_records
     return dic
 
-def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath, tmp_path):
+def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidatesOutFile, msaTool, matrix, dataPath, tmp_path, mode='silent'):
     ###########getting sequences and write all in one file to make msa #########
     name_file = candidate_name + ".co"
-    output_file = tmp_path + name_file + '.fasta'
+    output_file = tmp_path + name_file + '.fa'
     aln_file = tmp_path + name_file + '.aln'
     genome_dir_path = dataPath + '/searchTaxa_dir/%s/%s.fa'%(fdog_ref_species, fdog_ref_species)
     if not os.path.exists(genome_dir_path):
@@ -384,17 +385,19 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     if msaTool == "muscle":
         if align_fn.get_muscle_version(msaTool) == 'v3':
-            os.system("muscle -quiet -in " + output_file + " -out " + aln_file)
-            #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+            cmd = "muscle -quiet -in " + output_file + " -out " + aln_file
         else:
-            os.system("muscle -quiet -align" + output_file + " -out " + aln_file)
+            cmd = "muscle -align " + output_file + " -output " + aln_file
+        starting_subprocess(cmd, mode)
         if not os.path.exists(aln_file):
-            print("Muscle failed for " + candidate_name + ". Making MSA with Mafft-linsi.")
-            os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
+            print("Muscle failed for %s. Making MSA with Mafft-linsi." % (candidate_name))
+            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file
+            starting_subprocess(cmd, mode)
 
     elif msaTool == "mafft-linsi":
         #print("mafft-linsi")
-        os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file)
+        cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file
+        starting_subprocess(cmd, mode)
 
     try:
         distances = get_distance_biopython(aln_file, matrix)
@@ -405,8 +408,6 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         pass
         #print("Failure in distance computation, Candidate  %s will be rejected" % candidate_name)
         return 0, "NaN", "NaN"
-
-
 
     #distance_hit_query = distances[best_hit, candidate_name]
     #distance_ref_hit = distances[best_hit, ref]
@@ -427,8 +428,10 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
     orthologs = []
     #print(seedDic)
     blast_dir_path = dataPath + "/coreTaxa_dir/"
+    #print(blast_dir_path)
     if not os.path.exists(blast_dir_path):
-        blast_dir_path = dataPath + "/blast_dir"
+        blast_dir_path = dataPath + "/blast_dir/"
+    #print(blast_dir_path)
     if strict != True:
         seed = [fdog_ref_species]
         try:
@@ -639,8 +642,14 @@ def cleanup(tmp, tmp_path):
             if time.time() > timeout:
                 print("tmp folder could not be removed!")
                 break
+    else:
+        # clean up whole contigs
+        for root, dirs, files in os.walk(tmp_path):
+            for file in files:
+                if file.endswith(".fasta"):
+                    os.remove(os.path.join(root, file))
 
-def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix):
+def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix, mode='silent'):
     if len(candidate_names) == 1:
         return candidate_names
 
@@ -671,12 +680,18 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     if msaTool == "muscle":
         if align_fn.get_muscle_version(msaTool) == 'v3':
-            os.system("muscle -quiet -in " + out + " -out " + aln_file)
+            cmd = "muscle -quiet -in %s -out %s" % (out, aln_file)
             #print("muscle -quiet -in " + output_file + " -out " + aln_file)
         else:
-            os.system("muscle -quiet -align" + out + " -out " + aln_file)
+            cmd = "muscle -align %s -output %s" % (out, aln_file)
+        starting_subprocess(cmd, mode)
+        if not os.path.exists(aln_file):
+            print("Muscle failed for %s. Making MSA with Mafft-linsi." % (aln_file))
+            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file
+            starting_subprocess(cmd, mode)
     elif msaTool == "mafft-linsi":
-        os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file)
+        cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet %s > %s'% (out, aln_file)
+        starting_subprocess(cmd, mode)
 
     distances = get_distance_biopython(aln_file, matrix)
 
@@ -808,18 +823,19 @@ def blockProfiles(core_path, group, mode, out):
         check_path(fasta_path)
         if msaTool == "muscle":
             if align_fn.get_muscle_version(msaTool) == 'v3':
-                os.system("muscle -quiet -in " + fasta_path + " -out " + msa_path)
+                cmd= "muscle -quiet -in " + fasta_path + " -out " + msa_path
                 #print("muscle -quiet -in " + output_file + " -out " + aln_file)
             else:
-                os.system("muscle -quiet -align" + fasta_path + " -out " + msa_path)
+                cmd = "muscle -quiet -align" + fasta_path + " -out " + msa_path
         elif msaTool == "mafft-linsi":
-            os.system('mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + fasta_path + ' > ' + msa_path)
+            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + fasta_path + ' > ' + msa_path
+        starting_subprocess(cmd, mode)
 
     profile_path = out + "/tmp/" + group + ".prfl"
 
     ######################## block profile #####################################
 
-    print("Building a block profile ...")
+    print("Building a block profile ...", flush=True)
     cmd = 'msa2prfl.pl ' + msa_path + ' --setname=' + group + ' >' + profile_path
     starting_subprocess(cmd, 'silent')
 
@@ -832,7 +848,7 @@ def blockProfiles(core_path, group, mode, out):
         starting_subprocess(cmd, mode)
         cmd = 'msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path
         starting_subprocess(cmd, 'silent')
-        print(" \t ...finished \n")
+        print(" \t ...finished \n", flush=True)
 
     return profile_path
 
@@ -992,18 +1008,14 @@ def main():
             sys.exit()
         elif force == True:
             shutil.rmtree(out + '/' + group, ignore_errors=True)
-            refBool = False
             os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
             out = out + '/' + group + '/'
         elif append == True:
             out = out + '/' + group + '/'
-            refBool = True
-        else:
-            refBool = False # checks if sequences of reference species were already part of the extended.fa file
+
     else:
         os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
         out = out + '/' + group + '/'
-        refBool = False
 
     if core_path == '':
         core_path = out + '/core_orthologs/'
@@ -1031,7 +1043,8 @@ def main():
         sys.stderr = f
         sys.stdout = f
     else:
-        sys.stdout = Logger(f)
+        pass
+        #sys.stdout = Logger(f)
 
     ########################### other variables ################################
     if searchTaxa == []:
@@ -1069,8 +1082,8 @@ def main():
     cmd = 'mkdir ' + out + '/tmp'
     starting_subprocess(cmd, 'silent')
 
-    print("Gene: " + group)
-    print("fDOG reference species: " + fdog_ref_species + " \n")
+    print("Gene: " + group, flush=True)
+    print("fDOG reference species: " + fdog_ref_species + " \n",flush=True)
 
     ###################### preparations ########################################
 
@@ -1103,21 +1116,30 @@ def main():
         for asName in assembly_names:
             calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db])
 
-        results = (pool.imap_unordered(ortholog_search_tblastn, calls))
-        pool.close()
-        pool.join()
-        for i in results:
+
+        #results = (pool.imap_unordered(ortholog_search_tblastn, calls))
+        #pool.close()
+        #pool.join()
+        print("Searching for orthologs ...", flush=True)
+        for i in tqdm(pool.imap_unordered(ortholog_search_tblastn, calls),total=len(calls)):
             ortholog_sequences.append([i[0], i[1]])
-            for k in i[2]:
-                print(k)
+            if mode == 'debug':
+                for k in i[2]:
+                    print(k)
+        #for i in results:
+            #ortholog_sequences.append([i[0], i[1]])
+            #for k in i[2]:
+                #print(k)
+        print("\t ...finished \n", flush=True)
     else:
         ###################### computation species wise ################
-        for asName in assembly_names:
+        for asName in tqdm(assembly_names):
             args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db]
             reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search_tblastn(args)
             ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
-            for k in output_ortholog_search:
-                print(k)
+            if mode == 'debug':
+                for k in output_ortholog_search:
+                    print(k)
 
     time_ortholog_end = time.time()
     time_ortholog = time_ortholog_end - time_ortholog_start
@@ -1141,6 +1163,7 @@ def main():
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
+        #print(cmd)
         starting_subprocess(cmd, 'silent')
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
