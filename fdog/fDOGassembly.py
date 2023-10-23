@@ -285,7 +285,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             region.write(file + "\t" + str(start) + "\t" + str(end) + "\n")
             #metaeuk call
-            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1"
+            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files"
             #print(cmd)
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
             starting_subprocess(cmd, mode)
@@ -685,12 +685,13 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
         else:
             cmd = "muscle -align %s -output %s" % (out, aln_file)
         starting_subprocess(cmd, mode)
+        #print(cmd)
         if not os.path.exists(aln_file):
             print("Muscle failed for %s. Making MSA with Mafft-linsi." % (aln_file))
-            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file
+            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet %s > %s' % (out, aln_file)
             starting_subprocess(cmd, mode)
     elif msaTool == "mafft-linsi":
-        cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet %s > %s'% (out, aln_file)
+        cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet %s > %s' % (out, aln_file)
         starting_subprocess(cmd, mode)
 
     distances = get_distance_biopython(aln_file, matrix)
@@ -699,7 +700,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     min_name = None
 
     for name in candidate_names:
-        distance = distances[ref_id , name]
+        distance = distances[ref_id, name]
         if distance <= min_dist:
             min_dist = distance
             min_name = name
@@ -709,7 +710,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     for name in candidate_names:
         if name == min_name:
             pass
-        elif distances[min_name , name] <= distances[min_name , ref_id]:
+        elif distances[min_name, name] <= distances[min_name, ref_id]:
             checked.append(name)
 
     return checked
@@ -718,7 +719,7 @@ def clean_fas(path, file_type):
     file = open(path, "r")
     lines = file.readlines()
     file.close()
-    file = open(path,"w")
+    file = open(path, "w")
 
     for line in lines:
         if file_type == 'domains':
@@ -819,7 +820,7 @@ def blockProfiles(core_path, group, mode, out):
     ######################## paths ################################
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
     if not os.path.exists(msa_path):
-        fasta_path = core_path + "/" + group +"/"+ group + ".fa"
+        fasta_path = core_path + "/" + group + "/" + group + ".fa"
         check_path(fasta_path)
         if msaTool == "muscle":
             if align_fn.get_muscle_version(msaTool) == 'v3':
