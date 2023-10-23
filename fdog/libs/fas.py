@@ -78,7 +78,7 @@ def calc_pairwise_fas(seed_json, query_json, seqName, hmmpath):
     general_fn.check_file_exist(seed_json)
     general_fn.check_file_exist(query_json)
 
-    fas_cmd = 'fas.run -s %s -q %s' % (seed_json, query_json)
+    fas_cmd = 'fas.run -s %s -q %s --no_config' % (seed_json, query_json)
     fas_cmd = '%s -a %s/%s --raw --tsv --domain --cpus 1 -o %s/%s' \
                 % (fas_cmd, hmmpath, seqName, hmmpath, seqName)
     try:
