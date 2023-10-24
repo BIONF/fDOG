@@ -9,7 +9,7 @@
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  hamstr1s is distributed in the hope that it will be useful,
+#  fdog is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
@@ -26,8 +26,7 @@ with open("README.md", "r") as input:
 
 setup(
     name="fdog",
-    version="0.0.52",
-
+    version="0.1.24",
     python_requires='>=3.7.0',
     description="Feature-aware Directed OrtholoG search tool",
     long_description=long_description,
@@ -43,6 +42,8 @@ setup(
         'ete3',
         'six',
         'PyYAML',
+        'pyhmmer',
+        'pysam',
         'greedyFAS>=1.11.2'
     ],
     entry_points={
@@ -53,10 +54,11 @@ setup(
                             "fdog.addTaxon = fdog.addTaxon:main",
                             "fdog.addTaxa = fdog.addTaxa:main",
                             "fdog.showTaxa = fdog.showTaxa:main",
+                            "fdog.setPaths = fdog.setPaths:main",
                             "fdog.mergeOutput = fdog.mergeOutput:main",
-                            "fdog.remove = fdog.removefDog:main",
+                            "fdog.uninstall = fdog.removefDog:main",
                             "fdog.assembly = fdog.fDOGassembly:main",
-                            "fdog.mergeAssembly = fdog.mergeAssemblyOutput:main"],
+                            "fdog.addCoreGroup = fdog.makeCoreGroupFromFasta:main"],
     },
     license="GPL-3.0",
     classifiers=[

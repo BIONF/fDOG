@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 
 #######################################################################
-# Copyright (C) 2020 Vinh Tran
+# Copyright (C) 2022 Vinh Tran
 #
 #  This script is used to prepare data for fdog.
-#  For each given genome FASTA file, It will create a folder within genome_dir
+#  For each given genome FASTA file, It will create a folder within searchTaxa_dir
 #  with the naming scheme of fdog ([Species acronym]@[NCBI ID]@[Proteome version]
-#  e.g HUMAN@9606@3), a annotation file in JSON format in weight_dir and
-#  a blast DB in blast_dir folder (optional).
-#  For a long header of original FASTA sequence, only the first word
-#  will be taken as the ID of new fasta file, everything after the
-#  first whitespace will be removed. If this first word is not unique,
-#  an automatically increasing index will be added.
+#  e.g HUMAN@9606@3), a annotation file in JSON format in annotation_dir and
+#  a blast DB in coreTaxa_dir folder (optional).
 #
 #  This script is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -26,104 +22,78 @@
 import sys
 import os
 import argparse
-from os import listdir
-from os.path import isfile, join
 from pathlib import Path
-import subprocess
+from Bio import SeqIO
 import multiprocessing as mp
+from tqdm import tqdm
 from ete3 import NCBITaxa
-import csv
-from io import StringIO
 import re
 import shutil
-from tqdm import tqdm
 from datetime import datetime
+import time
+from pkg_resources import get_distribution
+from collections import OrderedDict
 
-def checkFileExist(file):
-    if not os.path.exists(os.path.abspath(file)):
-        sys.exit('%s not found' % file)
+import fdog.libs.zzz as general_fn
+import fdog.libs.tree as tree_fn
+import fdog.libs.addtaxon as add_taxon_fn
 
-def getTaxName(taxId):
-    ncbi = NCBITaxa()
-    try:
-        ncbiName = ncbi.get_taxid_translator([taxId])[int(taxId)]
-        ncbiName = re.sub('[^a-zA-Z1-9\s]+', '', ncbiName)
-        taxName = ncbiName.split()
-        name = taxName[0][:3].upper()+taxName[1][:2].upper()
-    except:
-        name = "UNK" + taxId
-    return(name)
 
-def parseMapFile(mappingFile):
-    nameDict = {}
-    with open(mappingFile) as f:
+def parse_map_file(mapping_file, folIn):
+    """ Create spec name from mapping file
+    And also check if given input files in mapping file exist
+    """
+    name_dict = {}
+    with open(mapping_file) as f:
       for line in f:
         if not '#' in line:
             tmp = line.split('\t')
-            fileName = tmp[0]
-            taxId = tmp[1].strip()
+            file_name = tmp[0]
+            file_in = '%s/%s' % (folIn, file_name)
+            general_fn.check_file_exist(file_in)
+            tax_id = tmp[1].strip()
             try:
-                taxName = tmp[2].strip()
+                tax_name = tmp[2].strip()
             except:
-                taxName = getTaxName(taxId)
+                tax_name = ''
             try:
                 ver = tmp[3].strip()
             except:
-                ver = datetime.today().strftime('%y%m%d') #1
-            # print(taxName+"@"+str(taxId)+"@"+str(ver))
-            nameDict[fileName] = (taxName, str(taxId), str(ver))
-    return(nameDict)
+                ver = datetime.today().strftime('%y%m%d')
+            spec_name = add_taxon_fn.generate_spec_name(tax_id, tax_name, ver)
+            name_dict[file_in] = spec_name
+    return(name_dict)
 
-def runAddTaxon(args):
-    (f,n,i,o,c,v,a,cpus,replace,delete) = args
-    cmd = 'fdog.addTaxon -f %s -n %s -i %s -o %s -v %s --cpus %s' % (f,n,i,o,v,cpus)
-    if c == True:
-        cmd = cmd + ' -c'
-    if a == True:
-        cmd = cmd + ' -a'
-    if replace == True:
-        cmd = cmd + ' --replace'
-    if delete == True:
-        cmd = cmd + ' --delete'
-    # print(cmd)
-    logFile = o + '/addTaxa2fDog.log'
-    cmd = cmd + ' >> ' + logFile
-    try:
-        subprocess.call([cmd], shell = True)
-    except:
-        sys.exit('Problem running\n%s' % (cmd))
 
 def main():
-    version = '0.0.9'
-    parser = argparse.ArgumentParser(description='You are running fdog.addTaxa version ' + str(version) + '.')
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-i', '--input', help='Path to input folder', action='store', default='', required=True)
     required.add_argument('-m', '--mapping',
-                            help='Tab-delimited text file containing <fasta_filename>tab<taxonID>tab<taxonName>tab<genome_version>. The last 2 columns are optional.',
+                            help='Tab-delimited text file containing <fasta_file_name>tab<taxonID>tab<taxonName>tab<genome_version>. The last 2 columns are optional.',
                             action='store', default='', required=True)
     optional.add_argument('-o', '--outPath', help='Path to output directory', action='store', default='')
-    optional.add_argument('-c', '--coreTaxa', help='Include these taxa to core taxa (i.e. taxa in blast_dir folder)', action='store_true', default=False)
-    optional.add_argument('-a', '--noAnno', help='Do NOT annotate these taxa using fas.doAnno', action='store_true', default=False)
+    optional.add_argument('--searchpath', help='Path to search taxa folder (e.g. fdog_data/searchTaxa_dir)', action='store', default='')
+    optional.add_argument('--corepath', help='Path to core taxa folder (e.g. fdog_data/coreTaxa_dir)', action='store', default='')
+    optional.add_argument('--annopath', help='Path to annotation folder (e.g. fdog_data/annotation_dir)', action='store', default='')
+    optional.add_argument('-c', '--coreTaxa', help='Include this taxon to core taxa (i.e. taxa in coreTaxa_dir folder)', action='store_true', default=False)
+    optional.add_argument('-a', '--noAnno', help='Do NOT annotate this taxon using fas.doAnno', action='store_true', default=False)
     optional.add_argument('--cpus', help='Number of CPUs used for annotation. Default = available cores - 1', action='store', default=0, type=int)
     optional.add_argument('--replace', help='Replace special characters in sequences by "X"', action='store_true', default=False)
     optional.add_argument('--delete', help='Delete special characters in sequences', action='store_true', default=False)
-    optional.add_argument('-f', '--force', help='Force overwrite existing data', action='store_true', default=False)
+    optional.add_argument('--force', help='Force overwrite existing data', action='store_true', default=False)
 
-    ### get arguments
     args = parser.parse_args()
     folIn = args.input
+    folIn = os.path.abspath(folIn)
     mapping = args.mapping
-    checkFileExist(mapping)
+    general_fn.check_file_exist(mapping)
     outPath = args.outPath
-    if outPath == '':
-        fdogPath = os.path.realpath(__file__).replace('/addTaxa.py','')
-        pathconfigFile = fdogPath + '/bin/pathconfig.txt'
-        if not os.path.exists(pathconfigFile):
-            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
-        with open(pathconfigFile) as f:
-            outPath = f.readline().strip()
-    outPath = os.path.abspath(outPath)
+    searchpath = args.searchpath
+    corepath = args.corepath
+    annopath = args.annopath
     noAnno = args.noAnno
     coreTaxa = args.coreTaxa
     cpus = args.cpus
@@ -131,61 +101,66 @@ def main():
         cpus = mp.cpu_count()-2
     replace = args.replace
     delete = args.delete
+    add_taxon_fn.check_conflict_opts(replace, delete)
     force = args.force
 
+    start = time.time()
+    ### parse mapping file
+    name_dict = parse_map_file(mapping, folIn)
 
-    ### get existing genomes
-    Path(outPath + "/genome_dir").mkdir(parents = True, exist_ok = True)
-    Path(outPath + "/weight_dir").mkdir(parents = True, exist_ok = True)
-    genomeFiles = listdir(outPath + "/genome_dir")
+    ### initiate paths
+    fdogPath = os.path.realpath(__file__).replace('/addTaxa.py','')
+    (outPath, searchpath, corepath, annopath) = add_taxon_fn.get_paths(outPath, fdogPath, searchpath, corepath, annopath)
+    Path(searchpath).mkdir(parents = True, exist_ok = True)
 
-    ### generate taxon names from mapping file
-    nameDict = parseMapFile(mapping)
+    ### create file in searchTaxa_dir [and coreTaxa_dir]
+    genome_jobs = []
+    blast_jobs = []
+    for f in name_dict:
+        spec_name = name_dict[f]
+        ## remove old folder if force is set
+        if force == True:
+            if os.path.exists('%s/%s' % (searchpath, spec_name)):
+                shutil.rmtree('%s/%s' % (searchpath, spec_name))
+            if os.path.exists('%s/%s' % (corepath, spec_name)):
+                shutil.rmtree('%s/%s' % (corepath, spec_name))
+        ## create jobs
+        genome_path = '%s/%s' % (searchpath, spec_name)
+        Path(genome_path).mkdir(parents = True, exist_ok = True)
+        genome_jobs.append([f, genome_path, spec_name, force, replace, delete])
+        if coreTaxa:
+            genome_file = '%s/%s.fa' % (genome_path, spec_name)
+            blast_jobs.append([searchpath, corepath, outPath, spec_name, genome_file, force, True])
+    pool = mp.Pool(cpus)
 
-    ### read all input fasta files and create addTaxon jobs
-    jobs = []
-    dupList = {}
-    faFiles = [f for f in listdir(folIn) if isfile(join(folIn, f))]
-    for f in faFiles:
-        # tmp = f.split('.')
-        if f in nameDict:
-            # check duplicated taxon name in existing data
-            taxName = '@'.join(nameDict[f])
-            flag = 1
-            if taxName in genomeFiles:
-                if force:
-                    shutil.rmtree(outPath + "/genome_dir/" + taxName)
-                    if not noAnno:
-                        shutil.rmtree(outPath + "/weight_dir/" + taxName)
-                else:
-                    flag = 0
-                dupList[f] = taxName
+    print('Parsing genome for %s species...' % len(genome_jobs))
+    genome_out = []
+    for _ in tqdm(pool.imap_unordered(add_taxon_fn.create_genome, genome_jobs),
+            total=len(genome_jobs)):
+        genome_out.append(_)
+    out_msg = 'Output for %s can be found in %s'  % (spec_name, searchpath)
+    if len(blast_jobs) > 0:
+        print('\nCreating Blast DB for %s species...' % len(blast_jobs))
+        blast_out = []
+        for _ in tqdm(pool.imap_unordered(add_taxon_fn.create_blastdb, blast_jobs),
+                total=len(blast_jobs)):
+            blast_out.append(_)
+        out_msg = '%s, %s' % (out_msg, corepath)
 
-            if flag == 1:
-                fasta = folIn + '/' + f
-                name = nameDict[f][0]
-                taxid = nameDict[f][1]
-                verProt = nameDict[f][2]
-                jobs.append([
-                    folIn + '/' + f, nameDict[f][0], nameDict[f][1],
-                    outPath, coreTaxa, nameDict[f][2], noAnno, cpus, replace, delete
-                ])
+    ### create annotation
+    if not noAnno:
+        Path(annopath).mkdir(parents = True, exist_ok = True)
+        for f in name_dict:
+            genome_file = '%s/%s/%s.fa' % (searchpath, name_dict[f], name_dict[f])
+            add_taxon_fn.create_annoFile(annopath, genome_file, cpus, force)
+        if os.path.exists('%s/tmp' % annopath):
+            if not os.listdir('%s/tmp' % annopath):
+                shutil.rmtree('%s/tmp' % annopath)
+        out_msg = '%s, %s' % (out_msg, annopath)
 
-    if len(dupList) > 0:
-        print("These taxa are probably already present in %s:" % (outPath + "/genome_dir"))
-        for f in dupList:
-            print('\t'+f+'\t'+dupList[f])
-        if force:
-            print('They will be deleted and re-compiled!')
-        else:
-            sys.exit("Please remove them from the mapping file or use different Name/ID/Version!")
-
-    print('Parsing...')
-    for job in tqdm(jobs):
-        # print('@'.join([job[1],job[2],job[5]]) + '\t' + job[0])
-        runAddTaxon(job)
-
-    print('Output can be found in %s' % outPath)
+    end = time.time()
+    print('==> Adding %s taxa finished in %s'  % (len(name_dict), '{:5.3f}s'.format(end - start)))
+    print('==> %s' % out_msg)
 
 if __name__ == '__main__':
     main()

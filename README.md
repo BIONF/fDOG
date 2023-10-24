@@ -44,30 +44,24 @@ export PATH=$HOME/.local/bin:$PATH
 
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
 
-**NOTE**: in case you haven't installed [greedyFAS](https://github.com/BIONF/FAS) before, it will be installed automatically within *fDOG* setup. However, you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) after *fDOG* setup finished before actually using *fDOG*!
+**NOTE**: in case you haven't installed [greedyFAS](https://github.com/BIONF/FAS), it will be installed automatically within *fDOG* setup. However, you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) after *fDOG* setup finished before actually using *fDOG*!
 
 You can setup fDOG by running this command
 ```
-fdog.setup -o /output/path/for/fdog/data
+fdog.setup -d /output/path/for/fdog/data
 ```
-or, in case you are using Anaconda
-```
-fdog.setup -o /output/path/for/fdog/data --conda
-```
-
-*You should have the sudo password ready, otherwise some missing dependencies cannot be installed. See [dependency list](#dependencies) for more info. If you do not have root privileges, ask your admin to install those dependencies using `fdog.setup --lib` command.*
 
 [Pre-calculated data set](https://github.com/BIONF/fDOG/wiki/Input-and-Output-Files#data-structure) of fdog will be saved in `/output/path/for/fdog/data`. After the setup run successfully, you can start using *fdog*. **Please make sure to check if you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) first.**
 
 You will get a warning if any of the dependencies are not ready to use, please solve those issues and rerun `fdog.setup`.
 
-*For debugging the setup, please create a log file by running the setup as e.g. `fdog.setup | tee log.txt` for Linux/MacOS or `fdog.setup --conda | tee log.txt` for Anaconda and send us that log file, so that we can trouble shoot the issues. Most of the problems can be solved by just re-running the setup.*
+*For debugging the setup, please create a log file by running the setup as e.g. `fdog.setup | tee log.txt` and send us that log file, so that we can trouble shoot the issues. Most of the problems can be solved by just re-running the setup.*
 
 # Usage
 *fdog* will run smoothly with the provided sample input file 'infile.fa' if everything is set correctly.
 
 ```
-fdog.run --seqFile infile.fa --seqName test --refspec HUMAN@9606@3
+fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3
 ```
 The output files with the prefix `test` will be saved at your current working directory.
 You can have an overview about all available options with the command
@@ -81,9 +75,9 @@ Please find more information in [our wiki](https://github.com/BIONF/fDOG/wiki) t
 
 Within the data package we provide a set of 78 reference taxa. They can be automatically downloaded during the setup. This data comes "ready to use" with the *fdog* framework. Species data must be present in the three directories listed below:
 
-* genome_dir (Contains sub-directories for proteome fasta files for each species)
-* blast_dir (Contains sub-directories for BLAST databases made with `makeblastdb` out of your proteomes)
-* weight_dir (Contains feature annotation files for each proteome)
+* searchTaxa_dir (Contains sub-directories for proteome fasta files for each species)
+* coreTaxa_dir (Contains sub-directories for BLAST databases made with `makeblastdb` out of your proteomes)
+* annotation_dir (Contains feature annotation files for each proteome)
 
 For each species/taxon there is a sub-directory named in accordance to the naming schema ([Species acronym]@[NCBI ID]@[Proteome version])
 
@@ -95,7 +89,7 @@ For adding **one gene set**, please use the `fdog.addTaxon` function:
 fdog.addTaxon -f newTaxon.fa -i tax_id [-o /output/directory] [-n abbr_tax_name] [-c] [-v protein_version] [-a]
 ```
 
-in which, the first 3 arguments are required including `newTaxon.fa` is the gene set that need to be added, `tax_id` is its NCBI taxonomy ID, `/output/directory` is where the sub-directories can be found (*genome_dir*, *blast_dir* and *weight_dir*). If not given, new taxon will be added into the same directory of pre-calculated data. Other arguments are optional, which are `-n` for specify your own taxon name (if not given, an abbriviate name will be suggested based on the NCBI taxon name of the input `tax_id`), `-c` for calculating the BLAST DB (only needed if you need to include your new taxon into the list of taxa for compilating the core set), `-v` for identifying the genome/proteome version (default will be 1), and `-a` for turning off the annotation step (*not recommended*).
+in which, the first 3 arguments are required including `newTaxon.fa` is the gene set that need to be added, `tax_id` is its NCBI taxonomy ID, `/output/directory` is where the sub-directories can be found (*genome_dir*, *blast_dir* and *weight_dir*). If not given, new taxon will be added into the same directory of pre-calculated data. Other arguments are optional, which are `-n` for specify your own taxon name (if not given, an abbriviate name will be suggested based on the NCBI taxon name of the input `tax_id`), `-c` for calculating the BLAST DB (only needed if you need to include your new taxon into the list of taxa for compilating the core set), `-v` for identifying the genome/proteome version (default will be the current date <YYMMDD>), and `-a` for turning off the annotation step (*not recommended*).
 
 ## Adding a list of gene sets into fDOG
 For adding **more than one gene set**, please use the `fdog.addTaxa` script:
