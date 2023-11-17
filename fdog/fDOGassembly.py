@@ -1107,7 +1107,7 @@ def main():
 
     ortholog_sequences = []
     time_ortholog_start = time.time()
-
+    
     if parallel == True:
         ##################### parallel computation #############################
         calls = []
@@ -1116,35 +1116,13 @@ def main():
         for asName in assembly_names:
             calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db])
 
-        results = (pool.imap_unordered(ortholog_search_tblastn, calls))
-        pool.close()
-        pool.join()
-        for i in results:
-            ortholog_sequences.append([i[0], i[1]])
-            for k in i[2]:
-                print(k)
-    else:
-        ###################### computation species wise ################
-        for asName in assembly_names:
-            args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db]
-            reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search_tblastn(args)
-            ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
-            for k in output_ortholog_search:
-                print(k)
-
-        #results = (pool.imap_unordered(ortholog_search_tblastn, calls))
-        #pool.close()
-        #pool.join()
         print("Searching for orthologs ...", flush=True)
         for i in tqdm(pool.imap_unordered(ortholog_search_tblastn, calls),total=len(calls)):
             ortholog_sequences.append([i[0], i[1]])
             if mode == 'debug':
                 for k in i[2]:
                     print(k)
-        #for i in results:
-            #ortholog_sequences.append([i[0], i[1]])
-            #for k in i[2]:
-                #print(k)
+
         print("\t ...finished \n", flush=True)
     else:
         ###################### computation species wise ################
