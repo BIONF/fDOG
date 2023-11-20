@@ -1146,7 +1146,7 @@ def main():
     time_ortholog = time_ortholog_end - time_ortholog_start
 
     ################## preparing output ########################################
-    orthologsOutFile = out + "/" + group + ".extended.fa"
+    orthologsOutFile = out + "/" + group + "_og.fa"
 
     if taxa == []:
         taxa = [fdog_ref_species]
