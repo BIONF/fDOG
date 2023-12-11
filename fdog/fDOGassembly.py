@@ -1108,7 +1108,7 @@ def main():
 
     ortholog_sequences = []
     time_ortholog_start = time.time()
-
+    
     if parallel == True:
         ##################### parallel computation #############################
         calls = []
@@ -1117,10 +1117,10 @@ def main():
         for asName in assembly_names:
             calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db])
 
-
         #results = (pool.imap_unordered(ortholog_search_tblastn, calls))
         #pool.close()
         #pool.join()
+      
         print("Searching for orthologs ...", flush=True)
         for i in tqdm(pool.imap_unordered(ortholog_search_tblastn, calls),total=len(calls)):
             ortholog_sequences.append([i[0], i[1]])
@@ -1132,6 +1132,7 @@ def main():
             #for k in i[2]:
                 #print(k)
         print("\t ...finished \n", flush=True)
+        
     else:
         ###################### computation species wise ################
         for asName in tqdm(assembly_names):
@@ -1146,7 +1147,7 @@ def main():
     time_ortholog = time_ortholog_end - time_ortholog_start
 
     ################## preparing output ########################################
-    orthologsOutFile = out + "/" + group + ".extended.fa"
+    orthologsOutFile = out + "/" + group + "_og.fa"
 
     if taxa == []:
         taxa = [fdog_ref_species]
@@ -1170,10 +1171,14 @@ def main():
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
         print("\t ...finished \n")
+        end = time.time()
+        time_fas = end - fas
+    else:
+        end = time.time()
+        time_fas = 0
 
     ################# remove tmp folder ########################################
-    end = time.time()
-    time_fas = end - fas
+
     print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
     print("Group preparation: %s \t Ortholog search: %s \t FAS: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
     sys.stdout = sys.__stdout__

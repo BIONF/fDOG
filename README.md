@@ -4,6 +4,8 @@
 [![Build Status](https://travis-ci.com/BIONF/fDOG.svg?branch=master)](https://travis-ci.com/BIONF/fDOG)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
 
+# Poster fDOG - Assembly
+https://github.com/BIONF/fDOG/blob/gh-pages/www/Poster_fDOG_Assembly.pdf
 # Table of Contents
 * [How to install](#how-to-install)
      * [Install the fDOG package](#install-the-fdog-package)

@@ -103,7 +103,7 @@ def create_genome(args):
     ### load fasta seq
     in_seq = SeqIO.to_dict((SeqIO.parse(open(faIn), 'fasta')))
     if not os.path.exists(genome_path):
-            Path(genome_path).mkdir(parents = True, exist_ok = True)
+        Path(genome_path).mkdir(parents = True, exist_ok = True)
     genome_file = '%s/%s.fa' % (genome_path, spec_name)
     if (not os.path.exists(os.path.abspath(genome_file))) or (os.stat(genome_file).st_size == 0) or force:
         f = open(genome_file, 'w')
