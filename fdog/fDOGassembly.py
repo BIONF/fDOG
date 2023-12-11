@@ -1146,7 +1146,7 @@ def main():
     time_ortholog = time_ortholog_end - time_ortholog_start
 
     ################## preparing output ########################################
-    orthologsOutFile = out + "/" + group + ".extended.fa"
+    orthologsOutFile = out + "/" + group + "_og.fa"
 
     if taxa == []:
         taxa = [fdog_ref_species]
@@ -1170,10 +1170,14 @@ def main():
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
         print("\t ...finished \n")
+        end = time.time()
+        time_fas = end - fas
+    else:
+        end = time.time()
+        time_fas = 0
 
     ################# remove tmp folder ########################################
-    end = time.time()
-    time_fas = end - fas
+
     print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
     print("Group preparation: %s \t Ortholog search: %s \t FAS: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
     sys.stdout = sys.__stdout__
