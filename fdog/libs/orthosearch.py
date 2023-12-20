@@ -34,7 +34,7 @@ import fdog.libs.output as output_fn
 def hamstr(args):
     (seqName, hmmpath, corepath, searchpath, outpath,
         refspec, seed_id, search_taxon,
-        evalHmmer, hitLimit, scoreCutoff,
+        evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
         evalBlast, lowComplexityFilter,
         checkCoorthologsRefOff, rbh, rep,
         aligner, cpus, debug, silentOff, noCleanup) = args
@@ -72,7 +72,7 @@ def hamstr(args):
 
     ### (1) Do hmmsearch for query hmm against search taxon fasta
     hmm_hits = hmm_fn.do_hmmsearch(
-            hmm_file, search_fa, evalHmmer, scoreCutoff, hitLimit, cpus, debug)
+            hmm_file, search_fa, evalHmmer, scoreCutoff, hitLimit, hmmScoreType, cpus, debug)
     output_fn.print_debug(debug, 'Sorted HMM hits', hmm_hits)
     ### (2) Read fasta file of refspec and search taxon
     refspec_seqs = fasta_fn.read_fasta(refspec_fa)
@@ -202,7 +202,7 @@ def run_hamstr(args):
     (seqName, refspec, pathArgs, orthoArgs, otherArgs) = args
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     (checkCoorthologsRefOff, rbh, rep, evalBlast, lowComplexityFilter,
-                        evalHmmer, hitLimit, scoreCutoff, aligner) = orthoArgs
+                        evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner) = orthoArgs
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
 
     hamstr_jobs = []
@@ -225,7 +225,7 @@ def run_hamstr(args):
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
-                    evalHmmer, hitLimit, scoreCutoff,
+                    evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
                     aligner, cpus, debug, silentOff, noCleanup
@@ -245,7 +245,7 @@ def run_hamstr(args):
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
-                    evalHmmer, hitLimit, scoreCutoff,
+                    evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
                     aligner, cpus, debug, silentOff, noCleanup

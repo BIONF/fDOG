@@ -93,6 +93,8 @@ def main():
                                 action='store', default=0.0001, type=float)
     ortho_options.add_argument('--hitLimit', help='number of hits of the initial pHMM based search that should be evaluated via a reverse search. Default: 10',
                                 action='store', default=10, type=int)
+    ortho_options.add_argument('--hmmScoreType', help='Choose type of hmm score (best domain or full sequence score) for validating HMM candidates (NOTE: applied also for the core compilation). Default: domain',
+                                action='store', choices=['domain','sequence'], default='domain')
     ortho_options.add_argument('--scoreCutoff', help='Define the percent range of the hmms core of the best hit up to which a candidate of the hmmsearch will be subjected for further evaluation. Default: 10',
                                 action='store', default=10, type=int)
 
@@ -166,6 +168,7 @@ def main():
     evalBlast = args.evalBlast
     evalHmmer = args.evalHmmer
     hitLimit = args.hitLimit
+    hmmScoreType = args.hmmScoreType
     scoreCutoff = args.scoreCutoff
 
     # fas arguments
@@ -275,7 +278,7 @@ def main():
                 searchTaxa = ','.join(searchTaxa)
         # do ortholog search
         orthoArgs = [checkCoorthologsRefOff, rbh, rep, evalBlast,
-                    lowComplexityFilter, evalHmmer, hitLimit, scoreCutoff, aligner]
+                    lowComplexityFilter, evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner]
         otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
         hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
         output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
