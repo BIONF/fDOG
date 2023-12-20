@@ -139,22 +139,24 @@ def hamstr(args):
                             ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
                             continue
 
+        # remove seed protein from candidata list
+        if search_taxon == refspec:
+            if seed_id in ortho_candi:
+                ortho_candi.pop(seed_id)
         ### (5) check co-ortholog if more than 1 HMM hits are accepted
         if len(ortho_candi) == 0:
             output_fn.print_stdout(
                 silentOff, 'WARNING: Reciprocity not fulfulled! No ortholog found!')
         else:
+            output_fn.print_debug(
+                debug, 'Candidates for checking co-orthologs', ortho_candi.keys())
             best_ortho = list(ortho_candi.keys())[0]
             ortho_final = fasta_fn.add_seq_to_dict(
                 ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
                 ortho_candi[best_ortho])
 
             if rep == False:
-                if len(ortho_candi) == 1:
-                    ortho_final = fasta_fn.add_seq_to_dict(
-                        ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
-                        ortho_candi[best_ortho])
-                else:
+                if len(ortho_candi) > 1:
                     aln_co_fa = '%s/coortho_%s_%s.fa' % (
                                 outpath, seqName, search_taxon)
                     with open(aln_co_fa, 'w') as aln_co_fa_out:
