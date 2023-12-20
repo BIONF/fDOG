@@ -368,7 +368,7 @@ def main():
         coreArgs = [minDist, maxDist, coreSize, coreTaxa, distDeviation,
                     alnStrategy, fasOff]
         orthoCoreArgs = [CorecheckCoorthologsOff, rbh, True, evalBlast/10,
-                        lowComplexityFilter, evalHmmer/10, coreHitLimit,
+                        lowComplexityFilter, evalHmmer/10, coreHitLimit, hmmScoreType,
                         scoreCutoff, aligner] # rep = True; e-value cutoff is 10x more stringent than from ortho search
         otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
         core_options = [coreArgs, orthoCoreArgs, otherCoreArgs]
