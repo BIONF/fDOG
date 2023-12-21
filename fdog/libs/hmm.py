@@ -70,22 +70,22 @@ def sort_hmm_hits(hmm_hits, hmm_score_type = 'domain', hitLimit = 10, scoreCutof
                         score_dict[best_domain_score].append(best_domain_hit)
     else:
         for hit in hmm_hits:
-            ori_hits[hit.name.decode('ASCII')] = len(hit.domains)
+            ori_hits[hit.name.decode('ASCII')] = hit.score
             if hit.score > best_hit_score:
                 # get hit with best score
                 best_hit_score = hit.score
                 best_hit = hit.name.decode('ASCII')
-                # add to score_dict
-                if best_hit_score > best_score:
-                    best_score = best_hit_score
-                cutoff = best_score/100*(100-scoreCutoff)
-                if best_score < 0:
-                    cutoff = best_score/100*(100+scoreCutoff)
-                if best_hit_score >= cutoff:
-                    if best_hit_score not in score_dict:
-                        score_dict[best_hit_score] = [best_hit]
-                    else:
-                        score_dict[best_hit_score].append(best_hit)
+            # add to score_dict
+            if best_hit_score > best_score:
+                best_score = best_hit_score
+            cutoff = best_score/100*(100-scoreCutoff)
+            if best_score < 0:
+                cutoff = best_score/100*(100+scoreCutoff)
+            if hit.score >= cutoff:
+                if hit.score not in score_dict:
+                    score_dict[hit.score] = [hit.name.decode('ASCII')]
+                else:
+                    score_dict[hit.score].append(hit.name.decode('ASCII'))
 
     output_fn.print_debug(debug, 'All HMM hits', ori_hits)
     hmm_cand = {}
