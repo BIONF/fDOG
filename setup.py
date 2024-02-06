@@ -58,6 +58,7 @@ setup(
                             "fdog.mergeOutput = fdog.mergeOutput:main",
                             "fdog.uninstall = fdog.removefDog:main",
                             "fdog.assembly = fdog.fDOGassembly:main",
+                            "fdog.addAssembly = fdog.addAssembly:main",
                             "fdog.addCoreGroup = fdog.makeCoreGroupFromFasta:main"],
     },
     license="GPL-3.0",

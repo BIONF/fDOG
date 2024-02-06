@@ -649,7 +649,57 @@ def cleanup(tmp, tmp_path):
                 if file.endswith(".fasta"):
                     os.remove(os.path.join(root, file))
 
-def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix, mode='silent'):
+def getLocationFromGff(gff_file, name):
+    gene_count = int(gene_count.split('.')[0].replace('g',''))
+    counter = 0
+    with open(gff_file,'r') as gff:
+    for line in gff:
+        if line.startswith('#'):
+            pass
+        else:
+                contig, source, type, start, end, score, strand, phase, att = line.split('\t')
+                if type == 'gene':
+                    counter += 1
+                    if counter == gene_count:
+                        position = [contig, start, end, strand]
+                        return position
+
+def checkOverlap(positions, n=30):
+    size = len(position)
+    pairs = set()
+    overlapping = set()
+    keys = list(positions.keys())
+    index = 0
+    for x in keys:
+        index +=1
+        for i in range(index,len(keys)):
+            x = keys[i]
+            if x != y:
+                if position[y][0] == position[x][0]:
+                    if position[y][3] == position[x][3]:
+                        if position[x][1] < position[y][1] and position[y][1] <= position[x][2]:
+                            len = position[x][2] - position[y][1]
+                            if len >= n:
+                                pairs.add(set(y,x))
+                                overlapping.add(y,x)
+                        elif position[x][1] == position[y][1]:
+                            len = min(position[x][2],position[y][2])  - position[x][1]
+                            if len >= n:
+                                pairs.add(set(y,x))
+                                overlapping.add(y,x)
+                        elif position[x][2] == position[y][2]:
+                            len = position[x][2] - max((position[x][2],position[y][2]))
+                            if len >= n:
+                                pairs.add(set(y,x))
+                                overlapping.add(y,x)
+                        elif position[y][1] < position[x][1] and position[x][1] <= position[y][2]:
+                            len = position[y][2] - position[x][1]
+                            if len >= n:
+                                pairs.add(set(y,x))
+                                overlapping.add(y,x)
+    return pairs, overlapping
+
+def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix, mode='silent', isoforms):
     if len(candidate_names) == 1:
         return candidate_names
 
@@ -697,20 +747,44 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     min_dist = 10
     min_name = None
+    positions = {}
 
     for name in candidate_names:
         distance = distances[ref_id , name]
+        if isoforms == False:
+            gff_file = out + '/' + '_'.join(name.split('_')[0:-1]) + '.gff'
+            position[name] = getLocationFromGff(gff_file, name)
         if distance <= min_dist:
             min_dist = distance
             min_name = name
 
     checked = [min_name]
-
+    pairs, overlapping = checkOverlap(position)
+    tested = set()
     for name in candidate_names:
         if name == min_name:
             pass
         elif distances[min_name , name] <= distances[min_name , ref_id]:
-            checked.append(name)
+            if isoforms == False and name in overlapping and name not in tested:
+                for pair in pairs:
+                    min_dist = 10
+                    to_add = ''
+                    if name in pair:
+                        x,y = pair
+                        tested.add(x,y)
+                        distx = distances[x,ref_id]
+                        disty = distances[y, ref_id]
+                        if distx <= disty  and distx < min_dist:
+                            to_add = x
+                            min_dist = distx
+                        elif disty <= distx  and disty < min_dist:
+                            to_add = y
+                            min_dist = disty
+                checked.append(to_add)
+            elif name in tested:
+                pass             
+            else:
+                checked.append(name)
 
     return checked
 
@@ -814,7 +888,7 @@ def ortholog_search_tblastn(args):
 
     return reciprocal_sequences, candidatesOutFile, output
 
-def blockProfiles(core_path, group, mode, out):
+def blockProfiles(core_path, group, mode, out, msaTool):
 
     ######################## paths ################################
     msa_path = core_path + "/" + group +"/"+ group + ".aln"
@@ -886,7 +960,7 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.4'
+    version = '0.1.5'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
@@ -898,7 +972,7 @@ def main():
     ################## optional arguments ######################################
     optional = parser.add_argument_group('Optional arguments')
     optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 50000)',action='store', default=50000, type=int)
-    optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:5000)', action='store', default=5000, type=int)
+    optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:20000)', action='store', default=20000, type=int)
     optional.add_argument('--assemblyPath', help='Path for the assembly directory', action='store', default='')
     optional.add_argument('--tmp', help='tmp files will not be deleted', action='store_true', default = False)
     optional.add_argument('--out', help='Output directory', action='store', default='')
@@ -923,6 +997,7 @@ def main():
     optional.add_argument('--augustus', help= 'Gene prediction is done by using the tool Augustus PPX', action='store_true', default=False)
     optional.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
     optional.add_argument('--metaeukDb', help='path to metaeuk reference database', action='store', default='')
+    optional.add_argument('--isoforms', help='If all Isoforms of a gene should be included', action='store_true', default=False)
     args = parser.parse_args()
 
     # required
@@ -955,6 +1030,7 @@ def main():
     parallel = args.parallel
     augustus_ref_species = args.augustusRefSpec
     metaeuk_db = args.metaeukDb
+    isoforms = args.isoforms
 
     #gene prediction tool
     augustus = args.augustus
@@ -1090,7 +1166,7 @@ def main():
     if augustus == True:
         group_computation_time_start = time.time()
         consensus_path = consensusSequence(core_path, group, mode, out)
-        profile_path = blockProfiles(core_path, group, mode, out)
+        profile_path = blockProfiles(core_path, group, mode, out, msaTool)
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
     else:
@@ -1107,7 +1183,7 @@ def main():
 
     ortholog_sequences = []
     time_ortholog_start = time.time()
-    
+
     if parallel == True:
         ##################### parallel computation #############################
         calls = []
@@ -1119,7 +1195,7 @@ def main():
         #results = (pool.imap_unordered(ortholog_search_tblastn, calls))
         #pool.close()
         #pool.join()
-      
+
         print("Searching for orthologs ...", flush=True)
         for i in tqdm(pool.imap_unordered(ortholog_search_tblastn, calls),total=len(calls)):
             ortholog_sequences.append([i[0], i[1]])
@@ -1131,7 +1207,7 @@ def main():
             #for k in i[2]:
                 #print(k)
         print("\t ...finished \n", flush=True)
-        
+
     else:
         ###################### computation species wise ################
         for asName in tqdm(assembly_names):
