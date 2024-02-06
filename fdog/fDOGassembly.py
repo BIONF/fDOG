@@ -826,7 +826,7 @@ def blockProfiles(core_path, group, mode, out, msaTool):
                 cmd= "muscle -quiet -in " + fasta_path + " -out " + msa_path
                 #print("muscle -quiet -in " + output_file + " -out " + aln_file)
             else:
-                cmd = "muscle -quiet -align" + fasta_path + " -out " + msa_path
+                cmd = "muscle -quiet -align " + fasta_path + " -output " + msa_path
         elif msaTool == "mafft-linsi":
             cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + fasta_path + ' > ' + msa_path
         starting_subprocess(cmd, mode)
