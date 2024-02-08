@@ -44,6 +44,7 @@ setup(
         'PyYAML',
         'pyhmmer',
         'pysam',
+        'pandas',
         'greedyFAS>=1.11.2'
     ],
     entry_points={

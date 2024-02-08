@@ -39,7 +39,7 @@ def main():
     version = get_distribution('fdog').version
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     parser.add_argument('-i', '--input',
-                        help='Input directory, where all single output (.extended.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
+                        help='Input directory, where all single output (o_g.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
                         action='store', default='', required=True)
     parser.add_argument('-o', '--output', help='Output name', action='store', default='', required=True)
     args = parser.parse_args()
@@ -55,6 +55,7 @@ def main():
     domains_0 = None
     domains_1 = None
     ex_fasta = None
+    og_fasta = None
     lines_seen = set()
     for infile in ldir(directory):
         if infile.endswith('.phyloprofile') and not infile == out + '.phyloprofile':
@@ -90,6 +91,14 @@ def main():
                 lines = reader.readlines()
                 for line in lines:
                     ex_fasta_out.write(line)
+        elif infile.endswith('_og.fa') and not infile == out + '_og.fa':
+            if not og_fasta:
+                og_fasta = out + '_og.fa'
+                og_fasta_out = open(og_fasta, 'w')
+            with open(directory + '/' + infile, 'r') as reader:
+                lines = reader.readlines()
+                for line in lines:
+                    og_fasta_out.write(line)
     if phyloprofile:
         phyloprofile_out.close()
     if domains_0:
@@ -98,6 +107,9 @@ def main():
         domains_1.close()
     if ex_fasta:
         ex_fasta_out.close()
+    if og_fasta:
+        og_fasta_out.close()
+        ex_fasta = og_fasta
 
     createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out)
     print('Done! Output files:\n%s/%s.*' % (directory,out))
