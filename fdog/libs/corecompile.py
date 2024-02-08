@@ -226,6 +226,8 @@ def compile_core(args):
             leaves.reverse()
             flag_node = 0
             for leaf in leaves:
+                if not leaf in tax_ids:
+                    continue
                 if flag_node == 1:
                     break
                 if not leaf == refspec_id and \
