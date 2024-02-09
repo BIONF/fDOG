@@ -31,12 +31,18 @@ import shutil
 import multiprocessing as mp
 import fdog.libs.alignment as align_fn
 from tqdm import tqdm
+from pathlib import Path
+import pandas as pd
 
 ########################### functions ##########################################
-def check_path(path):
-    if not os.path.exists(path):
+def check_path(path, exit=True):
+    if not os.path.exists(path) and exit == True:
         print(path + " does not exist. Exciting ...")
         sys.exit()
+    elif not os.path.exists(path) and exit == False:
+        return 1
+    else:
+        return 0
 
 def check_ref_sepc(species_list, fasta_file):
     file = open(fasta_file, "r")
@@ -233,8 +239,8 @@ def extract_sequence_from_to(name, file, start, end):
     return out, start, end
 
 def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
+    """Gene prediction with software Augustus for all candidate regions. The resulting AS sequences will be written in a tmp file."""
     output = open(candidatesOutFile, "w")
-
     for key in regions:
         locations = regions[key]
         counter = 0
@@ -248,7 +254,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #print(cmd)
             starting_subprocess(cmd, 'silent')
-            # transfer augustus output to as sequence
+            # transfer augustus output to AS sequence
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             starting_subprocess(cmd, mode)
             # parsing header and sequences
@@ -338,8 +344,12 @@ def get_distance_biopython(file, matrix):
     dm = calculator.get_distance(aln)
     return dm
 
-def readFasta(candidatesOutFile):
-    seq_records = SeqIO.parse(candidatesOutFile, "fasta")
+def readFasta(fasta):
+    path = Path(fasta)
+    if path.exists() == False:
+        print(str(path) + ' does not exists.')
+        sys.exit()
+    seq_records = SeqIO.parse(path, "fasta")
     return seq_records
 
 def getSeedInfo(path):
@@ -373,7 +383,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
     out.write(str(inSeq[best_hit].seq) + "\n")
     out.write(">" + ref + "\n")
     out.write(str(inSeq[ref].seq )+ "\n")
-
+    #print(candidatesOutFile)
     candidates = readFasta(candidatesOutFile)
     for record in candidates:
         if candidate_name in record.id:
@@ -385,12 +395,13 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
 
     if msaTool == "muscle":
         if align_fn.get_muscle_version(msaTool) == 'v3':
-            cmd = "muscle -quiet -in " + output_file + " -out " + aln_file
+            cmd = "muscle -quiet -in " + output_file + "-out " + aln_file
         else:
-            cmd = "muscle -align " + output_file + " -output " + aln_file
+            cmd = "muscle -align " + output_file +  " -output " + aln_file
         starting_subprocess(cmd, mode)
         if not os.path.exists(aln_file):
-            print("Muscle failed for %s. Making MSA with Mafft-linsi." % (candidate_name))
+            print('Muscle failed with command: %s'%(cmd))
+            print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (candidate_name))
             cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file
             starting_subprocess(cmd, mode)
 
@@ -649,7 +660,65 @@ def cleanup(tmp, tmp_path):
                 if file.endswith(".fasta"):
                     os.remove(os.path.join(root, file))
 
-def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix, mode='silent'):
+def getLocationFromGff(gff_file, name, tool):
+    #print(name)
+    if tool == 'metaeuk':
+        gene_count = int(name.split('_')[-1:][0])
+    else:
+        gene_count = int(name.split('.')[-2].replace('g', '').split('_')[-1:][0])
+    counter = 0
+    with open(gff_file,'r') as gff:
+        for line in gff:
+            if line.startswith('#'):
+                pass
+            else:
+                    contig, source, type, start, end, score, strand, phase, att = line.split('\t')
+                    if type == 'gene':
+                        counter += 1
+                        if counter == gene_count:
+                            position = [contig, int(start), int(end), strand]
+                            #print(position)
+                            return position
+
+def checkOverlap(position, n=30):
+    pairs = set()
+    overlapping = set()
+    keys = list(position.keys())
+    index = 0
+    for x in keys:
+        index +=1
+        for i in range(index,len(keys)):
+            y = keys[i]
+            if x != y:
+                if position[y][0] == position[x][0]:
+                    if position[y][3] == position[x][3]:
+                        if position[x][1] < position[y][1] and position[y][1] <= position[x][2]:
+                            len_overlap = position[x][2] - position[y][1]
+                            if len_overlap >= n:
+                                pairs.add((y,x))
+                                overlapping.add(y)
+                                overlapping.add(x)
+                        elif position[x][1] == position[y][1]:
+                            len_overlap = min(position[x][2],position[y][2])  - position[x][1]
+                            if len_overlap >= n:
+                                pairs.add((y,x))
+                                overlapping.add(y)
+                                overlapping.add(x)
+                        elif position[x][2] == position[y][2]:
+                            len_overlap = position[x][2] - max((position[x][2],position[y][2]))
+                            if len_overlap >= n:
+                                pairs.add((y,x))
+                                overlapping.add(y)
+                                overlapping.add(x)
+                        elif position[y][1] < position[x][1] and position[x][1] <= position[y][2]:
+                            len_overlap = position[y][2] - position[x][1]
+                            if len_overlap >= n:
+                                pairs.add((y,x))
+                                overlapping.add(y)
+                                overlapping.add(x)
+    return pairs, overlapping
+
+def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix, isoforms, gene_prediction, mode='silent'):
     if len(candidate_names) == 1:
         return candidate_names
 
@@ -681,12 +750,12 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     if msaTool == "muscle":
         if align_fn.get_muscle_version(msaTool) == 'v3':
             cmd = "muscle -quiet -in %s -out %s" % (out, aln_file)
-            #print("muscle -quiet -in " + output_file + " -out " + aln_file)
         else:
             cmd = "muscle -align %s -output %s" % (out, aln_file)
         starting_subprocess(cmd, mode)
         if not os.path.exists(aln_file):
-            print("Muscle failed for %s. Making MSA with Mafft-linsi." % (aln_file))
+            print('Muscle failed with command: %s' % (cmd))
+            print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (aln_file))
             cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file
             starting_subprocess(cmd, mode)
     elif msaTool == "mafft-linsi":
@@ -697,21 +766,48 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
 
     min_dist = 10
     min_name = None
-
+    position = {}
     for name in candidate_names:
         distance = distances[ref_id , name]
+        id = name.split('|')[2]
+        if isoforms == False:
+            gff_file = tmp_path + '/' + '_'.join(id.split('_')[0:-1]) + '.gff'
+            position[name] = getLocationFromGff(gff_file, id, gene_prediction)
         if distance <= min_dist:
             min_dist = distance
             min_name = name
 
     checked = [min_name]
-
+    pairs, overlapping = checkOverlap(position)
+    #print(pairs, overlapping)
+    tested = set()
     for name in candidate_names:
         if name == min_name:
             pass
         elif distances[min_name , name] <= distances[min_name , ref_id]:
-            checked.append(name)
-
+            if isoforms == False and name in overlapping and name not in tested:
+                for pair in pairs:
+                    min_dist = 10
+                    to_add = ''
+                    if name in pair:
+                        x,y = pair
+                        tested.add(x)
+                        tested.add(y)
+                        distx = distances[x,ref_id]
+                        disty = distances[y, ref_id]
+                        if distx <= disty  and distx < min_dist:
+                            to_add = x
+                            min_dist = distx
+                        elif disty <= distx  and disty < min_dist:
+                            to_add = y
+                            min_dist = disty
+                if to_add != min_name:
+                    checked.append(to_add)
+            elif name in tested and isoforms == False:
+                pass             
+            else:
+                checked.append(name)
+    #print(checked)
     return checked
 
 def clean_fas(path, file_type):
@@ -733,16 +829,29 @@ def clean_fas(path, file_type):
         file.write(new_line)
     file.close()
 
+def run_fas(cmd):
+    #print(cmd)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while process.poll() is None:
+        output = process.stdout.readline().decode().split('\n')
+        error = process.stderr.readline().decode().split('\n')
+        if error:
+            for line in error:
+                line.strip()
+                if 'error' in line or 'Error' in line:
+                    print ("Error running FAS with %s"%(' '.join(cmd)))
+                    process.terminate()
+                    sys.exit()
+    return output
+
 def ortholog_search_tblastn(args):
-    (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db) = args
+    (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms) = args
     output = []
-    cmd = 'mkdir ' + out + '/tmp/' + asName
+    asNamePath = asName.replace('@', '_')
+    cmd = 'mkdir ' + out + '/tmp/' + asNamePath
     starting_subprocess(cmd, 'silent')
-    tmp_path = out + "tmp/" + asName + "/"
+    tmp_path = out + "tmp/" + asNamePath + "/"
     candidatesOutFile = tmp_path + group + ".candidates.fa"
-    #orthologsOutFile = out + "/" + group + ".extended.fa"
-    fasOutFile = out + "/" + group
-    #mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
     output.append("Searching in species " + asName + "\n")
     assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
@@ -810,7 +919,7 @@ def ortholog_search_tblastn(args):
             output.append("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
         return [], candidatesOutFile, output
     else:
-        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix)
+        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix, isoforms, gene_prediction)
 
     return reciprocal_sequences, candidatesOutFile, output
 
@@ -823,8 +932,7 @@ def blockProfiles(core_path, group, mode, out, msaTool):
         check_path(fasta_path)
         if msaTool == "muscle":
             if align_fn.get_muscle_version(msaTool) == 'v3':
-                cmd= "muscle -quiet -in " + fasta_path + " -out " + msa_path
-                #print("muscle -quiet -in " + output_file + " -out " + aln_file)
+                print("muscle -quiet -in " + output_file + " -out " + aln_file)
             else:
                 cmd = "muscle -quiet -align " + fasta_path + " -output " + msa_path
         elif msaTool == "mafft-linsi":
@@ -868,25 +976,68 @@ def consensusSequence(core_path, group, mode, out):
 
     return consensus_path
 
-class Logger(object):
-    def __init__(self, file):
-        self.file = file
-        self.terminal = sys.stdout
-        self.log = self.file
+def createGff(ortholog_sequences, out_folder, tool):
+    #print(ortholog_sequences)
+    #print(out_folder)
+    gff_folder = out_folder + "/gff/"
+    os.system('mkdir %s >/dev/null 2>&1' %(gff_folder))
+    for s in ortholog_sequences:
+        genes = s[0]
+        #print(genes)
+        data = []
+        if genes != []:
+            gff_file_sp = gff_folder + '/' + genes[0].split('|')[1] + '.gff'
+            for gene in genes:
+                group, species, gene = gene.split('|')
+                #print(group, species, gene)
+                region = '_'.join(gene.split('_')[0:-1])
+                if tool == 'metaeuk':
+                    gene_count = int(gene.split('_')[-1:][0])
+                else:
+                    gene_count = int(gene.split('.')[-2].replace('g', '').split('_')[-1:][0])
+                #print(region, gene_count)
+                gff_file_gene = "%s/tmp/%s/%s.gff" %(out_folder, species.replace('@', '_'), region)
+                #print(gff_file_gene)
+                with open(gff_file_gene, 'r') as gff:
+                    counter = 0
+                    for line in gff:
+                        if line.startswith('#'):
+                            pass
+                        else:
+                            line=line.rstrip()
+                            contig, source, type, start, end, score, strand, phase, att = line.split('\t')
+                            if type == 'gene':
+                                counter += 1
+                            if counter == gene_count:
+                                if source == 'AUGUSTUS':
+                                    att = att.replace('g' + str(gene_count), '_'.join(gene.split('.')[:-1]))
+                                    att = att.replace('"', '')
+                                elif source == 'MetaEuk':
+                                    att = 'gene_id ' + gene + '; ' +  att
+                                data.append([contig, source, type, int(start), int(end), score, strand, phase, att])
+        else:
+            continue
 
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
+        df = pd.DataFrame(data, columns=['contig', 'source', 'type', 'start', 'end', 'score', 'starnd', 'phase', 'att'])
+        #print(df)
+        df.sort_values(by=['contig', 'start'])
+        df.to_csv(gff_file_sp,sep='\t' , index=False, header=None)
 
-    def flush(self):
-        pass
+def getAugustusRefSpec(mapping_augustus):
+    dict = {}
+    with open(mapping_augustus,'r') as file:
+        for line in file:
+            line = line.rstrip()
+            assembly, id = line.split('\t')
+            dict[assembly] = id
+    return dict
 
 def main():
 
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.4'
+    version = '0.1.5'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
@@ -898,31 +1049,33 @@ def main():
     ################## optional arguments ######################################
     optional = parser.add_argument_group('Optional arguments')
     optional.add_argument('--avIntron', help='average intron length of the assembly species in bp (default: 50000)',action='store', default=50000, type=int)
-    optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:5000)', action='store', default=5000, type=int)
-    optional.add_argument('--assemblyPath', help='Path for the assembly directory', action='store', default='')
+    optional.add_argument('--lengthExtension', help='length extension of the candidate regions in bp (default:20000)', action='store', default=20000, type=int)
+    optional.add_argument('--assemblyPath', help='Path for the assembly directory, (default dataPath)', action='store', default='')
     optional.add_argument('--tmp', help='tmp files will not be deleted', action='store_true', default = False)
     optional.add_argument('--out', help='Output directory', action='store', default='')
-    optional.add_argument('--dataPath', help='data directory', action='store', default='')
-    optional.add_argument('--coregroupPath', help='core_ortholog directory', action='store', default='')
-    optional.add_argument('--searchTool', help='Choose between blast and diamond as alignemnt search tool(default:blast)', action='store', choices=['blast', 'diamond'], default='blast')
+    optional.add_argument('--dataPath', help='fDOG data directory containing searchTaxa_dir, coreTaxa_dir and annotation_dir', action='store', default='')
+    optional.add_argument('--coregroupPath', help='core_ortholog directory containing ortholog groups of gene of interest', action='store', default='')
+    #optional.add_argument('--searchTool', help='Choose between blast and diamond as alignment search tool(default:blast)', action='store', choices=['blast', 'diamond'], default='blast')
     optional.add_argument('--evalBlast', help='E-value cut-off for the Blast search. (default: 0.00001)', action='store', default=0.00001, type=float)
     optional.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set', action='store_true', default=False)
-    optional.add_argument('--msaTool', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. DEFAULT: muscle', choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
+    optional.add_argument('--msaTool', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. (default:muscle)', choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
     optional.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_true', default=False)
-    optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. DEFAULT: blosum62', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
+    optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. (default: blosum62)', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     optional.add_argument('--coreTaxa', help='List of core taxa used during --strict', action='store', nargs="+", default=[])
     #optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on.', action='store', default='no')
-    optional.add_argument('--fasoff', help='Turn OFF FAS support', action='store_true', default=False)
+    optional.add_argument('--fasoff', help='Turn off FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
-    optional.add_argument('--searchTaxa', help='List of Taxa to search in', action='store', nargs="+", default=[])
-    optional.add_argument('--silent', help='Output will only be written into the log file', action='store_true', default=False)
-    optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed', action='store_true', default=False)
+    optional.add_argument('--searchTaxa', help='List of Taxa to search in, (default: all species located in assembly_dir)', action='store', nargs="+", default=[])
+    optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed, caution: using --parallel can result in messy output', action='store_true', default=False)
     optional.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
-    optional.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
+    optional.add_argument('--append', help='Append the output to existing output files, caution: reference species must be identical', action='store_true', default=False)
     optional.add_argument('--parallel', help= 'The ortholog search of multiple species will be done in parallel', action='store_true', default=False)
     optional.add_argument('--augustus', help= 'Gene prediction is done by using the tool Augustus PPX', action='store_true', default=False)
-    optional.add_argument('--augustusRefSpec', help='augustus reference species', action='store', default='')
-    optional.add_argument('--metaeukDb', help='path to metaeuk reference database', action='store', default='')
+    optional.add_argument('--augustusRefSpec', help='Augustus reference species identifier (use command: augustus --species=help to get precomputed augustus gene models)', action='store', default='')
+    optional.add_argument('--augustusRefSpecFile', help='Mapping file tab seperated containing Assembly Names and augustus reference species that should be used', action='store', default='')
+    optional.add_argument('--metaeukDb', help='Path to MetaEuk reference database', action='store', default='')
+    optional.add_argument('--isoforms', help='All Isoforms of a gene passing the ortholog verification will be included in the output', action='store_true', default=False)
+    optional.add_argument('--gff', help='GFF files will be included in output', action='store_true', default=False)
     args = parser.parse_args()
 
     # required
@@ -941,31 +1094,39 @@ def main():
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
-    searchTool = args.searchTool
+    #searchTool = args.searchTool
+    searchTool = 'blast'
     evalue = args.evalBlast
     msaTool = args.msaTool
     matrix = args.scoringmatrix
     taxa = args.coreTaxa
     fasoff = args.fasoff
     searchTaxa = args.searchTaxa
-    silent = args.silent
     debug = args.debug
     force = args.force
     append = args.append
     parallel = args.parallel
     augustus_ref_species = args.augustusRefSpec
+    mapping_augustus = args.augustusRefSpecFile
     metaeuk_db = args.metaeukDb
+    isoforms = args.isoforms
+    gff = args.gff
 
     #gene prediction tool
     augustus = args.augustus
     if augustus == True:
-
-        if augustus_ref_species == '':
+        if augustus_ref_species == '' and mapping_augustus == '':
             print("Augustus reference species is required when using Augustus as gene prediction tool")
             return 1
         gene_prediction = "augustus"
+        if mapping_augustus != '':
+            check_path(mapping_augustus)
+            aug_ref_dict = getAugustusRefSpec(mapping_augustus)
     else:
         gene_prediction = "metaeuk"
+        if metaeuk_db == '':
+            print("MetaEuk DB is required when using MetaEuk as gene prediction tool")
+            return 1
 
     # output modes
     if debug == True and silent == True:
@@ -974,8 +1135,6 @@ def main():
     else:
         if debug == True:
             mode = 'debug'
-        elif silent == True:
-            mode = 'silent'
         else:
             mode = 'normal'
 
@@ -1019,6 +1178,8 @@ def main():
 
     if core_path == '':
         core_path = out + '/core_orthologs/'
+        if check_path(core_path, False) == 1:
+            core_path = dataPath + '/core_orthologs/'
     else:
         if not core_path.endswith('/'):
             core_path = core_path + '/'
@@ -1031,12 +1192,6 @@ def main():
     if metaeuk_db != '':
         check_path(metaeuk_db)
 
-
-    try:
-        f = open(out + "/fdog.log", "a+")
-    except FileNotFoundError:
-        f = open(out + "/fdog.log", "w")
-
     ################## How to handle std output and std error ##################
 
     if mode == 'silent':
@@ -1044,7 +1199,6 @@ def main():
         sys.stdout = f
     else:
         pass
-        #sys.stdout = Logger(f)
 
     ########################### other variables ################################
     if searchTaxa == []:
@@ -1107,35 +1261,39 @@ def main():
 
     ortholog_sequences = []
     time_ortholog_start = time.time()
-    
+
     if parallel == True:
         ##################### parallel computation #############################
         calls = []
         cpus = mp.cpu_count()
         pool = mp.Pool(cpus)
         for asName in assembly_names:
-            calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db])
+            if mapping_augustus == '':
+                calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms])
+            else:
+                try:
+                    calls.append([asName, out, assemblyDir, consensus_path, aug_ref_dict[asName], group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms])
+                except KeyError:
+                    print("%s is not included in Augustus reference species mapping file. %s will be skipped" %(asName, asName))
 
-        #results = (pool.imap_unordered(ortholog_search_tblastn, calls))
-        #pool.close()
-        #pool.join()
-      
         print("Searching for orthologs ...", flush=True)
         for i in tqdm(pool.imap_unordered(ortholog_search_tblastn, calls),total=len(calls)):
             ortholog_sequences.append([i[0], i[1]])
             if mode == 'debug':
                 for k in i[2]:
                     print(k)
-        #for i in results:
-            #ortholog_sequences.append([i[0], i[1]])
-            #for k in i[2]:
-                #print(k)
         print("\t ...finished \n", flush=True)
-        
+
     else:
         ###################### computation species wise ################
         for asName in tqdm(assembly_names):
-            args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db]
+            if mapping_augustus == '':
+                args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms]
+            else:
+                try:
+                    args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms]
+                except KeyError:
+                    print("%s is not included in Augustus reference species mapping file. %s will be skipped" % (asName, asName))
             reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search_tblastn(args)
             ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
             if mode == 'debug':
@@ -1155,21 +1313,24 @@ def main():
     else:
         addRef(orthologsOutFile, fasta_path, taxa)
         addSeq(orthologsOutFile, ortholog_sequences)
+
+    if gff == True:
+        createGff(ortholog_sequences, out, gene_prediction)
     mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
     if fasoff == False:
         fas = time.time()
-        print("Calculating FAS scores ...")
+        print("Calculating FAS scores ...", flush=True)
 
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-        cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
+        cmd = ['fas.run', '--seed', fasta_path , '--query' , orthologsOutFile , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
         #print(cmd)
-        starting_subprocess(cmd, 'silent')
+        fas_out = run_fas(cmd)
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
-        print("\t ...finished \n")
+        print("\t ...finished \n", flush=True)
         end = time.time()
         time_fas = end - fas
     else:
@@ -1181,8 +1342,6 @@ def main():
     print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
     print("Group preparation: %s \t Ortholog search: %s \t FAS: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
     sys.stdout = sys.__stdout__
-
-    f.close()
     cleanup(tmp, tmp_folder)
 
 if __name__ == '__main__':

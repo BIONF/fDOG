@@ -34,7 +34,7 @@ import fdog.libs.output as output_fn
 def hamstr(args):
     (seqName, hmmpath, corepath, searchpath, outpath,
         refspec, seed_id, search_taxon,
-        evalHmmer, hitLimit, scoreCutoff,
+        evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
         evalBlast, lowComplexityFilter,
         checkCoorthologsRefOff, rbh, rep,
         aligner, cpus, debug, silentOff, noCleanup) = args
@@ -72,7 +72,7 @@ def hamstr(args):
 
     ### (1) Do hmmsearch for query hmm against search taxon fasta
     hmm_hits = hmm_fn.do_hmmsearch(
-            hmm_file, search_fa, evalHmmer, scoreCutoff, hitLimit, cpus, debug)
+            hmm_file, search_fa, evalHmmer, scoreCutoff, hitLimit, hmmScoreType, cpus, debug)
     output_fn.print_debug(debug, 'Sorted HMM hits', hmm_hits)
     ### (2) Read fasta file of refspec and search taxon
     refspec_seqs = fasta_fn.read_fasta(refspec_fa)
@@ -83,72 +83,78 @@ def hamstr(args):
             silentOff, 'WARNING: No HMM hit found!')
     else:
         for hmm_hit in hmm_hits:
-            if not hmm_hit == seed_id: # only if search taxon == refspec
-                hmm_hit_fa = '%s/hmm_%s_%s_%s.fa' % (
-                                    outpath, seqName, search_taxon, hmm_hit)
-                with open(hmm_hit_fa, 'w') as hmm_fa_out:
-                    hmm_fa_out.write('>%s\n%s' % (hmm_hit, search_seqs.fetch(hmm_hit)))
-                blast_xml = blast_fn.do_blastsearch(
-                        hmm_hit_fa, refspec_db, evalBlast = evalBlast, lowComplexityFilter = lowComplexityFilter)
-                blast_out = blast_fn.parse_blast_xml(blast_xml)
-                output_fn.print_debug(debug, 'BLAST hits', blast_out)
-                if noCleanup == False:
-                    os.remove(hmm_hit_fa)
-                ### (4) check reciprocity
-                ### (4a) if refspec_seq_id == best blast hit
-                if len(blast_out['hits'].keys()) > 0:
+            hmm_hit_fa = '%s/hmm_%s_%s_%s.fa' % (
+                                outpath, seqName, search_taxon, hmm_hit)
+            with open(hmm_hit_fa, 'w') as hmm_fa_out:
+                hmm_fa_out.write('>%s\n%s' % (hmm_hit, search_seqs.fetch(hmm_hit)))
+            blast_xml = blast_fn.do_blastsearch(
+                    hmm_hit_fa, refspec_db, evalBlast = evalBlast, lowComplexityFilter = lowComplexityFilter)
+            blast_out = blast_fn.parse_blast_xml(blast_xml)
+            output_fn.print_debug(debug, 'BLAST hits', blast_out)
+            if noCleanup == False:
+                os.remove(hmm_hit_fa)
+            ### (4) check reciprocity
+            ### (4a) if refspec_seq_id == best blast hit
+            if len(blast_out['hits'].keys()) > 0:
+                best_blast_hit = list(blast_out['hits'].keys())[0]
+                if best_blast_hit == hmm_hit and len(blast_out['hits'].keys()) > 1:
                     best_blast_hit = list(blast_out['hits'].keys())[0]
-                    if best_blast_hit == hmm_hit and len(blast_out['hits'].keys()) > 1:
-                        best_blast_hit = list(blast_out['hits'].keys())[1]
-                    if seed_id == best_blast_hit:
-                        output_fn.print_stdout(
-                            silentOff,
-                            '%s accepted (best blast hit is ref)' % (blast_out['query']))
-                        ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
-                        continue
-                    else:
-                        ### (4b) else, check for co-ortholog ref
-                        if checkCoorthologsRefOff == False:
-                            aln_fa = '%s/blast_%s_%s_%s_%s_%s.fa' % (
-                                        outpath, seqName, seed_id, search_taxon,
-                                        hmm_hit, best_blast_hit)
-                            with open(aln_fa, 'w') as aln_fa_out:
-                                aln_fa_out.write(
-                                    '>%s\n%s\n>%s\n%s\n>%s\n%s' % (
-                                        seed_id, refspec_seqs.fetch(seed_id),
-                                        hmm_hit, search_seqs.fetch(hmm_hit),
-                                        best_blast_hit, refspec_seqs.fetch(best_blast_hit)
-                                    )
+                if seed_id == best_blast_hit:
+                    output_fn.print_stdout(
+                        silentOff,
+                        '%s accepted (best blast hit is ref)' % (blast_out['query']))
+                    ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
+                    continue
+                else:
+                    ### (4b) else, check for co-ortholog ref
+                    if checkCoorthologsRefOff == False:
+                        aln_fa = '%s/blast_%s_%s_%s_%s_%s.fa' % (
+                                    outpath, seqName, seed_id, search_taxon,
+                                    hmm_hit, best_blast_hit)
+                        with open(aln_fa, 'w') as aln_fa_out:
+                            aln_fa_out.write(
+                                '>%s\n%s\n>%s\n%s\n>%s\n%s' % (
+                                    seed_id, refspec_seqs.fetch(seed_id),
+                                    hmm_hit, search_seqs.fetch(hmm_hit),
+                                    best_blast_hit, refspec_seqs.fetch(best_blast_hit)
                                 )
-                            fasta_fn.remove_dup(aln_fa)
-                            aln_seq = align_fn.do_align(aligner, aln_fa)
-                            output_fn.print_debug(
-                                debug, 'Alignment for checking co-ortholog ref', aln_seq)
-                            br_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, seed_id, debug)
-                            bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, hmm_hit, debug)
-                            output_fn.print_debug(
-                                debug, 'Check if distance blast_vs_ref < blast_vs_hmm',
-                                'd_br = %s; d_bh = %s' % (br_dist, bh_dist))
-                            if noCleanup == False:
-                                os.remove(aln_fa)
-                            if br_dist == bh_dist == 0 or br_dist < bh_dist:
-                                output_fn.print_stdout(
-                                    silentOff,
-                                    '%s accepted (best blast hit is co-ortholog to ref)'
-                                    % (blast_out['query'])
-                                )
-                                ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
-                                continue
+                            )
+                        fasta_fn.remove_dup(aln_fa)
+                        aln_seq = align_fn.do_align(aligner, aln_fa)
+                        output_fn.print_debug(
+                            debug, 'Alignment for checking co-ortholog ref', aln_seq)
+                        br_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, seed_id, debug)
+                        bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, hmm_hit, debug)
+                        output_fn.print_debug(
+                            debug, 'Check if distance blast_vs_ref < blast_vs_hmm',
+                            'd_br = %s; d_bh = %s' % (br_dist, bh_dist))
+                        if noCleanup == False:
+                            os.remove(aln_fa)
+                        if br_dist == bh_dist == 0 or br_dist < bh_dist:
+                            output_fn.print_stdout(
+                                silentOff,
+                                '%s accepted (best blast hit is co-ortholog to ref)'
+                                % (blast_out['query'])
+                            )
+                            ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
+                            continue
+
+        # remove seed protein from candidata list
+        if search_taxon == refspec:
+            if seed_id in ortho_candi:
+                ortho_candi.pop(seed_id)
         ### (5) check co-ortholog if more than 1 HMM hits are accepted
         if len(ortho_candi) == 0:
             output_fn.print_stdout(
                 silentOff, 'WARNING: Reciprocity not fulfulled! No ortholog found!')
         else:
+            output_fn.print_debug(
+                debug, 'Candidates for checking co-orthologs', ortho_candi.keys())
             best_ortho = list(ortho_candi.keys())[0]
-            if not best_ortho == seed_id:
-                ortho_final = fasta_fn.add_seq_to_dict(
-                    ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
-                    ortho_candi[best_ortho])
+            ortho_final = fasta_fn.add_seq_to_dict(
+                ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
+                ortho_candi[best_ortho])
+
             if rep == False:
                 if len(ortho_candi) > 1:
                     aln_co_fa = '%s/coortho_%s_%s.fa' % (
@@ -196,7 +202,7 @@ def run_hamstr(args):
     (seqName, refspec, pathArgs, orthoArgs, otherArgs) = args
     (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
     (checkCoorthologsRefOff, rbh, rep, evalBlast, lowComplexityFilter,
-                        evalHmmer, hitLimit, scoreCutoff, aligner) = orthoArgs
+                        evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner) = orthoArgs
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
 
     hamstr_jobs = []
@@ -219,7 +225,7 @@ def run_hamstr(args):
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
-                    evalHmmer, hitLimit, scoreCutoff,
+                    evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
                     aligner, cpus, debug, silentOff, noCleanup
@@ -239,7 +245,7 @@ def run_hamstr(args):
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
-                    evalHmmer, hitLimit, scoreCutoff,
+                    evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
                     aligner, cpus, debug, silentOff, noCleanup

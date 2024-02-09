@@ -140,3 +140,4 @@ dmypy.json
 /fdog/data/assembly_dir/
 /fdog/fdog_goes_assembly/tmp/ 
 taxdump*
+.DS_Store

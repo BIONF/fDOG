@@ -254,7 +254,7 @@ def main():
         if check_conda_env() == True:
             req_file = '%s/data/conda_requirements.yml' % fdogPath
             print('=> Dependencies in %s' % req_file)
-            conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
+            conda_install_cmd = 'conda install -c bioconda -c conda-forge --file %s -y' % (req_file)
             try:
                 subprocess.call([conda_install_cmd], shell = True)
             except:
