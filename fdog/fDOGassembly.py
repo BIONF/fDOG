@@ -660,9 +660,12 @@ def cleanup(tmp, tmp_path):
                 if file.endswith(".fasta"):
                     os.remove(os.path.join(root, file))
 
-def getLocationFromGff(gff_file, name):
+def getLocationFromGff(gff_file, name, tool):
     #print(name)
-    gene_count = int(name.split('.')[1].replace('g','').split('_')[-1:][0])
+    if tool == 'metaeuk':
+        gene_count = int(name.split('_')[-1:][0])
+    else:
+        gene_count = int(name.split('.')[-2].replace('g', '').split('_')[-1:][0])
     counter = 0
     with open(gff_file,'r') as gff:
         for line in gff:
@@ -715,7 +718,7 @@ def checkOverlap(position, n=30):
                                 overlapping.add(x)
     return pairs, overlapping
 
-def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix, isoforms, mode='silent'):
+def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_species, msaTool, matrix, isoforms, gene_prediction, mode='silent'):
     if len(candidate_names) == 1:
         return candidate_names
 
@@ -769,7 +772,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
         id = name.split('|')[2]
         if isoforms == False:
             gff_file = tmp_path + '/' + '_'.join(id.split('_')[0:-1]) + '.gff'
-            position[name] = getLocationFromGff(gff_file, id)
+            position[name] = getLocationFromGff(gff_file, id, gene_prediction)
         if distance <= min_dist:
             min_dist = distance
             min_name = name
@@ -916,7 +919,7 @@ def ortholog_search_tblastn(args):
             output.append("No ortholog fulfilled the reciprocity criteria for species %s.\n" % asName)
         return [], candidatesOutFile, output
     else:
-        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix, isoforms)
+        reciprocal_sequences = coorthologs(reciprocal_sequences, tmp_path, candidatesOutFile, fasta_path, fdog_ref_species, msaTool, matrix, isoforms, gene_prediction)
 
     return reciprocal_sequences, candidatesOutFile, output
 
@@ -973,7 +976,7 @@ def consensusSequence(core_path, group, mode, out):
 
     return consensus_path
 
-def createGff(ortholog_sequences, out_folder):
+def createGff(ortholog_sequences, out_folder, tool):
     #print(ortholog_sequences)
     #print(out_folder)
     gff_folder = out_folder + "/gff/"
@@ -987,7 +990,10 @@ def createGff(ortholog_sequences, out_folder):
             group, species, gene = gene.split('|')
             #print(group, species, gene)
             region = '_'.join(gene.split('_')[0:-1])
-            gene_count = int(gene.split('.')[1].replace('g', '').split('_')[-1:][0])
+            if tool == 'metaeuk':
+                gene_count = int(gene.split('_')[-1:][0])
+            else:
+                gene_count = int(gene.split('.')[-2].replace('g', '').split('_')[-1:][0])
             #print(region, gene_count)
             gff_file_gene = "%s/tmp/%s/%s.gff" %(out_folder, species.replace('@', '_'), region)
             #print(gff_file_gene)
@@ -1056,7 +1062,6 @@ def main():
     optional.add_argument('--fasoff', help='Turn off FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
     optional.add_argument('--searchTaxa', help='List of Taxa to search in, (default: all species located in assembly_dir)', action='store', nargs="+", default=[])
-    optional.add_argument('--silent', help='Reduced output will be written into stdout', action='store_true', default=False)
     optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed, caution: using --parallel can result in messy output', action='store_true', default=False)
     optional.add_argument('--force', help='Overwrite existing output files', action='store_true', default=False)
     optional.add_argument('--append', help='Append the output to existing output files, caution: reference species must be identical', action='store_true', default=False)
@@ -1093,7 +1098,6 @@ def main():
     taxa = args.coreTaxa
     fasoff = args.fasoff
     searchTaxa = args.searchTaxa
-    silent = args.silent
     debug = args.debug
     force = args.force
     append = args.append
@@ -1127,8 +1131,6 @@ def main():
     else:
         if debug == True:
             mode = 'debug'
-        elif silent == True:
-            mode = 'silent'
         else:
             mode = 'normal'
 
@@ -1172,7 +1174,7 @@ def main():
 
     if core_path == '':
         core_path = out + '/core_orthologs/'
-        if check_path(core_path) == 1:
+        if check_path(core_path, False) == 1:
             core_path = dataPath + '/core_orthologs/'
     else:
         if not core_path.endswith('/'):
@@ -1309,7 +1311,7 @@ def main():
         addSeq(orthologsOutFile, ortholog_sequences)
 
     if gff == True:
-        createGff(ortholog_sequences, out)
+        createGff(ortholog_sequences, out, gene_prediction)
     mappingFile = out + "/tmp/" + group + ".mapping.txt"
 
     if fasoff == False:
