@@ -983,37 +983,41 @@ def createGff(ortholog_sequences, out_folder, tool):
     os.system('mkdir %s >/dev/null 2>&1' %(gff_folder))
     for s in ortholog_sequences:
         genes = s[0]
-        gff_file_sp = gff_folder + '/' + genes[0].split('|')[1] + '.gff'
-        data =[]
+        #print(genes)
+        data = []
+        if genes != []:
+            gff_file_sp = gff_folder + '/' + genes[0].split('|')[1] + '.gff'
+            for gene in genes:
+                group, species, gene = gene.split('|')
+                #print(group, species, gene)
+                region = '_'.join(gene.split('_')[0:-1])
+                if tool == 'metaeuk':
+                    gene_count = int(gene.split('_')[-1:][0])
+                else:
+                    gene_count = int(gene.split('.')[-2].replace('g', '').split('_')[-1:][0])
+                #print(region, gene_count)
+                gff_file_gene = "%s/tmp/%s/%s.gff" %(out_folder, species.replace('@', '_'), region)
+                #print(gff_file_gene)
+                with open(gff_file_gene, 'r') as gff:
+                    counter = 0
+                    for line in gff:
+                        if line.startswith('#'):
+                            pass
+                        else:
+                            line=line.rstrip()
+                            contig, source, type, start, end, score, strand, phase, att = line.split('\t')
+                            if type == 'gene':
+                                counter += 1
+                            if counter == gene_count:
+                                if source == 'AUGUSTUS':
+                                    att = att.replace('g' + str(gene_count), '_'.join(gene.split('.')[:-1]))
+                                    att = att.replace('"', '')
+                                elif source == 'MetaEuk':
+                                    att = 'gene_id ' + gene + '; ' +  att
+                                data.append([contig, source, type, int(start), int(end), score, strand, phase, att])
+        else:
+            continue
 
-        for gene in genes:
-            group, species, gene = gene.split('|')
-            #print(group, species, gene)
-            region = '_'.join(gene.split('_')[0:-1])
-            if tool == 'metaeuk':
-                gene_count = int(gene.split('_')[-1:][0])
-            else:
-                gene_count = int(gene.split('.')[-2].replace('g', '').split('_')[-1:][0])
-            #print(region, gene_count)
-            gff_file_gene = "%s/tmp/%s/%s.gff" %(out_folder, species.replace('@', '_'), region)
-            #print(gff_file_gene)
-            with open(gff_file_gene, 'r') as gff:
-                counter = 0
-                for line in gff:
-                    if line.startswith('#'):
-                        pass
-                    else:
-                        line=line.rstrip()
-                        contig, source, type, start, end, score, strand, phase, att = line.split('\t')
-                        if type == 'gene':
-                            counter += 1
-                        if counter == gene_count:
-                            if source == 'AUGUSTUS':
-                                att = att.replace('g' + str(gene_count), '_'.join(gene.split('.')[:-1]))
-                                att = att.replace('"', '')
-                            elif source == 'MetaEuk':
-                                att = 'gene_id ' + gene + '; ' +  att
-                            data.append([contig, source, type, int(start), int(end), score, strand, phase, att])
         df = pd.DataFrame(data, columns=['contig', 'source', 'type', 'start', 'end', 'score', 'starnd', 'phase', 'att'])
         #print(df)
         df.sort_values(by=['contig', 'start'])
