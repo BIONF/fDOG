@@ -239,8 +239,8 @@ def extract_sequence_from_to(name, file, start, end):
     return out, start, end
 
 def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
+    """Gene prediction with software Augustus for all candidate regions. The resulting AS sequences will be written in a tmp file."""
     output = open(candidatesOutFile, "w")
-
     for key in regions:
         locations = regions[key]
         counter = 0
@@ -254,7 +254,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #print(cmd)
             starting_subprocess(cmd, 'silent')
-            # transfer augustus output to as sequence
+            # transfer augustus output to AS sequence
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             starting_subprocess(cmd, mode)
             # parsing header and sequences
@@ -826,6 +826,21 @@ def clean_fas(path, file_type):
         file.write(new_line)
     file.close()
 
+def run_fas(cmd):
+    #print(cmd)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while process.poll() is None:
+        output = process.stdout.readline().decode().split('\n')
+        error = process.stderr.readline().decode().split('\n')
+        if error:
+            for line in error:
+                line.strip()
+                if 'error' in line or 'Error' in line:
+                    print ("Error running FAS with %s"%(' '.join(cmd)))
+                    process.terminate()
+                    sys.exit()
+    return output
+
 def ortholog_search_tblastn(args):
     (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms) = args
     output = []
@@ -998,7 +1013,14 @@ def createGff(ortholog_sequences, out_folder):
         df.sort_values(by=['contig', 'start'])
         df.to_csv(gff_file_sp,sep='\t' , index=False, header=None)
 
-
+def getAugustusRefSpec(mapping_augustus):
+    dict = {}
+    with open(mapping_augustus,'r') as file:
+        for line in file:
+            line = line.rstrip()
+            assembly, id = line.split('\t')
+            dict[assembly] = id
+    return dict
 
 def main():
 
@@ -1041,6 +1063,7 @@ def main():
     optional.add_argument('--parallel', help= 'The ortholog search of multiple species will be done in parallel', action='store_true', default=False)
     optional.add_argument('--augustus', help= 'Gene prediction is done by using the tool Augustus PPX', action='store_true', default=False)
     optional.add_argument('--augustusRefSpec', help='Augustus reference species identifier (use command: augustus --species=help to get precomputed augustus gene models)', action='store', default='')
+    optional.add_argument('--augustusRefSpecFile', help='Mapping file tab seperated containing Assembly Names and augustus reference species that should be used', action='store', default='')
     optional.add_argument('--metaeukDb', help='Path to MetaEuk reference database', action='store', default='')
     optional.add_argument('--isoforms', help='All Isoforms of a gene passing the ortholog verification will be included in the output', action='store_true', default=False)
     optional.add_argument('--gff', help='GFF files will be included in output', action='store_true', default=False)
@@ -1076,6 +1099,7 @@ def main():
     append = args.append
     parallel = args.parallel
     augustus_ref_species = args.augustusRefSpec
+    mapping_augustus = args.augustusRefSpecFile
     metaeuk_db = args.metaeukDb
     isoforms = args.isoforms
     gff = args.gff
@@ -1083,11 +1107,13 @@ def main():
     #gene prediction tool
     augustus = args.augustus
     if augustus == True:
-
-        if augustus_ref_species == '':
+        if augustus_ref_species == '' and mapping_augustus == '':
             print("Augustus reference species is required when using Augustus as gene prediction tool")
             return 1
         gene_prediction = "augustus"
+        if mapping_augustus != '':
+            check_path(mapping_augustus)
+            aug_ref_dict = getAugustusRefSpec(mapping_augustus)
     else:
         gene_prediction = "metaeuk"
         if metaeuk_db == '':
@@ -1236,7 +1262,13 @@ def main():
         cpus = mp.cpu_count()
         pool = mp.Pool(cpus)
         for asName in assembly_names:
-            calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms])
+            if mapping_augustus == '':
+                calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms])
+            else:
+                try:
+                    calls.append([asName, out, assemblyDir, consensus_path, aug_ref_dict[asName], group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms])
+                except KeyError:
+                    print("%s is not included in Augustus reference species mapping file. %s will be skipped" %(asName, asName))
 
         print("Searching for orthologs ...", flush=True)
         for i in tqdm(pool.imap_unordered(ortholog_search_tblastn, calls),total=len(calls)):
@@ -1249,7 +1281,13 @@ def main():
     else:
         ###################### computation species wise ################
         for asName in tqdm(assembly_names):
-            args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms]
+            if mapping_augustus == '':
+                args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms]
+            else:
+                try:
+                    args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms]
+                except KeyError:
+                    print("%s is not included in Augustus reference species mapping file. %s will be skipped" % (asName, asName))
             reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search_tblastn(args)
             ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
             if mode == 'debug':
@@ -1280,13 +1318,9 @@ def main():
 
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-        cmd = 'fas.run --seed ' + fasta_path + ' --query ' + orthologsOutFile + ' --annotation_dir ' + tmp_path + 'anno_dir --bidirectional --tsv --phyloprofile ' + mappingFile + ' --seed_id "' + fas_seed_id + '" --out_dir ' + out + ' --out_name ' + group
+        cmd = ['fas.run', '--seed', fasta_path , '--query' , orthologsOutFile , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
         #print(cmd)
-        try:
-            fas_out = subprocess.run(
-                [cmd], shell=True, capture_output=True, check=True)
-        except:
-            sys.exit('ERROR: Error running FAS\n%s' % cmd)
+        fas_out = run_fas(cmd)
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
