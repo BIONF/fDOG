@@ -278,3 +278,34 @@ def run_hamstr(args):
 
     ### return
     return({**{seed_id_mod:seed_seq}, **hamstr_out})
+
+
+def get_search_taxa_ids(searchTaxa, searchpath):
+    """ Get taxonomy IDs for search taxa
+    Either from searchTaxa_dir, or from user input list (--searchTaxa)
+    Return dictionary {taxID:<TaxName>@<TaxID>@Ver}
+    """
+    tax_ids = {}
+    if not searchTaxa == '' and not len(searchTaxa) == 0:
+        ignored_taxa = []
+        if os.path.exists(os.path.abspath(searchTaxa)):
+            search_taxa = general_fn.read_file(searchTaxa)
+        else:
+            search_taxa = searchTaxa.split(',')
+
+        for search_taxon in search_taxa:
+            if not os.path.exists(
+                    os.path.abspath(
+                        '%s/%s/%s.fa' % (searchpath,search_taxon,search_taxon))):
+                ignored_taxa.append(search_taxon)
+            else:
+                id = search_taxon.split('@')[1]
+                if not id in tax_ids:
+                    tax_ids[id] = search_taxon
+        if len(ignored_taxa) > 0:
+            print(
+                'WARNING: %s taxa cannot be found at %s\n%s'
+                % (len(ignored_taxa), searchpath, ignored_taxa))
+    else:
+        tax_ids = general_fn.get_ids_from_folder(searchpath, 'searchTaxa_dir')
+    return(tax_ids)
