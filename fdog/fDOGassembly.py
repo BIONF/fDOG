@@ -988,6 +988,9 @@ def createGff(ortholog_sequences, out_folder, tool):
         if genes != []:
             gff_file_sp = gff_folder + '/' + genes[0].split('|')[1] + '.gff'
             for gene in genes:
+                if gene == '':
+                    continue
+                #print(gene.split('|'))
                 group, species, gene = gene.split('|')
                 #print(group, species, gene)
                 region = '_'.join(gene.split('_')[0:-1])
