@@ -225,6 +225,8 @@ def main():
         check_fas = fas_fn.check_fas_executable()
         if check_fas == 0:
             sys.exit('ERROR: FAS is not executable! You still can use fDOG with --fasOff!')
+    check_time = time.time()
+    print('==> Preparation finished in ' + '{:5.3f}s'.format(check_time - begin))
 
     ##### Identify seed ID from refspec genome
     if reuseCore:
@@ -265,7 +267,7 @@ def main():
                 exit('ERROR: Taxon group "%s" invalid!' % group)
             ### create taxonomy tree from list of search taxa
             searchTaxa = []
-            tax_ids = core_fn.get_core_taxa_ids(coreTaxa, corepath)
+            tax_ids = ortho_fn.get_search_taxa_ids(searchTaxa, searchpath)
 
             for tax_id in tax_ids.keys():
                 check = tree_fn.check_taxon_group(group_id[group][0], tax_id, ncbi)
