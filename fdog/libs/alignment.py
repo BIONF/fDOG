@@ -143,6 +143,10 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
     fdog_path = os.path.realpath(__file__).replace('/libs/alignment.py','')
     fa1_filename = fa1.split("/")[-1]
     fa2_filename = fa2.split("/")[-1]
+    if os.path.exists(fa1_filename):
+        if fa2_filename == fa1_filename:
+            fa2_filename = f'{fa2_filename}.core'
+        fa1_filename = f'{fa1_filename}.core'
     os.symlink(fa1, fa1_filename)
     if not fa2_filename == fa1_filename:
         os.symlink(fa2, fa2_filename)
