@@ -340,8 +340,16 @@ def searching_for_db(assembly_path):
 def get_distance_biopython(file, matrix):
     #print(file)
     aln = AlignIO.read(open(file), 'fasta')
-    calculator = DistanceCalculator(matrix)
-    dm = calculator.get_distance(aln)
+    try:
+        calculator = DistanceCalculator(matrix)
+        dm = calculator.get_distance(aln)
+    except ValueError:
+        #print('The amino acid U is scored as C during distance calculation for file %s'%(file))
+        for record in aln:
+            new_seq = record.seq.replace('U', 'C')
+            record.seq = new_seq
+        calculator = DistanceCalculator(matrix)
+        dm = calculator.get_distance(aln)
     return dm
 
 def readFasta(fasta):
