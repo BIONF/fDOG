@@ -86,7 +86,7 @@ def hamstr(args):
             hmm_hit_fa = '%s/hmm_%s_%s_%s.fa' % (
                                 outpath, seqName, search_taxon, hmm_hit)
             with open(hmm_hit_fa, 'w') as hmm_fa_out:
-                hmm_fa_out.write('>%s\n%s' % (hmm_hit, search_seqs.fetch(hmm_hit)))
+                hmm_fa_out.write('>%s_%s\n%s' % (search_taxon, hmm_hit, search_seqs.fetch(hmm_hit)))
             blast_xml = blast_fn.do_blastsearch(
                     hmm_hit_fa, refspec_db, evalBlast = evalBlast, lowComplexityFilter = lowComplexityFilter)
             blast_out = blast_fn.parse_blast_xml(blast_xml)
@@ -113,9 +113,9 @@ def hamstr(args):
                                     hmm_hit, best_blast_hit)
                         with open(aln_fa, 'w') as aln_fa_out:
                             aln_fa_out.write(
-                                '>%s\n%s\n>%s\n%s\n>%s\n%s' % (
+                                '>%s\n%s\n>%s_%s\n%s\n>%s\n%s' % (
                                     seed_id, refspec_seqs.fetch(seed_id),
-                                    hmm_hit, search_seqs.fetch(hmm_hit),
+                                    search_taxon, hmm_hit, search_seqs.fetch(hmm_hit),
                                     best_blast_hit, refspec_seqs.fetch(best_blast_hit)
                                 )
                             )
@@ -124,7 +124,7 @@ def hamstr(args):
                         output_fn.print_debug(
                             debug, 'Alignment for checking co-ortholog ref', aln_seq)
                         br_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, seed_id, debug)
-                        bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, hmm_hit, debug)
+                        bh_dist = align_fn.calc_Kimura_dist(aln_seq, best_blast_hit, f'{search_taxon}_{hmm_hit}', debug)
                         output_fn.print_debug(
                             debug, 'Check if distance blast_vs_ref < blast_vs_hmm',
                             'd_br = %s; d_bh = %s' % (br_dist, bh_dist))
@@ -139,7 +139,7 @@ def hamstr(args):
                             ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
                             continue
 
-        # remove seed protein from candidata list
+        # remove seed protein from candidate list
         if search_taxon == refspec:
             if seed_id in ortho_candi:
                 ortho_candi.pop(seed_id)
@@ -164,18 +164,18 @@ def hamstr(args):
                             (seed_id, refspec_seqs.fetch(seed_id)))
                         for cand in ortho_candi:
                             aln_co_fa_out.write(('>%s\n%s\n') %
-                                (cand, ortho_candi[cand]))
+                                (f'{search_taxon}_{cand}', ortho_candi[cand]))
                     aln_co_seq = align_fn.do_align(aligner, aln_co_fa)
                     output_fn.print_debug(
                         debug, 'Alignment for checking co-orthologs', aln_co_seq)
                     if noCleanup == False:
                         os.remove(aln_co_fa)
                     best_dist = align_fn.calc_Kimura_dist(
-                                    aln_co_seq, seed_id, best_ortho, debug)
+                                    aln_co_seq, seed_id, f'{search_taxon}_{best_ortho}', debug)
                     for cand in ortho_candi:
                         if not cand == best_ortho:
                             candi_dist = align_fn.calc_Kimura_dist(
-                                aln_co_seq, best_ortho, cand, debug)
+                                aln_co_seq, f'{search_taxon}_{best_ortho}', f'{search_taxon}_{cand}', debug)
                             output_fn.print_debug(
                                 debug,
                                 'Check if distance bestHmm_vs_ref > '

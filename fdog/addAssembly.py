@@ -39,7 +39,7 @@ def parse_file(path):
 def main():
 
     #################### handle user input #####################################
-    version = '0.0.1'
+    version = '0.0.2'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.addAssembly version ' + str(version) + '.')
     ################## required arguments ######################################
@@ -86,11 +86,11 @@ def main():
             if ln == False:
                 assembly_folder = out_folder + name
                 os.system('mkdir %s >/dev/null 2>&1' % (assembly_folder))
-                os.system("cp %fa %s/%s.fa" %(fa, assembly_folder, name))
+                os.system("cp %s %s/%s.fa" %(fa, assembly_folder, name))
             else:
                 assembly_folder = out_folder + name
                 os.system('mkdir %s >/dev/null 2>&1' % (assembly_folder))
-                os.system("ln %fa %s/%s.fa" %(fa, assembly_folder, name))
+                os.system("ln %s %s/%s.fa" %(fa, assembly_folder, name))
         else:
             print("%s Fasta format not valid or header includes |"%(fa))
 
@@ -102,7 +102,7 @@ def main():
             if ln == False:
                 assembly_folder = out_folder + name
                 os.system('mkdir %s >/dev/null 2>&1' % (assembly_folder))
-                os.system("cp %s/%fa %s/%s.fa" %(fasta, fa, assembly_folder, name))
+                os.system("cp %s/%s %s/%s.fa" %(fasta, fa, assembly_folder, name))
             else:
                 assembly_folder = out_folder + name
                 os.system('mkdir %s >/dev/null 2>&1' % (assembly_folder))
