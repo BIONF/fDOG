@@ -1140,14 +1140,10 @@ def main():
             return 1
 
     # output modes
-    if debug == True and silent == True:
-        print("It's not possible to use booth modes, please restart and use --debug or --silent")
-        return 1
+    if debug == True:
+        mode = 'debug'
     else:
-        if debug == True:
-            mode = 'debug'
-        else:
-            mode = 'normal'
+        mode = 'normal'
 
     #checking paths
     if dataPath == '':
