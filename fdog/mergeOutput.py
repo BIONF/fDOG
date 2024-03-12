@@ -55,8 +55,8 @@ def main():
     domains_0 = None
     domains_1 = None
     ex_fasta = None
-    lines_seen = set()
     for infile in ldir(directory):
+        lines_seen = set()
         if infile.endswith('.phyloprofile') and not infile == out + '.phyloprofile':
             if not phyloprofile:
                 phyloprofile = out + '.phyloprofile'
@@ -74,14 +74,18 @@ def main():
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    domains_0_out.write(line)
+                    if line not in lines_seen: # not a duplicate
+                        domains_0_out.write(line)
+                        lines_seen.add(line)
         elif infile.endswith('_reverse.domains') and not infile == out + '_reverse.domains':
             if not domains_1:
                 domains_1 = open(out + '_reverse.domains', 'w')
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    domains_1.write(line)
+                    if line not in lines_seen: # not a duplicate
+                        domains_1.write(line)
+                        lines_seen.add(line)
         elif infile.endswith('.extended.fa') and not infile == out + '.extended.fa':
             if not ex_fasta:
                 ex_fasta = out + '.extended.fa'
