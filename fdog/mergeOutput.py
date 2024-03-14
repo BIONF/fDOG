@@ -55,8 +55,9 @@ def main():
     domains_0 = None
     domains_1 = None
     ex_fasta = None
+    lines_seen = set()
+    lines_seen_2 = set()
     for infile in ldir(directory):
-        lines_seen = set()
         if infile.endswith('.phyloprofile') and not infile == out + '.phyloprofile':
             if not phyloprofile:
                 phyloprofile = out + '.phyloprofile'
@@ -83,9 +84,9 @@ def main():
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    if line not in lines_seen: # not a duplicate
+                    if line not in lines_seen_2: # not a duplicate
                         domains_1.write(line)
-                        lines_seen.add(line)
+                        lines_seen_2.add(line)
         elif infile.endswith('.extended.fa') and not infile == out + '.extended.fa':
             if not ex_fasta:
                 ex_fasta = out + '.extended.fa'
