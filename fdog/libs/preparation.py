@@ -191,7 +191,7 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
         sys.exit()
     blast_out = blast_fn.parse_blast_xml(blast_xml)
     if len(blast_out['hits']) < 1:
-        print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species!')
+        print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species (No blast hit was found)!')
         print(f'You can check it by running:\nblastp -query {seqFile} -db {corepath}/{refspec}/{refspec} -evalue 0.001 -outfmt 7')
         sys.exit()
     for hit in blast_out['hits']:
@@ -201,6 +201,6 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
             output_fn.print_stdout(silentOff, 'WARNING: Found seed sequence shorter/longer than input!')
             return(hit)
         else:
-            print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species!')
+            print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species (blast hit is much longer/shorter than seed)!')
             print(f'You can check it by running:\nblastp -query {seqFile} -db {corepath}/{refspec}/{refspec} -evalue 0.001 -outfmt 7')
             sys.exit()
