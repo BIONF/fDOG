@@ -231,6 +231,7 @@ def main():
                                 help='Specifiy mode for filtering core orthologs by FAS score. In \'relaxed\' mode candidates with insufficient FAS score will be disadvantaged. In \'strict\' mode candidates with insufficient FAS score will be deleted from the candidates list. The option \'--minScore\' specifies the cut-off of the FAS score.',
                                 choices=['relaxed', 'strict'], action='store', default='')
     fas_options.add_argument('--minScore', help='Specify the threshold for coreFilter. Default: 0.75', action='store', default=0.75, type=float)
+    fas_options.add_argument('--featureFile', help='File that contains tools used for FAS calculation', action='store', default='')
 
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
@@ -304,6 +305,7 @@ def main():
     fasOff = args.fasOff
     coreFilter = args.coreFilter
     minScore = args.minScore
+    featureFile = args.featureFile
 
     # other I/O arguments
     append = args.append
@@ -446,7 +448,7 @@ def main():
                 sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
             if os.path.exists(finalFa):
                 start = time.time()
-                fas_fn.calc_fas_multi(finalFa, outpath, annopath, cpus)
+                fas_fn.calc_fas_multi(finalFa, outpath, annopath, cpus, featureFile)
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
                 multiLog.write('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
