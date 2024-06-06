@@ -22,6 +22,7 @@ from os import listdir as ldir
 import argparse
 import yaml
 from pkg_resources import get_distribution
+from Bio import SeqIO
 
 def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
     settings = dict(
@@ -57,6 +58,7 @@ def main():
     ex_fasta = None
     lines_seen = set()
     lines_seen_2 = set()
+    fa_seq_id = set()
     for infile in ldir(directory):
         if infile.endswith('.phyloprofile') and not infile == out + '.phyloprofile':
             if not phyloprofile:
@@ -91,10 +93,12 @@ def main():
             if not ex_fasta:
                 ex_fasta = out + '.extended.fa'
                 ex_fasta_out = open(ex_fasta, 'w')
-            with open(directory + '/' + infile, 'r') as reader:
-                lines = reader.readlines()
-                for line in lines:
-                    ex_fasta_out.write(line)
+            inSeq = SeqIO.to_dict((SeqIO.parse(open(directory + '/' + infile), 'fasta')))
+            for seq in inSeq:
+                if not seq in fa_seq_id:
+                    ex_fasta_out.write('>%s\n%s\n' % (seq, inSeq[seq].seq))
+                    fa_seq_id.add(seq)
+
     if phyloprofile:
         phyloprofile_out.close()
     if domains_0:
