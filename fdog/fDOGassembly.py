@@ -334,7 +334,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                 gff_file.close()
             except FileNotFoundError:
                 pass
-    region.write()
+    region.close()
     output.close()
 
 def searching_for_db(assembly_path):
