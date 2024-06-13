@@ -1074,7 +1074,7 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.5'
+    version = '0.1.5.1'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
