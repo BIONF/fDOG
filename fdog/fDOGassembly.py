@@ -241,6 +241,8 @@ def extract_sequence_from_to(name, file, start, end):
 def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
     """Gene prediction with software Augustus for all candidate regions. The resulting AS sequences will be written in a tmp file."""
     output = open(candidatesOutFile, "w")
+    region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
+    region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
     for key in regions:
         locations = regions[key]
         counter = 0
@@ -260,6 +262,8 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             #print(cmd)
             starting_subprocess(cmd, mode)
+            #write region in region file
+            region.write(key + "\t" + str(start) + "\t" + str(end) + "\n")
             # parsing header and sequences
             try:
                 sequence_file = open(tmp_path + name + ".aa", "r")
@@ -276,6 +280,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                 pass
                 #print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
     output.close()
+    region.close()
 
 def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, db):
     output = open(candidatesOutFile, "w")
@@ -329,7 +334,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                 gff_file.close()
             except FileNotFoundError:
                 pass
-
+    region.write()
     output.close()
 
 def searching_for_db(assembly_path):
