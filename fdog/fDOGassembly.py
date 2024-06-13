@@ -44,15 +44,15 @@ def check_path(path, exit=True):
     else:
         return 0
 
-def check_ref_sepc(species_list, fasta_file):
-    file = open(fasta_file, "r")
-    lines = file.readlines()
-    species_file = []
-
-    for line in lines:
-        if line[0] == ">":
-            species = line.split("|")[1]
-            species_file.append(species)
+def check_ref_spec(species_list, fasta_file):
+    """ Checks if reference species is part of the input ortholog group
+    """
+    species_file = {}
+    with open(fasta_file,"r") as lines:
+        for line in lines:
+            if line[0] == ">":
+                species = line.split("|")[1]
+                species_file.add(species)
     for species in species_list:
         if species in species_file:
             return species
@@ -251,11 +251,14 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             # augutus call
-            cmd = "augustus --protein=1 --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
+            cmd = "augustus --protein=1 --gff3=on --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #print(cmd)
             starting_subprocess(cmd, 'silent')
             # transfer augustus output to AS sequence
+            #print(tmp_path)
+            #print(key)
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
+            #print(cmd)
             starting_subprocess(cmd, mode)
             # parsing header and sequences
             try:
@@ -290,9 +293,10 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             name = key + "_" + str(counter)
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             region.write(file + "\t" + str(start) + "\t" + str(end) + "\n")
-            #metaeuk call
-            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files"
+            #metaeuk call sensitive
+            #cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files -s 6"
             #print(cmd)
+            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 15 --max-overlap 15 --min-intron 5 --overlap 1 -s 4.5 --remove-tmp-files"
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
             starting_subprocess(cmd, mode)
             # parsing header and sequences
@@ -989,6 +993,7 @@ def createGff(ortholog_sequences, out_folder, tool):
     #print(out_folder)
     gff_folder = out_folder + "/gff/"
     os.system('mkdir %s >/dev/null 2>&1' %(gff_folder))
+    types_set = set(['gene', 'CDS', 'transcript', 'mRNA', 'exon'])
     for s in ortholog_sequences:
         genes = s[0]
         #print(genes)
@@ -1021,10 +1026,23 @@ def createGff(ortholog_sequences, out_folder, tool):
                                 counter += 1
                             if counter == gene_count:
                                 if source == 'AUGUSTUS':
-                                    att = att.replace('g' + str(gene_count), '_'.join(gene.split('.')[:-1]))
+                                    att = att.replace('g' + str(gene_count), group + '_' + '_'.join(gene.split('.')[:-1]))
                                     att = att.replace('"', '')
+                                    if type not in types_set:
+                                        continue
                                 elif source == 'MetaEuk':
-                                    att = 'gene_id ' + gene + '; ' +  att
+                                    #att = 'ID=' + group + '_' +  gene + '; ' +  att
+                                    if type == 'gene':
+                                        att_entries = att.split(';')
+                                        for x in att_entries:
+                                            if x.startswith('Target_ID='):
+                                                target = x
+                                            elif x.startswith('TCS_ID='):
+                                                parent_prefix = x.replace('TCS_ID=', '')
+                                    att = att.replace('TCS_ID=', 'ID=')
+                                    att = att.replace(parent_prefix, group + '_' + gene)
+                                    att = att.replace(target + ';', '')
+                                    phase = 0
                                 data.append([contig, source, type, int(start), int(end), score, strand, phase, att])
         else:
             continue
@@ -1236,7 +1254,7 @@ def main():
 
     ########### is/are fDOG reference species part of ortholog group? ##########
 
-    fdog_ref_species = check_ref_sepc(fdog_ref_species, fasta_path)
+    fdog_ref_species = check_ref_spec(fdog_ref_species, fasta_path)
 
     ###################### create tmp folder ###################################
 
@@ -1250,15 +1268,23 @@ def main():
 
     if augustus == True:
         group_computation_time_start = time.time()
-        consensus_path = consensusSequence(core_path, group, mode, out)
-        profile_path = blockProfiles(core_path, group, mode, out, msaTool)
+        consensus_path = core_path + '/' + group + '/' + group + '.con'
+        if check_path(consensus_path, exit=False) == 1:
+            consensus_path = consensusSequence(core_path, group, mode, out)
+        print(consensus_path)
+        profile_path = core_path + '/' + group + '/' + group + '.prfl'
+        if check_path(profile_path, exit=False) == 1:
+            profile_path = blockProfiles(core_path, group, mode, out, msaTool)
+        print(profile_path)
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
     else:
         #print("test")
         profile_path = ""
         group_computation_time_start = time.time()
-        consensus_path = consensusSequence(core_path, group, mode, out)
+        consensus_path = core_path + '/' + group + '.con'
+        if check_path(consensus_path, exit=False) == 1:
+            consensus_path = consensusSequence(core_path, group, mode, out)
         #concatinade core_group sequences if metaeuk should be run without tblastn
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
