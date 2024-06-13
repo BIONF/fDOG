@@ -47,7 +47,7 @@ def check_path(path, exit=True):
 def check_ref_spec(species_list, fasta_file):
     """ Checks if reference species is part of the input ortholog group
     """
-    species_file = {}
+    species_file = set()
     with open(fasta_file,"r") as lines:
         for line in lines:
             if line[0] == ">":
@@ -297,7 +297,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
-            region.write(file + "\t" + str(start) + "\t" + str(end) + "\n")
+            region.write(key + "\t" + str(start) + "\t" + str(end) + "\n")
             #metaeuk call sensitive
             #cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files -s 6"
             #print(cmd)
@@ -334,7 +334,7 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                 gff_file.close()
             except FileNotFoundError:
                 pass
-    region.write()
+    region.close()
     output.close()
 
 def searching_for_db(assembly_path):
@@ -1074,7 +1074,7 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.5'
+    version = '0.1.5.1'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
