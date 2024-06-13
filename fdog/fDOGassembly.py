@@ -347,8 +347,10 @@ def searching_for_db(assembly_path):
     return check
 
 def get_distance_biopython(file, matrix):
+    """ Reads alignment file and returns distance matrix """
     #print(file)
-    aln = AlignIO.read(open(file), 'fasta')
+    input_handle = open(file)
+    aln = AlignIO.read(input_handle, 'fasta')
     try:
         calculator = DistanceCalculator(matrix)
         dm = calculator.get_distance(aln)
@@ -359,6 +361,7 @@ def get_distance_biopython(file, matrix):
             record.seq = new_seq
         calculator = DistanceCalculator(matrix)
         dm = calculator.get_distance(aln)
+    input_handle.close()
     return dm
 
 def readFasta(fasta):
