@@ -47,7 +47,7 @@ def check_path(path, exit=True):
 def check_ref_spec(species_list, fasta_file):
     """ Checks if reference species is part of the input ortholog group
     """
-    species_file = {}
+    species_file = set()
     with open(fasta_file,"r") as lines:
         for line in lines:
             if line[0] == ">":
