@@ -46,10 +46,10 @@ def main():
     required = parser.add_argument_group('Required arguments')
     required.add_argument('--fasta', help='Path to fasta file or folder', action='store', default='', required=True)
     required.add_argument('--out', help='Path to output folder.', action='store', default='', required=True)
-    required.add_argument('--ncbi', help='NCBI number of species or mapping file', action='store', default='', required=True)
+    required.add_argument('--ncbi', help='NCBI ID of species or a mapping file (tab separated) containing the NCBI ID and the corresponding file name placed in the folder given by --fasta. ', action='store', default='', required=True)
     required.add_argument('--ver', help='Version', action='store', default='', required=True)
     optional = parser.add_argument_group('Optional arguments')
-    optional.add_argument('--link', help='links fasta files not copies them', action='store_true', default = False)
+    optional.add_argument('--link', help='links fasta files instead of copying them', action='store_true', default = False)
 
     args = parser.parse_args()
     fasta = args.fasta
