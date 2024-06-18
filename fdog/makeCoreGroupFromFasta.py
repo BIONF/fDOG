@@ -96,4 +96,5 @@ def main():
 
     print('Core group located at %s. Fasta file: %s; MSA: %s; HMM: %s' % (out_folder, fasta_file, aln_file, hmm_file))
 
-main()
+if __name__ == '__main__':
+    main()

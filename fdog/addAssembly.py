@@ -120,4 +120,5 @@ def main():
 
     print("DONE, files can be found: %s"%(out_folder))
 
-main()
+if __name__ == '__main__':
+    main()
