@@ -71,10 +71,13 @@ def starting_subprocess(cmd, mode, time_out = None):
     try:
         if mode == 'debug':
             result = subprocess.run(cmd, shell=True, timeout = time_out)
+            return result
         elif mode == 'silent':
             result = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell=True, timeout = time_out)
+            return result
         elif mode == 'normal':
             result = subprocess.run(cmd, stdout = subprocess.PIPE, shell=True, timeout = time_out)
+            return result
     except subprocess.TimeoutExpired:
         return 1
 
@@ -550,16 +553,19 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         orthologs = set({})
 
         for species in seed:
-            print("backward search in species %s\n" %species)
+            #print("backward search in species %s\n" %species)
             orthologs_new = set({})
             try:
                 id_ref = seedDic[species]
             except KeyError:
                 #print("The species " + species + " isn't part of the core ortholog group, ... exciting")
                 return 0, seed
-
-            cmd = "blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -seg " + filter + " -out " + tmp_path + "/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
-            starting_subprocess(cmd, mode)
+            #cmd = "blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
+            cmd = "blastp -db " + blast_dir_path + species + "/" + species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "/blast_" + species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
+            results = starting_subprocess(cmd, mode)
+            if results.returncode != 0:
+                print("Blastp failed with the command: %s"%(results.args))
+                sys.exit()
             alg_file = open(tmp_path + "/blast_" + species, "r")
             lines = alg_file.readlines()
             alg_file.close()
