@@ -353,7 +353,11 @@ def get_distance_biopython(file, matrix):
     """ Reads alignment file and returns distance matrix """
     #print(file)
     input_handle = open(file)
-    aln = AlignIO.read(input_handle, 'fasta')
+    try:
+        aln = AlignIO.read(input_handle, 'fasta')
+    except ValueError:
+        print("Alignment file %s is empty. Exiting ... "%(file))
+        sys.exit()
     try:
         calculator = DistanceCalculator(matrix)
         dm = calculator.get_distance(aln)
@@ -424,6 +428,11 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         starting_subprocess(cmd, mode)
         if not os.path.exists(aln_file):
             print('Muscle failed with command: %s'%(cmd))
+            print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (candidate_name))
+            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file
+            starting_subprocess(cmd, mode)
+        elif os.path.getsize(aln_file) == 0:
+            print('Muscle failed with command: %s' % (cmd))
             print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (candidate_name))
             cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file
             starting_subprocess(cmd, mode)
@@ -784,6 +793,12 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
             print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (aln_file))
             cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file
             starting_subprocess(cmd, mode)
+        elif os.path.getsize(aln_file) == 0:
+            print('Muscle failed with command: %s' % (cmd))
+            print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (aln_file))
+            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file
+            starting_subprocess(cmd, mode)
+
     elif msaTool == "mafft-linsi":
         cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet %s > %s'% (out, aln_file)
         starting_subprocess(cmd, mode)
@@ -837,6 +852,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     return checked
 
 def clean_fas(path, file_type):
+    check_path(path)
     file = open(path, "r")
     lines = file.readlines()
     file.close()
@@ -864,8 +880,8 @@ def run_fas(cmd):
         if error:
             for line in error:
                 line.strip()
-                if 'error' in line or 'Error' in line:
-                    print ("Error running FAS with %s"%(' '.join(cmd)))
+                if 'error' in line or 'Error' in line or 'RemoteTraceback' in line:
+                    print ("Error running FAS with %s"%(' '.join(cmd)), flush=True)
                     process.terminate()
                     sys.exit()
     return output
@@ -895,6 +911,7 @@ def ortholog_search_tblastn(args):
     #makes a tBLASTn search against database
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
     cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
+    print(cmd)
     time_tblastn_start = time.time()
     exit_code = starting_subprocess(cmd, mode, 3600)
     time_tblastn_end = time.time()
@@ -1074,6 +1091,19 @@ def getAugustusRefSpec(mapping_augustus):
             assembly, id = line.split('\t')
             dict[assembly] = id
     return dict
+
+def create_renamed_link(fasta_path, tmp_path):
+    """Creates a link of a file and replaces every dot in the file name"""
+    fasta = os.path.abspath(fasta_path)
+    file_name = os.path.splitext(os.path.basename(fasta))[0].replace('.','_') + '.fa'
+    dest = os.path.abspath(tmp_path) + '/' + file_name
+    os.symlink(fasta, dest)
+    return dest
+
+def move_working_dir(aim):
+    cwd = os.getcwd()
+    if cwd != aim:
+        os.chdir(aim)
 
 def main():
 
@@ -1296,7 +1326,7 @@ def main():
         #print("test")
         profile_path = ""
         group_computation_time_start = time.time()
-        consensus_path = core_path + '/' + group + '.con'
+        consensus_path = core_path + '/' + group + '/' + group + '.con'
         if check_path(consensus_path, exit=False) == 1:
             consensus_path = consensusSequence(core_path, group, mode, out)
         #concatinade core_group sequences if metaeuk should be run without tblastn
@@ -1371,9 +1401,15 @@ def main():
 
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-        cmd = ['fas.run', '--seed', fasta_path , '--query' , orthologsOutFile , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
+        #print(fasta_path, group)
+        fasta_link = create_renamed_link(fasta_path, tmp_path)
+        print(fasta_link)
+        query_link = create_renamed_link(orthologsOutFile, tmp_path)
+        print(query_link)
+        cmd = ['fas.run', '--seed', fasta_link, '--query' , query_link , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
         #print(cmd)
         fas_out = run_fas(cmd)
+        print(fas_out)
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
