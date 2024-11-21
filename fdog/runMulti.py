@@ -198,7 +198,7 @@ def main():
                                 action='store_true', default=False)
     core_options.add_argument('--coreHitLimit', help='Number of hits of the initial pHMM based search that should be evaluated via a reverse search. Default: 3',
                                 action='store', default=3, type=int)
-    core_options.add_argument('--candidateScoreFactor', help='A multiplier used to set cutoff for candidate selection. A candidate alignment score must exceed the '
+    core_options.add_argument('--candScoreFactor', help='A multiplier used to set cutoff for candidate selection. A candidate alignment score must exceed the '
                                 'this factor in order to be considered further. Default: 0.05',
                                 action='store', default=0.05, type=float)
     core_options.add_argument('--alnStrategy', help='Specify the alignment strategy during core ortholog compilation. Default: local',
@@ -280,7 +280,7 @@ def main():
     CorecheckCoorthologsOff = args.CorecheckCoorthologsOff
     coreRep = args.coreRep
     coreHitLimit = args.coreHitLimit
-    distDeviation = max(round(args.candidateScoreFactor - 1, 2), 0) #args.distDeviation
+    distDeviation = max(round(args.candScoreFactor - 1, 2), 0) #args.distDeviation
     alnStrategy = args.alnStrategy
 
     # ortholog search arguments
