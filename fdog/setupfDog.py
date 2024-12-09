@@ -157,7 +157,15 @@ def download_data(dataPath, resetData):
         data_url = 'https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo'
         if os.path.exists(data_fdog_file) and resetData:
             os.remove(data_fdog_file)
-        general_fn.download_file(data_url, data_fdog_file)
+        # general_fn.download_file(data_url, data_fdog_file)
+        ####### temporary solution while the uni network does not work #########
+        wgetCmd = 'wget "https://www.dropbox.com/scl/fi/t2ln18k0jthc3y74s591q/data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0"'
+        try:
+            subprocess.run([wgetCmd], shell=True, check=True)
+            shutil.move("data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0", "data_HaMStR-2019c.tar.gz")
+        except:
+            print('Problem occurred while download demo data from dropbox')
+        ########################################################################
         try:
             print('Extracting %s...' % data_fdog_file)
             shutil.unpack_archive(data_fdog_file, dataPath, 'gztar')
