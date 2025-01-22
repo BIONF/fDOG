@@ -106,12 +106,14 @@ def calc_fas_cand(args):
     return(fas_score)
 
 
-def calc_fas_multi (input_fa, outpath, annopath, cpus):
+def calc_fas_multi (input_fa, outpath, annopath, cpus, featureFile):
     """ Calculate pairwise FAS scores for all orthologs vs seed protein
     input_fa is the default <seqName>.extended.fa output file of fDOG
     Output will be <seqName>_forward.
     """
     fasCmd = 'fas.runFdogFas -i %s -w %s --cores %s --redo_anno' % (input_fa, annopath, cpus)
+    if featureFile:
+        fasCmd = f'{fasCmd} --featuretypes {featureFile}'
     try:
         subprocess.call([fasCmd], shell = True)
         if os.path.exists(outpath + '/tmp'):

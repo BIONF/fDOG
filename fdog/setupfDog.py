@@ -157,7 +157,15 @@ def download_data(dataPath, resetData):
         data_url = 'https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo'
         if os.path.exists(data_fdog_file) and resetData:
             os.remove(data_fdog_file)
-        general_fn.download_file(data_url, data_fdog_file)
+        # general_fn.download_file(data_url, data_fdog_file)
+        ####### temporary solution while the uni network does not work #########
+        wgetCmd = 'wget "https://www.dropbox.com/scl/fi/t2ln18k0jthc3y74s591q/data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0"'
+        try:
+            subprocess.run([wgetCmd], shell=True, check=True)
+            shutil.move("data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0", "data_HaMStR-2019c.tar.gz")
+        except:
+            print('Problem occurred while download demo data from dropbox')
+        ########################################################################
         try:
             print('Extracting %s...' % data_fdog_file)
             shutil.unpack_archive(data_fdog_file, dataPath, 'gztar')
@@ -248,13 +256,13 @@ def main():
     ## FAS
     if not woFAS:
         install_fas(woFAS)
-    ## hmmer, blast+, clustalw, mafft, muscle, augustus, metaeuk
+    ## hmmer, blast+, clustalw, mafft, muscle
     missing_tools = check_dependencies(fdogPath)
     if len(missing_tools) > 0:
         if check_conda_env() == True:
             req_file = '%s/data/conda_requirements.yml' % fdogPath
             print('=> Dependencies in %s' % req_file)
-            conda_install_cmd = 'conda install -c bioconda -c conda-forge --file %s -y' % (req_file)
+            conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
             try:
                 subprocess.call([conda_install_cmd], shell = True)
             except:
