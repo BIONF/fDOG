@@ -31,7 +31,7 @@ import re
 from datetime import datetime
 import multiprocessing as mp
 from tqdm import tqdm
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 from Bio.Blast.Applications import NcbiblastpCommandline
 
 
@@ -418,7 +418,7 @@ def run_check(args):
     return(caution)
 
 def main():
-    version = get_distribution('fdog').version
+    version = version("fdog")
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     parser.add_argument('-s', '--searchTaxa_dir', help='Path to search taxa directory (e.g. fdog_dataPath/searchTaxa_dir)', action='store', default='')
     parser.add_argument('-c', '--coreTaxa_dir', help='Path to blastDB directory (e.g. fdog_dataPath/coreTaxa_dir)', action='store', default='')

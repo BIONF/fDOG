@@ -20,7 +20,7 @@ import os
 import argparse
 import subprocess
 import shutil
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 
 import fdog.setupfDog as setupfDog_fn
 
@@ -48,7 +48,7 @@ def query_yes_no(question, default='yes'):
 
 
 def main():
-    version = get_distribution('fdog').version
+    version = version("fdog")
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     parser.add_argument('--all', help='Remove fdog together with all files/data within the installed fdog directory', action='store_true', default=False)
     args = parser.parse_args()

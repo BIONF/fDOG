@@ -19,7 +19,7 @@
 
 import os
 import argparse
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 
 import fdog.libs.zzz as general_fn
 import fdog.checkData as check_data_fn
@@ -65,7 +65,7 @@ def check_data(searchpath, corepath, annopath):
 
 
 def main():
-    version = get_distribution('fdog').version
+    version = version("fdog")
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

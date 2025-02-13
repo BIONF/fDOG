@@ -24,7 +24,7 @@ import subprocess
 import shutil
 from ete3 import NCBITaxa
 from pathlib import Path
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fas as fas_fn
@@ -201,7 +201,7 @@ def write_pathconfig(fdogPath, dataPath):
 
 
 def main():
-    version = get_distribution('fdog').version
+    version = version("fdog")
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

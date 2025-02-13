@@ -31,7 +31,7 @@ import re
 import shutil
 from datetime import datetime
 import time
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 from collections import OrderedDict
 
 import fdog.libs.zzz as general_fn
@@ -66,7 +66,7 @@ def parse_map_file(mapping_file, folIn):
 
 
 def main():
-    version = get_distribution('fdog').version
+    version = version("fdog")
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')

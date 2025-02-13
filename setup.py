@@ -26,8 +26,8 @@ with open("README.md", "r") as input:
 
 setup(
     name="fdog",
-    version="0.1.36",
-    python_requires='>=3.10.0',
+    version="0.1.37",
+    python_requires='>=3.12.0',
     description="Feature-aware Directed OrtholoG search tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
