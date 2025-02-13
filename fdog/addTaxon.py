@@ -34,8 +34,8 @@ import fdog.libs.addtaxon as add_taxon_fn
 
 
 def main():
-    version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-f', '--fasta', help='FASTA file of input taxon', action='store', default='', required=True)

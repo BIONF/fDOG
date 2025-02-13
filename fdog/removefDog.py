@@ -48,8 +48,8 @@ def query_yes_no(question, default='yes'):
 
 
 def main():
-    version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     parser.add_argument('--all', help='Remove fdog together with all files/data within the installed fdog directory', action='store_true', default=False)
     args = parser.parse_args()
     data = args.all

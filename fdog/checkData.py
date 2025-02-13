@@ -418,8 +418,8 @@ def run_check(args):
     return(caution)
 
 def main():
-    version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     parser.add_argument('-s', '--searchTaxa_dir', help='Path to search taxa directory (e.g. fdog_dataPath/searchTaxa_dir)', action='store', default='')
     parser.add_argument('-c', '--coreTaxa_dir', help='Path to blastDB directory (e.g. fdog_dataPath/coreTaxa_dir)', action='store', default='')
     parser.add_argument('-a', '--annotation_dir', help='Path to feature annotation directory (e.g. fdog_dataPath/annotation_dir)', action='store', default='')

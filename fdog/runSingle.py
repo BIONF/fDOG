@@ -33,8 +33,8 @@ import fdog.libs.output as output_fn
 
 
 def main():
-    version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.',
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.',
                                      epilog="For more information on certain options, please refer to the wiki pages "
                                             "on github: https://github.com/BIONF/fDOG/wiki")
     required = parser.add_argument_group('Required arguments')

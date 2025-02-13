@@ -66,8 +66,8 @@ def parse_map_file(mapping_file, folIn):
 
 
 def main():
-    version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('-i', '--input', help='Path to input folder', action='store', default='', required=True)

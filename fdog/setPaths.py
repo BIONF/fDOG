@@ -65,8 +65,8 @@ def check_data(searchpath, corepath, annopath):
 
 
 def main():
-    version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('--searchpath', help='Path to search taxa folder (e.g. fdog_data/searchTaxa_dir)', action='store', default='', required=True)
