@@ -1,7 +1,6 @@
 # fDOG - Feature-aware Directed OrtholoG search
 [![PyPI version](https://badge.fury.io/py/fdog.svg)](https://pypi.org/project/fdog/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Build Status](https://travis-ci.com/BIONF/fDOG.svg?branch=master)](https://travis-ci.com/BIONF/fDOG)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
 
 # Table of Contents
