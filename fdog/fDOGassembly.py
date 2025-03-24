@@ -862,10 +862,16 @@ def run_fas(cmd):
         output = process.stdout.readline().decode().split('\n')
         error = process.stderr.readline().decode().split('\n')
         if error:
+            cmd_out = ''
             for line in error:
                 line.strip()
                 if 'error' in line or 'Error' in line:
-                    print ("Error running FAS with %s"%(' '.join(cmd)))
+                    for i in cmd:
+                        if '|' in i:
+                            cmd_out += " '"+ str(i) + "'"
+                        else:
+                            cmd_out += " " + str(i)
+                    print ("Error running FAS with %s"%(cmd_out))
                     process.terminate()
                     sys.exit()
     return output
