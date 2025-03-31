@@ -262,11 +262,23 @@ def main():
         if check_conda_env() == True:
             req_file = '%s/data/conda_requirements.yml' % fdogPath
             print('=> Dependencies in %s' % req_file)
+            micromamba_install_cmd = 'micromamba install -c bioconda --file %s -y' % (req_file)
+            mamba_install_cmd = 'mamba install -c bioconda --file %s -y' % (req_file)
             conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
             try:
-                subprocess.call([conda_install_cmd], shell = True)
-            except:
-                sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
+                # Try to use micromamba first
+                subprocess.check_call(micromamba_install_cmd, shell=True)
+            except subprocess.CalledProcessError as e:
+                try:
+                    # If micromamba fails, try mamba
+                    subprocess.check_call(mamba_install_cmd, shell=True)
+                except subprocess.CalledProcessError as e:
+                    try:
+                        # If both fail, try conda
+                        subprocess.check_call(conda_install_cmd, shell=True)
+                    except subprocess.CalledProcessError as e:
+                        # If all installation attempts fail, exit with an error message
+                        sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
         else:
             install_cmd = 'sudo apt-get install -y -qq <tool>'
             sys.exit('\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
