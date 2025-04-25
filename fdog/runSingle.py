@@ -19,7 +19,7 @@ import sys
 import os
 import argparse
 import subprocess
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 from importlib.metadata import version, PackageNotFoundError
 import time
 

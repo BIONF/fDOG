@@ -26,7 +26,6 @@ from pathlib import Path
 from Bio import SeqIO
 import multiprocessing as mp
 from tqdm import tqdm
-from ete3 import NCBITaxa
 import re
 import shutil
 from datetime import datetime

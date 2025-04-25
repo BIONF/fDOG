@@ -39,7 +39,7 @@ setup(
     install_requires=[
         'biopython',
         'tqdm',
-        'ete3',
+        'ete4',
         'six',
         'PyYAML',
         'pyhmmer',

@@ -22,7 +22,7 @@ import platform
 import argparse
 import subprocess
 import shutil
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 from pathlib import Path
 from importlib.metadata import version, PackageNotFoundError
 
@@ -147,25 +147,25 @@ def check_dependencies(fdogPath):
 
 def download_data(dataPath, resetData):
     """ Downloade pre-calculated fDOG data """
-    data_fdog_file = "data_HaMStR-2019c.tar.gz"
+    data_fdog_file = "data_fDOG_2024.tar.gz"
     checksum_data = "1748371655 621731824 $data_fdog_file"
 
     genome_path = '%s/searchTaxa_dir' % dataPath
     Path(genome_path).mkdir(parents = True, exist_ok = True)
 
     if len(general_fn.read_dir(genome_path)) < 1 or resetData:
-        data_url = 'https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo'
+        data_url = 'https://applbqio.biologie.uni-frankfurt.de/download/hamstr_qfo'
         if os.path.exists(data_fdog_file) and resetData:
             os.remove(data_fdog_file)
-        # general_fn.download_file(data_url, data_fdog_file)
-        ####### temporary solution while the uni network does not work #########
-        wgetCmd = 'wget "https://www.dropbox.com/scl/fi/t2ln18k0jthc3y74s591q/data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0"'
-        try:
-            subprocess.run([wgetCmd], shell=True, check=True)
-            shutil.move("data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0", "data_HaMStR-2019c.tar.gz")
-        except:
-            print('Problem occurred while download demo data from dropbox')
-        ########################################################################
+        general_fn.download_file(data_url, data_fdog_file)
+        # ####### temporary solution while the uni network does not work #########
+        # wgetCmd = 'wget "https://www.dropbox.com/scl/fi/t2ln18k0jthc3y74s591q/data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0"'
+        # try:
+        #     subprocess.run([wgetCmd], shell=True, check=True)
+        #     shutil.move("data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0", "data_HaMStR-2019c.tar.gz")
+        # except:
+        #     print('Problem occurred while download demo data from dropbox')
+        # ########################################################################
         try:
             print('Extracting %s...' % data_fdog_file)
             shutil.unpack_archive(data_fdog_file, dataPath, 'gztar')
@@ -234,7 +234,7 @@ def main():
 
     ### check if pathconfig file exists
     pathconfigFile = '%s/bin/pathconfig.yml' % fdogPath
-    demo_cmd = 'fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3'
+    demo_cmd = 'fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02'
     if os.path.exists(pathconfigFile) and not force:
         check_fas = 1
         if not woFAS:
@@ -274,25 +274,6 @@ def main():
                 subprocess.call(install_cmd, shell=True)
             except:
                 sys.exit(f'\033[91mERROR: Cannot install conda packages in {req_file}!\033[0m')
-
-
-            # micromamba_install_cmd = 'micromamba install -c bioconda --file %s -y' % (req_file)
-            # mamba_install_cmd = 'mamba install -c bioconda --file %s -y' % (req_file)
-            # conda_install_cmd = 'conda install -c bioconda --file %s -y' % (req_file)
-            # try:
-            #     # Try to use micromamba first
-            #     subprocess.check_call(micromamba_install_cmd, shell=True)
-            # except subprocess.CalledProcessError as e:
-            #     try:
-            #         # If micromamba fails, try mamba
-            #         subprocess.check_call(mamba_install_cmd, shell=True)
-            #     except subprocess.CalledProcessError as e:
-            #         try:
-            #             # If both fail, try conda
-            #             subprocess.check_call(conda_install_cmd, shell=True)
-            #         except subprocess.CalledProcessError as e:
-            #             # If all installation attempts fail, exit with an error message
-            #             sys.exit('\033[91mERROR: Cannot install conda packages in %s!\033[0m' % req_file)
         else:
             install_cmd = 'sudo apt-get install -y -qq <tool>'
             sys.exit('\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))

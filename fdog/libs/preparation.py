@@ -20,7 +20,7 @@ import os
 import subprocess
 from pathlib import Path
 from Bio import SeqIO
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fasta as fasta_fn

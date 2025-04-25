@@ -25,7 +25,7 @@ import re
 import shutil
 import multiprocessing as mp
 from tqdm import tqdm
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 from importlib.metadata import version, PackageNotFoundError
 import time
 
