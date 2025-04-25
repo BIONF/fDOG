@@ -246,7 +246,7 @@ def main():
             print('You can test fDOG using the following command:\n%s --fasOff' % demo_cmd)
         sys.exit()
 
-    ### get ncbi taxonomy database for ete3
+    ### get ncbi taxonomy database for ete4
     print('*** Creating local NCBI taxonomy database...')
     ncbi = NCBITaxa()
 
