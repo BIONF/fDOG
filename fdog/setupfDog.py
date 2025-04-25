@@ -152,9 +152,8 @@ def download_data(dataPath, resetData):
 
     genome_path = '%s/searchTaxa_dir' % dataPath
     Path(genome_path).mkdir(parents = True, exist_ok = True)
-
     if len(general_fn.read_dir(genome_path)) < 1 or resetData:
-        data_url = 'https://applbqio.biologie.uni-frankfurt.de/download/hamstr_qfo'
+        data_url = 'https://applbio.biologie.uni-frankfurt.de/download/hamstr_qfo'
         if os.path.exists(data_fdog_file) and resetData:
             os.remove(data_fdog_file)
         general_fn.download_file(data_url, data_fdog_file)
