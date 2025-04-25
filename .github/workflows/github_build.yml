@@ -44,7 +44,7 @@ jobs:
         echo "TEST fdog.setup"
         fdog.setup -d /home/runner/work/fDOG/fDOG/dt --woFAS
         echo "TEST fdog.checkData"
-        fdog.checkData -s /home/runner/work/fDOG/fDOG/dt/searchTaxa_dir -c /home/runner/work/fDOG/fDOG/dt/coreTaxa_dir -a /home/runner/work/fDOG/fDOG/dt/annotation_dir --reblast
+        fdog.checkData -s /home/runner/work/fDOG/fDOG/dt/searchTaxa_dir -c /home/runner/work/fDOG/fDOG/dt/coreTaxa_dir -a /home/runner/work/fDOG/fDOG/dt/annotation_dir --reblast  --ignoreAnno
         echo "TEST fdog.showTaxa"
         fdog.showTaxa
         echo "TEST fdog.run"

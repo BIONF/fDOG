@@ -57,8 +57,9 @@ def get_ancestor(id1, id2, ncbi):
     Return dictionary {ancestor_id: ancestor_rank}
     """
     tree = ncbi.get_topology([id1, id2], intermediate_nodes = False)
-    ancestor = tree.get_common_ancestor(id1, id2).name
-    return(ncbi.get_rank([ancestor]))
+    ancestor_name = tree.common_ancestor(id1, id2)
+    ancestor_id = int(ancestor_name.name)
+    return(ncbi.get_rank([ancestor_id]))
 
 
 def check_common_ancestor(ref_id, ancestor, minDist, maxDist, ncbi):
@@ -68,6 +69,7 @@ def check_common_ancestor(ref_id, ancestor, minDist, maxDist, ncbi):
     """
     ref_lineage = ncbi.get_lineage(ref_id)
     (min_ref, max_ref) = get_rank_range(ref_lineage, minDist, maxDist, ncbi)
+    ancestor = int(ancestor)
     if not ancestor in ref_lineage:
         return(0)
     ancestor_index = len(ref_lineage) - ref_lineage.index(ancestor) - 1
@@ -78,7 +80,7 @@ def check_common_ancestor(ref_id, ancestor, minDist, maxDist, ncbi):
 
 def remove_clade(tree, node_id):
     """ Remove a clade from a tree """
-    removed_clade = tree.search_nodes(name = str(node_id))[0]
+    removed_clade = list(tree.search_nodes(name = str(node_id)))[0]
     removed_node = removed_clade.detach()
     return(tree)
 
@@ -96,12 +98,12 @@ def get_leaves_dict(spec_lineage, tree, min_index, max_index):
     for i in range(len(spec_lineage)):
         if i >= min_index and i <= max_index:
             curr_node = spec_lineage[i]
-            node = tree.search_nodes(name = str(curr_node))
+            node = list(tree.search_nodes(name = str(curr_node)))
             if len(node) > 0:
                 for leaf in node:
                     node_dict[spec_lineage[i]] = []
                     for t in leaf.traverse():
-                        if t.is_leaf():
+                        if t.is_leaf:
                             if not t.name in already_added:
                                 already_added.append(t.name)
                                 node_dict[spec_lineage[i]].append(t.name)
