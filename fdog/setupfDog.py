@@ -174,7 +174,7 @@ def download_data(dataPath, resetData):
             os.rename('%s/genome_dir' % dataPath, '%s/searchTaxa_dir' % dataPath)
             os.rename('%s/blast_dir' % dataPath, '%s/coreTaxa_dir' % dataPath)
             os.rename('%s/weight_dir' % dataPath, '%s/annotation_dir' % dataPath)
-        check_cmd = 'fdog.checkData -s %s/searchTaxa_dir -c %s/coreTaxa_dir -a %s/annotation_dir --reblast' % (dataPath, dataPath, dataPath)
+        check_cmd = 'fdog.checkData -s %s/searchTaxa_dir -c %s/coreTaxa_dir -a %s/annotation_dir --reblast --ignoreAnno' % (dataPath, dataPath, dataPath)
         try:
             print('Checking downloaded data...')
             subprocess.run([check_cmd], stdout = subprocess.DEVNULL, check = True, shell = True)
