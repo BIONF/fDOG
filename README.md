@@ -70,7 +70,7 @@ Please find more information in [our wiki](https://github.com/BIONF/fDOG/wiki) t
 
 # fDOG data set
 
-Within the data package we provide a set of 78 reference taxa. They can be automatically downloaded during the setup. This data comes "ready to use" with the *fdog* framework. Species data must be present in the three directories listed below:
+Within the data package we provide a set of [81 reference taxa](https://ftp.ebi.ac.uk/pub/databases/reference_proteomes/QfO/QfO_release_2024_02.tar.gz). They will be automatically downloaded during the setup. This data comes "ready to use" with the *fdog* framework. Species data must be present in the three directories listed below:
 
 * searchTaxa_dir (Contains sub-directories for proteome fasta files for each species)
 * coreTaxa_dir (Contains sub-directories for BLAST databases made with `makeblastdb` out of your proteomes)
