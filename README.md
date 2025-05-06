@@ -18,7 +18,7 @@
 
 # How to install
 
-*fDOG* tool is distributed as a python package called *fdog*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
+*fDOG* tool is distributed as a python package called *fdog*. It is compatible with [Python ≥ v3.12](https://www.python.org/downloads/).
 
 ## Install the fDOG package
 You can install *fdog* using `pip`:
