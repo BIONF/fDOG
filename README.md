@@ -78,7 +78,7 @@ Within the data package we provide a set of [81 reference taxa](https://ftp.ebi.
 
 For each species/taxon there is a sub-directory named in accordance to the naming schema ([Species acronym]@[NCBI ID]@[Proteome version])
 
-*fdog* is not limited to those 78 taxa. If needed the user can manually add further gene sets (multiple fasta format) using provided functions.
+*fdog* is not limited to those 81 reference taxa. If needed the user can manually add further gene sets (multiple fasta format) using provided functions.
 
 ## Adding a new gene set into fDOG
 For adding **one gene set**, please use the `fdog.addTaxon` function:
