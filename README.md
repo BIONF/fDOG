@@ -111,7 +111,7 @@ _**NOTE:** After adding new taxa into *fdog*, you should [check for the validity
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fDOG/issues/new) or be in touch via email.
 
 # How to cite
-Ebersberger, I., Strauss, S. & von Haeseler, A. HaMStR: Profile hidden markov model based search for orthologs in ESTs. BMC Evol Biol 9, 157 (2009), [doi:10.1186/1471-2148-9-157](https://doi.org/10.1186/1471-2148-9-157)
+Tran V, Langschied F, Muelbaier H, Dosch J, Arthen F, Balint M, Ebersberger I. 2025. Feature architecture-aware ortholog search with fDOG reveals the distribution of plant cell wall-degrading enzymes across life. Molecular Biology and Evolution:msaf120. https://doi.org/10.1093/molbev/msaf120
 
 # Contributors
 - [Ingo Ebersberger](https://github.com/ebersber)
