@@ -1,4 +1,5 @@
 # fDOG - Feature-aware Directed OrtholoG search
+[![published in: MBE](https://img.shields.io/badge/published%20in-MBE-ff69b4)](https://doi.org/10.1093/molbev/msaf120)
 [![PyPI version](https://badge.fury.io/py/fdog.svg)](https://pypi.org/project/fdog/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
