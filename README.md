@@ -61,7 +61,7 @@ You will get a warning if any of the dependencies are not ready to use, please s
 *fdog* will run smoothly with the provided sample input file 'infile.fa' if everything is set correctly.
 
 ```
-fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3
+fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02
 ```
 The output files with the prefix `test` will be saved at your current working directory.
 You can have an overview about all available options with the command
