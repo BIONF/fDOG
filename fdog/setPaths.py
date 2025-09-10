@@ -19,7 +19,7 @@
 
 import os
 import argparse
-from importlib.metadata import version, PackageNotFoundError
+from pkg_resources import get_distribution
 
 import fdog.libs.zzz as general_fn
 import fdog.checkData as check_data_fn
@@ -65,8 +65,8 @@ def check_data(searchpath, corepath, annopath):
 
 
 def main():
-    fdog_version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
     required = parser.add_argument_group('required arguments')
     optional = parser.add_argument_group('optional arguments')
     required.add_argument('--searchpath', help='Path to search taxa folder (e.g. fdog_data/searchTaxa_dir)', action='store', default='', required=True)

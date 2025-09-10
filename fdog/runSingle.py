@@ -19,8 +19,8 @@ import sys
 import os
 import argparse
 import subprocess
-from ete4 import NCBITaxa
-from importlib.metadata import version, PackageNotFoundError
+from ete3 import NCBITaxa
+from pkg_resources import get_distribution
 import time
 
 import fdog.libs.zzz as general_fn
@@ -33,8 +33,8 @@ import fdog.libs.output as output_fn
 
 
 def main():
-    fdog_version = version("fdog")
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.',
+    version = get_distribution('fdog').version
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.',
                                      epilog="For more information on certain options, please refer to the wiki pages "
                                             "on github: https://github.com/BIONF/fDOG/wiki")
     required = parser.add_argument_group('Required arguments')
