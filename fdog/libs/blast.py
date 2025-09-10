@@ -17,7 +17,6 @@
 
 import os
 import sys
-from Bio.Blast.Applications import NcbiblastpCommandline
 import xml.etree.ElementTree as ET
 import subprocess
 
@@ -29,21 +28,21 @@ def do_blastsearch(
     """ Perform blastp search for a query fasta file
     Return an XML string contains blast result
     """
-    filter = 'no'
-    if lowComplexityFilter == True:
-        filter = 'yes'
+    filter_value = "yes" if lowComplexityFilter else "no"
     try:
-        blastp_cline = NcbiblastpCommandline(
-            query = query, db = blast_db, evalue = evalBlast, seg = filter,
-            max_target_seqs = 10, outfmt = 5)
-        stdout, stderr = blastp_cline()
-        return(stdout)
-    except:
-        sys.exit(
-            'ERROR: Error running blastp search for %s against %s\n%s'
-            % (query, blast_db, NcbiblastpCommandline(
-                query = query, db = blast_db, evalue = evalBlast, seg = filter,
-                max_target_seqs = 10, outfmt = 5)))
+        cmd = [
+            "blastp",
+            "-query", query,
+            "-db", blast_db,
+            "-evalue", str(evalBlast),
+            "-seg", filter_value,
+            "-max_target_seqs", "10",
+            "-outfmt", "5"
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        sys.exit(f"ERROR: Error running BLASTP search for {query} against {blast_db}\n{e.stderr}")
 
 
 def parse_blast_xml(blast_output):

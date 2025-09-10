@@ -17,10 +17,10 @@
 
 import sys
 import os
+import subprocess
 from pathlib import Path
 from Bio import SeqIO
-from Bio.Blast.Applications import NcbiblastpCommandline
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fasta as fasta_fn
@@ -107,17 +107,15 @@ def check_input(args):
 
 def check_blast_version(corepath, refspec):
     """ Check if blast DBs in corepath is compatible with blastp version """
-    fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py','')
-    query = fdog_path + '/data/infile.fa'
-    blast_db = '%s/%s/%s' % (corepath, refspec, refspec)
+    fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py', '')
+    query = os.path.join(fdog_path, 'data', 'infile.fa')
+    blast_db = os.path.join(corepath, refspec, refspec)
     try:
-        blastp_cline = NcbiblastpCommandline(
-            query = query, db = blast_db)
-        stdout, stderr = blastp_cline()
-    except:
-        sys.exit(
-            'ERROR: Error running blast (probably conflict with BLAST DBs versions)\n%s'
-            % (NcbiblastpCommandline(query = query, db = blast_db)))
+        cmd = ["blastp", "-query", query, "-db", blast_db]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        sys.exit(f"ERROR: Error running BLAST (probably conflict with BLAST DB versions)\n{e.stderr}")
+
 
 def check_ranks_core_taxa(corepath, refspec, minDist, maxDist):
     """ Check if refspec (or all core taxa) have a valid minDist and maxDist tax ID
@@ -191,7 +189,7 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
         sys.exit()
     blast_out = blast_fn.parse_blast_xml(blast_xml)
     if len(blast_out['hits']) < 1:
-        print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species!')
+        print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species (No blast hit was found)!')
         print(f'You can check it by running:\nblastp -query {seqFile} -db {corepath}/{refspec}/{refspec} -evalue 0.001 -outfmt 7')
         sys.exit()
     for hit in blast_out['hits']:
@@ -201,6 +199,6 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
             output_fn.print_stdout(silentOff, 'WARNING: Found seed sequence shorter/longer than input!')
             return(hit)
         else:
-            print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species!')
+            print(f'ERROR: Cannot find seed sequence {blast_out["query"]} in genome of reference species (blast hit is much longer/shorter than seed)!')
             print(f'You can check it by running:\nblastp -query {seqFile} -db {corepath}/{refspec}/{refspec} -evalue 0.001 -outfmt 7')
             sys.exit()
