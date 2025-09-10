@@ -17,10 +17,10 @@
 
 import sys
 import os
+import subprocess
 from pathlib import Path
 from Bio import SeqIO
-from Bio.Blast.Applications import NcbiblastpCommandline
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.fasta as fasta_fn
@@ -107,17 +107,15 @@ def check_input(args):
 
 def check_blast_version(corepath, refspec):
     """ Check if blast DBs in corepath is compatible with blastp version """
-    fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py','')
-    query = fdog_path + '/data/infile.fa'
-    blast_db = '%s/%s/%s' % (corepath, refspec, refspec)
+    fdog_path = os.path.realpath(__file__).replace('/libs/preparation.py', '')
+    query = os.path.join(fdog_path, 'data', 'infile.fa')
+    blast_db = os.path.join(corepath, refspec, refspec)
     try:
-        blastp_cline = NcbiblastpCommandline(
-            query = query, db = blast_db)
-        stdout, stderr = blastp_cline()
-    except:
-        sys.exit(
-            'ERROR: Error running blast (probably conflict with BLAST DBs versions)\n%s'
-            % (NcbiblastpCommandline(query = query, db = blast_db)))
+        cmd = ["blastp", "-query", query, "-db", blast_db]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        sys.exit(f"ERROR: Error running BLAST (probably conflict with BLAST DB versions)\n{e.stderr}")
+
 
 def check_ranks_core_taxa(corepath, refspec, minDist, maxDist):
     """ Check if refspec (or all core taxa) have a valid minDist and maxDist tax ID
