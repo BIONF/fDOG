@@ -21,7 +21,8 @@ import os
 from os import listdir as ldir
 import argparse
 import yaml
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
+from Bio import SeqIO
 
 def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
     settings = dict(
@@ -36,8 +37,8 @@ def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
 
 
 def main():
-    version = get_distribution('fdog').version
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     parser.add_argument('-i', '--input',
                         help='Input directory, where all single output (o_g.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
                         action='store', default='', required=True)
@@ -54,9 +55,15 @@ def main():
     phyloprofile = None
     domains_0 = None
     domains_1 = None
+    domains_2 = None
+    domains_3 = None
     ex_fasta = None
     og_fasta = None
     lines_seen = set()
+    lines_seen_2 = set()
+    lines_seen_3 = set()
+    lines_seen_4 = set()
+    fa_seq_id = set()
     for infile in ldir(directory):
         if infile.endswith('.phyloprofile') and not infile == out + '.phyloprofile':
             if not phyloprofile:
@@ -75,18 +82,46 @@ def main():
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    domains_0_out.write(line)
+                    if line not in lines_seen: # not a duplicate
+                        domains_0_out.write(line)
+                        lines_seen.add(line)
         elif infile.endswith('_reverse.domains') and not infile == out + '_reverse.domains':
             if not domains_1:
                 domains_1 = open(out + '_reverse.domains', 'w')
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
-                    domains_1.write(line)
+                    if line not in lines_seen_2: # not a duplicate
+                        domains_1.write(line)
+                        lines_seen_2.add(line)
+        elif infile.endswith('.forward.domains') and not infile == out + '.forward.domains':
+            if not domains_2:
+                domains_2 = out + '.forward.domains'
+                domains_2_out = open(domains_2, 'w')
+            with open(directory + '/' + infile, 'r') as reader:
+                lines = reader.readlines()
+                for line in lines:
+                    if line not in lines_seen_3: # not a duplicate
+                        domains_2_out.write(line)
+                        lines_seen_3.add(line)
+        elif infile.endswith('.reverse.domains') and not infile == out + '.reverse.domains':
+            if not domains_3:
+                domains_3 = open(out + '.reverse.domains', 'w')
+            with open(directory + '/' + infile, 'r') as reader:
+                lines = reader.readlines()
+                for line in lines:
+                    if line not in lines_seen_4: # not a duplicate
+                        domains_3.write(line)
+                        lines_seen_4.add(line)
         elif infile.endswith('.extended.fa') and not infile == out + '.extended.fa':
             if not ex_fasta:
                 ex_fasta = out + '.extended.fa'
                 ex_fasta_out = open(ex_fasta, 'w')
+            inSeq = SeqIO.to_dict((SeqIO.parse(open(directory + '/' + infile), 'fasta')))
+            for seq in inSeq:
+                if not seq in fa_seq_id:
+                    ex_fasta_out.write('>%s\n%s\n' % (seq, inSeq[seq].seq))
+                    fa_seq_id.add(seq)
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
@@ -99,6 +134,7 @@ def main():
                 lines = reader.readlines()
                 for line in lines:
                     og_fasta_out.write(line)
+
     if phyloprofile:
         phyloprofile_out.close()
     if domains_0:

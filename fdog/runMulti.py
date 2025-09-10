@@ -25,8 +25,8 @@ import re
 import shutil
 import multiprocessing as mp
 from tqdm import tqdm
-from ete3 import NCBITaxa
-from pkg_resources import get_distribution
+from ete4 import NCBITaxa
+from importlib.metadata import version, PackageNotFoundError
 import time
 
 import fdog.libs.zzz as general_fn
@@ -161,8 +161,8 @@ def join_outputs(outpath, jobName, seeds, keep, silentOff):
 
 
 def main():
-    version = get_distribution('fdog').version
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.',
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.',
                                      epilog="For more information on certain options, please refer to the wiki pages "
                                             "on github: https://github.com/BIONF/fDOG/wiki")
     required = parser.add_argument_group('Required arguments')
@@ -198,7 +198,8 @@ def main():
                                 action='store_true', default=False)
     core_options.add_argument('--coreHitLimit', help='Number of hits of the initial pHMM based search that should be evaluated via a reverse search. Default: 3',
                                 action='store', default=3, type=int)
-    core_options.add_argument('--distDeviation', help='The deviation in score in percent (0 = 0 percent, 1 = 100 percent) allowed for two taxa to be considered similar. Default: 0.05',
+    core_options.add_argument('--candScoreFactor', help='A multiplier used to set cutoff for candidate selection. A candidate alignment score must exceed the '
+                                'this factor in order to be considered further. Default: 0.05',
                                 action='store', default=0.05, type=float)
     core_options.add_argument('--alnStrategy', help='Specify the alignment strategy during core ortholog compilation. Default: local',
                                 choices=['local', 'glocal', 'global'],
@@ -231,6 +232,7 @@ def main():
                                 help='Specifiy mode for filtering core orthologs by FAS score. In \'relaxed\' mode candidates with insufficient FAS score will be disadvantaged. In \'strict\' mode candidates with insufficient FAS score will be deleted from the candidates list. The option \'--minScore\' specifies the cut-off of the FAS score.',
                                 choices=['relaxed', 'strict'], action='store', default='')
     fas_options.add_argument('--minScore', help='Specify the threshold for coreFilter. Default: 0.75', action='store', default=0.75, type=float)
+    fas_options.add_argument('--featureFile', help='File that contains tools used for FAS calculation', action='store', default='')
 
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
@@ -278,7 +280,7 @@ def main():
     CorecheckCoorthologsOff = args.CorecheckCoorthologsOff
     coreRep = args.coreRep
     coreHitLimit = args.coreHitLimit
-    distDeviation = args.distDeviation
+    distDeviation = max(round(args.candScoreFactor - 1, 2), 0) #args.distDeviation
     alnStrategy = args.alnStrategy
 
     # ortholog search arguments
@@ -304,6 +306,7 @@ def main():
     fasOff = args.fasOff
     coreFilter = args.coreFilter
     minScore = args.minScore
+    featureFile = args.featureFile
 
     # other I/O arguments
     append = args.append
@@ -446,7 +449,7 @@ def main():
                 sys.exit('Problem with FAS! Please check https://github.com/BIONF/FAS or turn it off if not needed!')
             if os.path.exists(finalFa):
                 start = time.time()
-                fas_fn.calc_fas_multi(finalFa, outpath, annopath, cpus)
+                fas_fn.calc_fas_multi(finalFa, outpath, annopath, cpus, featureFile)
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
                 multiLog.write('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))

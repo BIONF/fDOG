@@ -17,7 +17,7 @@
 
 import sys
 import os
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 
 import fdog.libs.zzz as general_fn
 
