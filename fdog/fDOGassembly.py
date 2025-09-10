@@ -216,6 +216,32 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path, x = 10):
             candidate_regions, number_regions = get_x_results(candidate_regions, x, score_list)
         return candidate_regions, number_regions
 
+def extend_regions(regions, number_regions, length_extension):
+    print(regions)
+    for contig in regions:
+        for i in range(0, len(regions[contig])):
+            start = regions[contig][i][0] - length_extension
+            end = regions[contig][i][1] + length_extension
+            regions[contig][i][0] = start
+            regions[contig][i][1] = end
+    print(regions)
+    for contig in regions:
+        if len(regions[contig]) > 1:
+            new_list = []
+            candidate_list = regions[contig]
+            print(candidate_list)
+            candidate_list = sorted(candidate_list)
+            print(candidate_list)
+            i = 0
+            while i < len(candidate_list):
+                if candidate_list[i+1][0] < candidate_list[i][1]:
+                    #overlap
+                    
+
+
+    print(regions)
+
+
 def extract_seq(region_dic, path, tmp_path, mode):
 
     for key in region_dic:
@@ -241,7 +267,7 @@ def extract_sequence_from_to(name, file, start, end):
 
     return out, start, end
 
-def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
+def augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
     """Gene prediction with software Augustus for all candidate regions. The resulting AS sequences will be written in a tmp file."""
     output = open(candidatesOutFile, "w")
     region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
@@ -252,8 +278,8 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
         for i in locations:
             # some variables
             counter += 1
-            start = str(i[0] - length_extension)
-            end = str(i[1] + length_extension)
+            start = str(i[0])
+            end = str(i[1])
             name = key + "_" + str(counter)
             # augutus call
             cmd = "augustus --protein=1 --gff3=on --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
@@ -285,7 +311,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
     output.close()
     region.close()
 
-def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, db):
+def metaeuk_single(regions, candidatesOutFile, ass_name, group, tmp_path, mode, db):
     output = open(candidatesOutFile, "w")
     region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
     region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
@@ -296,8 +322,8 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
         for i in locations:
             #some variables
             counter += 1
-            start = str(i[0] - length_extension)
-            end = str(i[1] + length_extension)
+            start = str(i[0])
+            end = str(i[1])
             name = key + "_" + str(counter)
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             region.write(key + "\t" + str(start) + "\t" + str(end) + "\n")
@@ -923,6 +949,7 @@ def ortholog_search_tblastn(args):
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
 
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
+    regions, number_regions = extend_regions(regions, number_regions, length_extension)
     if regions == 0:
         #no candidat region are available, no ortholog can be found
         output.append("No candidate region found for species %s!\n" % asName)
@@ -935,7 +962,7 @@ def ortholog_search_tblastn(args):
     if gene_prediction == "augustus":
         ############### make Augustus PPX search ###################################
         time_augustus_start = time.time()
-        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
+        augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
         time_augustus_end = time.time()
         time_augustus = time_augustus_end - time_augustus_start
         output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
@@ -945,7 +972,7 @@ def ortholog_search_tblastn(args):
             db = fasta_path
         else:
             db = metaeuk_db
-        metaeuk_single(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, db)
+        metaeuk_single(regions, candidatesOutFile, asName, group, tmp_path, mode, db)
         time_metaeuk_end = time.time()
         time_metaeuk = time_metaeuk_end - time_metaeuk_start
         output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))
