@@ -19,7 +19,7 @@ import sys
 import os
 import shutil
 from pathlib import Path
-from ete4 import NCBITaxa
+from ete3 import NCBITaxa
 from Bio import SeqIO
 import time
 

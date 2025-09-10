@@ -20,6 +20,7 @@ import os
 from pathlib import Path
 from Bio import SeqIO
 import subprocess
+from ete3 import NCBITaxa
 import re
 from datetime import datetime
 from collections import OrderedDict
