@@ -302,9 +302,9 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             region.write(key + "\t" + str(start) + "\t" + str(end) + "\n")
             #metaeuk call sensitive
-            #cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files -s 6"
+            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files -s 6"
             #print(cmd)
-            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 15 --max-overlap 15 --min-intron 5 --overlap 1 -s 4.5 --remove-tmp-files"
+            #cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 15 --max-overlap 15 --min-intron 5 --overlap 1 -s 4.5 --remove-tmp-files"
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
             starting_subprocess(cmd, mode)
             # parsing header and sequences
@@ -911,7 +911,7 @@ def ortholog_search_tblastn(args):
     #makes a tBLASTn search against database
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
     cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
-    print(cmd)
+    #print(cmd)
     time_tblastn_start = time.time()
     exit_code = starting_subprocess(cmd, mode, 3600)
     time_tblastn_end = time.time()
@@ -1149,6 +1149,7 @@ def main():
     optional.add_argument('--metaeukDb', help='Path to MetaEuk reference database', action='store', default='')
     optional.add_argument('--isoforms', help='All Isoforms of a gene passing the ortholog verification will be included in the output', action='store_true', default=False)
     optional.add_argument('--gff', help='GFF files will be included in output', action='store_true', default=False)
+    optional.add_argument('--cpus', help='The number of CPUs fDOG-Assembly is allowed to use. The maximal number of species in which orthologs will be searched in parallel.', action='store', default='')
     args = parser.parse_args()
 
     # required
@@ -1184,6 +1185,7 @@ def main():
     metaeuk_db = args.metaeukDb
     isoforms = args.isoforms
     gff = args.gff
+    cpus = args.cpus
 
     #gene prediction tool
     augustus = args.augustus
@@ -1315,11 +1317,11 @@ def main():
         consensus_path = core_path + '/' + group + '/' + group + '.con'
         if check_path(consensus_path, exit=False) == 1:
             consensus_path = consensusSequence(core_path, group, mode, out)
-        print(consensus_path)
+        #print(consensus_path)
         profile_path = core_path + '/' + group + '/' + group + '.prfl'
         if check_path(profile_path, exit=False) == 1:
             profile_path = blockProfiles(core_path, group, mode, out, msaTool)
-        print(profile_path)
+        #print(profile_path)
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
     else:
@@ -1342,7 +1344,15 @@ def main():
     if parallel == True:
         ##################### parallel computation #############################
         calls = []
-        cpus = mp.cpu_count()
+        if cpus == '':
+            cpus = mp.cpu_count() - 1
+        elif cpus.isdigit() == False or int(cpus) > mp.cpu_count():
+            print('The value %s given as parameter cpus is not legit.'%(cpus))
+            cpus = mp.cpu_count() - 1
+            print('The value given as parameter cpus is not legit. The default value of %s cpus will be used' %(cpus))
+        else:
+            cpus = int(cpus)
+        print(cpus)
         pool = mp.Pool(cpus)
         for asName in assembly_names:
             if mapping_augustus == '':
