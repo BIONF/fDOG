@@ -217,6 +217,7 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path, x = 10):
         return candidate_regions, number_regions
 
 def extend_regions(regions, number_regions, length_extension):
+    ############## experimental #############################
     print(regions)
     for contig in regions:
         for i in range(0, len(regions[contig])):
@@ -236,9 +237,7 @@ def extend_regions(regions, number_regions, length_extension):
             while i < len(candidate_list):
                 if candidate_list[i+1][0] < candidate_list[i][1]:
                     #overlap
-                    
-
-
+                    print(regions)
     print(regions)
 
 
@@ -949,7 +948,7 @@ def ortholog_search_tblastn(args):
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
 
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
-    regions, number_regions = extend_regions(regions, number_regions, length_extension)
+    #regions, number_regions = extend_regions(regions, number_regions, length_extension)
     if regions == 0:
         #no candidat region are available, no ortholog can be found
         output.append("No candidate region found for species %s!\n" % asName)
