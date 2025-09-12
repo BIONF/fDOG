@@ -1190,7 +1190,7 @@ def main():
     #I/O
     tmp = args.tmp
     strict = args.strict
-    checkCoorthologs = args.checkCoorthologsRef
+    checkCoorthologs = args.checkCoorthologsRefOff
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
