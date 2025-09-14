@@ -216,31 +216,6 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path, x = 10):
             candidate_regions, number_regions = get_x_results(candidate_regions, x, score_list)
         return candidate_regions, number_regions
 
-def extend_regions(regions, number_regions, length_extension):
-    ############## experimental #############################
-    print(regions)
-    for contig in regions:
-        for i in range(0, len(regions[contig])):
-            start = regions[contig][i][0] - length_extension
-            end = regions[contig][i][1] + length_extension
-            regions[contig][i][0] = start
-            regions[contig][i][1] = end
-    print(regions)
-    for contig in regions:
-        if len(regions[contig]) > 1:
-            new_list = []
-            candidate_list = regions[contig]
-            print(candidate_list)
-            candidate_list = sorted(candidate_list)
-            print(candidate_list)
-            i = 0
-            while i < len(candidate_list):
-                if candidate_list[i+1][0] < candidate_list[i][1]:
-                    #overlap
-                    print(regions)
-    print(regions)
-
-
 def extract_seq(region_dic, path, tmp_path, mode):
 
     for key in region_dic:
@@ -266,7 +241,7 @@ def extract_sequence_from_to(name, file, start, end):
 
     return out, start, end
 
-def augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
+def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
     """Gene prediction with software Augustus for all candidate regions. The resulting AS sequences will be written in a tmp file."""
     output = open(candidatesOutFile, "w")
     region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
@@ -277,13 +252,13 @@ def augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species,
         for i in locations:
             # some variables
             counter += 1
-            start = str(i[0])
-            end = str(i[1])
+            start = str(i[0] - length_extension)
+            end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             # augutus call
             cmd = "augustus --protein=1 --gff3=on --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #print(cmd)
-            starting_subprocess(cmd, 'silent')
+            starting_subprocess(cmd, 'normal')
             # transfer augustus output to AS sequence
             #print(tmp_path)
             #print(key)
@@ -310,7 +285,7 @@ def augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species,
     output.close()
     region.close()
 
-def metaeuk_single(regions, candidatesOutFile, ass_name, group, tmp_path, mode, db):
+def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, db):
     output = open(candidatesOutFile, "w")
     region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
     region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
@@ -321,15 +296,15 @@ def metaeuk_single(regions, candidatesOutFile, ass_name, group, tmp_path, mode, 
         for i in locations:
             #some variables
             counter += 1
-            start = str(i[0])
-            end = str(i[1])
+            start = str(i[0] - length_extension)
+            end = str(i[1] + length_extension)
             name = key + "_" + str(counter)
             file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
             region.write(key + "\t" + str(start) + "\t" + str(end) + "\n")
             #metaeuk call sensitive
-            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files -s 6"
+            #cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files -s 6"
             #print(cmd)
-            #cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 15 --max-overlap 15 --min-intron 5 --overlap 1 -s 4.5 --remove-tmp-files"
+            cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 15 --max-overlap 15 --min-intron 5 --overlap 1 -s 4.5 --remove-tmp-files"
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
             starting_subprocess(cmd, mode)
             # parsing header and sequences
@@ -378,11 +353,7 @@ def get_distance_biopython(file, matrix):
     """ Reads alignment file and returns distance matrix """
     #print(file)
     input_handle = open(file)
-    try:
-        aln = AlignIO.read(input_handle, 'fasta')
-    except ValueError:
-        print("Alignment file %s is empty. Exiting ... "%(file))
-        sys.exit()
+    aln = AlignIO.read(input_handle, 'fasta')
     try:
         calculator = DistanceCalculator(matrix)
         dm = calculator.get_distance(aln)
@@ -453,11 +424,6 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         starting_subprocess(cmd, mode)
         if not os.path.exists(aln_file):
             print('Muscle failed with command: %s'%(cmd))
-            print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (candidate_name))
-            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file
-            starting_subprocess(cmd, mode)
-        elif os.path.getsize(aln_file) == 0:
-            print('Muscle failed with command: %s' % (cmd))
             print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (candidate_name))
             cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + output_file + ' > ' + aln_file
             starting_subprocess(cmd, mode)
@@ -818,12 +784,6 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
             print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (aln_file))
             cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file
             starting_subprocess(cmd, mode)
-        elif os.path.getsize(aln_file) == 0:
-            print('Muscle failed with command: %s' % (cmd))
-            print("Muscle failed for file %s. Making MSA with Mafft-linsi." % (aln_file))
-            cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet ' + out + ' > ' + aln_file
-            starting_subprocess(cmd, mode)
-
     elif msaTool == "mafft-linsi":
         cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet %s > %s'% (out, aln_file)
         starting_subprocess(cmd, mode)
@@ -877,7 +837,6 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     return checked
 
 def clean_fas(path, file_type):
-    check_path(path)
     file = open(path, "r")
     lines = file.readlines()
     file.close()
@@ -903,10 +862,16 @@ def run_fas(cmd):
         output = process.stdout.readline().decode().split('\n')
         error = process.stderr.readline().decode().split('\n')
         if error:
+            cmd_out = ''
             for line in error:
                 line.strip()
-                if 'error' in line or 'Error' in line or 'RemoteTraceback' in line:
-                    print ("Error running FAS with %s"%(' '.join(cmd)), flush=True)
+                if 'error' in line or 'Error' in line:
+                    for i in cmd:
+                        if '|' in i:
+                            cmd_out += " '"+ str(i) + "'"
+                        else:
+                            cmd_out += " " + str(i)
+                    print ("Error running FAS with %s"%(cmd_out))
                     process.terminate()
                     sys.exit()
     return output
@@ -936,7 +901,6 @@ def ortholog_search_tblastn(args):
     #makes a tBLASTn search against database
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
     cmd = 'tblastn -db ' + db_path + ' -query ' + consensus_path + ' -outfmt "6 sseqid sstart send evalue qstart qend score " -evalue ' + str(evalue) + ' -out ' + tmp_path + '/blast_results.out'
-    #print(cmd)
     time_tblastn_start = time.time()
     exit_code = starting_subprocess(cmd, mode, 3600)
     time_tblastn_end = time.time()
@@ -948,7 +912,6 @@ def ortholog_search_tblastn(args):
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
 
     regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
-    #regions, number_regions = extend_regions(regions, number_regions, length_extension)
     if regions == 0:
         #no candidat region are available, no ortholog can be found
         output.append("No candidate region found for species %s!\n" % asName)
@@ -961,7 +924,7 @@ def ortholog_search_tblastn(args):
     if gene_prediction == "augustus":
         ############### make Augustus PPX search ###################################
         time_augustus_start = time.time()
-        augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
+        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
         time_augustus_end = time.time()
         time_augustus = time_augustus_end - time_augustus_start
         output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
@@ -971,7 +934,7 @@ def ortholog_search_tblastn(args):
             db = fasta_path
         else:
             db = metaeuk_db
-        metaeuk_single(regions, candidatesOutFile, asName, group, tmp_path, mode, db)
+        metaeuk_single(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, db)
         time_metaeuk_end = time.time()
         time_metaeuk = time_metaeuk_end - time_metaeuk_start
         output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))
@@ -1118,25 +1081,12 @@ def getAugustusRefSpec(mapping_augustus):
             dict[assembly] = id
     return dict
 
-def create_renamed_link(fasta_path, tmp_path):
-    """Creates a link of a file and replaces every dot in the file name"""
-    fasta = os.path.abspath(fasta_path)
-    file_name = os.path.splitext(os.path.basename(fasta))[0].replace('.','_') + '.fa'
-    dest = os.path.abspath(tmp_path) + '/' + file_name
-    os.symlink(fasta, dest)
-    return dest
-
-def move_working_dir(aim):
-    cwd = os.getcwd()
-    if cwd != aim:
-        os.chdir(aim)
-
 def main():
 
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.5.1'
+    version = '0.1.5.2'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
@@ -1158,7 +1108,7 @@ def main():
     optional.add_argument('--evalBlast', help='E-value cut-off for the Blast search. (default: 0.00001)', action='store', default=0.00001, type=float)
     optional.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set', action='store_true', default=False)
     optional.add_argument('--msaTool', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. (default:muscle)', choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
-    optional.add_argument('--checkCoorthologsRefOff', help='Turn off that during the final ortholog search, an ortholog is accepted also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_false', default=True)
+    optional.add_argument('--checkCoorthologsOff', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_false', default=True)
     optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. (default: blosum62)', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     optional.add_argument('--coreTaxa', help='List of core taxa used during --strict', action='store', nargs="+", default=[])
     #optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on.', action='store', default='no')
@@ -1175,7 +1125,6 @@ def main():
     optional.add_argument('--metaeukDb', help='Path to MetaEuk reference database', action='store', default='')
     optional.add_argument('--isoforms', help='All Isoforms of a gene passing the ortholog verification will be included in the output', action='store_true', default=False)
     optional.add_argument('--gff', help='GFF files will be included in output', action='store_true', default=False)
-    optional.add_argument('--cpus', help='The number of CPUs fDOG-Assembly is allowed to use. The maximal number of species in which orthologs will be searched in parallel.', action='store', default='')
     args = parser.parse_args()
 
     # required
@@ -1190,7 +1139,8 @@ def main():
     #I/O
     tmp = args.tmp
     strict = args.strict
-    checkCoorthologs = args.checkCoorthologsRefOff
+    checkCoorthologs = args.checkCoorthologsOff
+    print(checkCoorthologs)
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
@@ -1211,7 +1161,6 @@ def main():
     metaeuk_db = args.metaeukDb
     isoforms = args.isoforms
     gff = args.gff
-    cpus = args.cpus
 
     #gene prediction tool
     augustus = args.augustus
@@ -1343,18 +1292,18 @@ def main():
         consensus_path = core_path + '/' + group + '/' + group + '.con'
         if check_path(consensus_path, exit=False) == 1:
             consensus_path = consensusSequence(core_path, group, mode, out)
-        #print(consensus_path)
+        print(consensus_path)
         profile_path = core_path + '/' + group + '/' + group + '.prfl'
         if check_path(profile_path, exit=False) == 1:
             profile_path = blockProfiles(core_path, group, mode, out, msaTool)
-        #print(profile_path)
+        print(profile_path)
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
     else:
         #print("test")
         profile_path = ""
         group_computation_time_start = time.time()
-        consensus_path = core_path + '/' + group + '/' + group + '.con'
+        consensus_path = core_path + '/' + group + '.con'
         if check_path(consensus_path, exit=False) == 1:
             consensus_path = consensusSequence(core_path, group, mode, out)
         #concatinade core_group sequences if metaeuk should be run without tblastn
@@ -1370,15 +1319,7 @@ def main():
     if parallel == True:
         ##################### parallel computation #############################
         calls = []
-        if cpus == '':
-            cpus = mp.cpu_count() - 1
-        elif cpus.isdigit() == False or int(cpus) > mp.cpu_count():
-            print('The value %s given as parameter cpus is not legit.'%(cpus))
-            cpus = mp.cpu_count() - 1
-            print('The value given as parameter cpus is not legit. The default value of %s cpus will be used' %(cpus))
-        else:
-            cpus = int(cpus)
-        print(cpus)
+        cpus = mp.cpu_count()
         pool = mp.Pool(cpus)
         for asName in assembly_names:
             if mapping_augustus == '':
@@ -1437,15 +1378,9 @@ def main():
 
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
-        #print(fasta_path, group)
-        fasta_link = create_renamed_link(fasta_path, tmp_path)
-        print(fasta_link)
-        query_link = create_renamed_link(orthologsOutFile, tmp_path)
-        print(query_link)
-        cmd = ['fas.run', '--seed', fasta_link, '--query' , query_link , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
+        cmd = ['fas.run', '--seed', fasta_path , '--query' , orthologsOutFile , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
         #print(cmd)
         fas_out = run_fas(cmd)
-        print(fas_out)
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
