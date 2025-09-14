@@ -26,14 +26,12 @@ from pathlib import Path
 import subprocess
 import shutil
 from Bio import SeqIO
-from ete3 import NCBITaxa
+from ete4 import NCBITaxa
 import re
 from datetime import datetime
 import multiprocessing as mp
 from tqdm import tqdm
-from pkg_resources import get_distribution
-from Bio.Blast.Applications import NcbiblastpCommandline
-
+from importlib.metadata import version, PackageNotFoundError
 
 import fdog.libs.zzz as general_fn
 import fdog.libs.blast as blast_fn
@@ -176,13 +174,18 @@ def run_check_fasta(checkDir, replace, delete, concat):
 
 def check_blastdb(args):
     """ Check for outdated blastdb """
-    (query, taxon, coreTaxa_dir, searchTaxa_dir) = args
-    blast_db = '%s/%s/%s' % (coreTaxa_dir, taxon, taxon)
+    query, taxon, coreTaxa_dir, searchTaxa_dir = args
+    blast_db = f"{coreTaxa_dir}/{taxon}/{taxon}"
+
     try:
-        blastp_cline = NcbiblastpCommandline(query = query, db = blast_db)
-        stdout, stderr = blastp_cline()
-    except:
+        result = subprocess.run(
+            ["blastp", "-query", query, "-db", blast_db],
+            capture_output=True, text=True, check=True
+        )
+        return(result.stdout)
+    except subprocess.CalledProcessError as e:
         return([query, blast_db])
+
     fai_in_genome = "%s/%s/%s.fa.fai" % (searchTaxa_dir, taxon, taxon)
     fai_in_blast = "%s/%s/%s.fa.fai" % (coreTaxa_dir, taxon, taxon)
     # check if fai_in_blast is a valid symlink
@@ -418,8 +421,8 @@ def run_check(args):
     return(caution)
 
 def main():
-    version = get_distribution('fdog').version
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     parser.add_argument('-s', '--searchTaxa_dir', help='Path to search taxa directory (e.g. fdog_dataPath/searchTaxa_dir)', action='store', default='')
     parser.add_argument('-c', '--coreTaxa_dir', help='Path to blastDB directory (e.g. fdog_dataPath/coreTaxa_dir)', action='store', default='')
     parser.add_argument('-a', '--annotation_dir', help='Path to feature annotation directory (e.g. fdog_dataPath/annotation_dir)', action='store', default='')

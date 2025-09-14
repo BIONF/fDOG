@@ -21,7 +21,7 @@ import os
 from os import listdir as ldir
 import argparse
 import yaml
-from pkg_resources import get_distribution
+from importlib.metadata import version, PackageNotFoundError
 from Bio import SeqIO
 
 def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
@@ -37,8 +37,8 @@ def createConfigPP(phyloprofile, domains_0, ex_fasta, directory, out):
 
 
 def main():
-    version = get_distribution('fdog').version
-    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(version) + '.')
+    fdog_version = version("fdog")
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.')
     parser.add_argument('-i', '--input',
                         help='Input directory, where all single output (o_g.fa, .phyloprofile, _forward.domains, _reverse.domains) can be found',
                         action='store', default='', required=True)

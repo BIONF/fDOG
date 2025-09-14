@@ -1,7 +1,7 @@
 # fDOG - Feature-aware Directed OrtholoG search
+[![published in: MBE](https://img.shields.io/badge/published%20in-MBE-ff69b4)](https://doi.org/10.1093/molbev/msaf120)
 [![PyPI version](https://badge.fury.io/py/fdog.svg)](https://pypi.org/project/fdog/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Build Status](https://travis-ci.com/BIONF/fDOG.svg?branch=master)](https://travis-ci.com/BIONF/fDOG)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
 
 # Poster fDOG - Assembly
@@ -21,7 +21,7 @@ https://github.com/BIONF/fDOG/blob/gh-pages/www/Poster_fDOG_Assembly.pdf
 
 # How to install
 
-*fDOG* tool is distributed as a python package called *fdog*. It is compatible with [Python ≥ v3.7](https://www.python.org/downloads/).
+*fDOG* tool is distributed as a python package called *fdog*. It is compatible with [Python ≥ v3.12](https://www.python.org/downloads/).
 
 ## Install the fDOG package
 You can install *fdog* using `pip`:
@@ -61,7 +61,7 @@ You will get a warning if any of the dependencies are not ready to use, please s
 *fdog* will run smoothly with the provided sample input file 'infile.fa' if everything is set correctly.
 
 ```
-fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@3
+fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02
 ```
 The output files with the prefix `test` will be saved at your current working directory.
 You can have an overview about all available options with the command
@@ -73,7 +73,7 @@ Please find more information in [our wiki](https://github.com/BIONF/fDOG/wiki) t
 
 # fDOG data set
 
-Within the data package we provide a set of 78 reference taxa. They can be automatically downloaded during the setup. This data comes "ready to use" with the *fdog* framework. Species data must be present in the three directories listed below:
+Within the data package we provide a set of [81 reference taxa](https://ftp.ebi.ac.uk/pub/databases/reference_proteomes/QfO/QfO_release_2024_02.tar.gz). They will be automatically downloaded during the setup. This data comes "ready to use" with the *fdog* framework. Species data must be present in the three directories listed below:
 
 * searchTaxa_dir (Contains sub-directories for proteome fasta files for each species)
 * coreTaxa_dir (Contains sub-directories for BLAST databases made with `makeblastdb` out of your proteomes)
@@ -81,7 +81,7 @@ Within the data package we provide a set of 78 reference taxa. They can be autom
 
 For each species/taxon there is a sub-directory named in accordance to the naming schema ([Species acronym]@[NCBI ID]@[Proteome version])
 
-*fdog* is not limited to those 78 taxa. If needed the user can manually add further gene sets (multiple fasta format) using provided functions.
+*fdog* is not limited to those 81 reference taxa. If needed the user can manually add further gene sets (multiple fasta format) using provided functions.
 
 ## Adding a new gene set into fDOG
 For adding **one gene set**, please use the `fdog.addTaxon` function:
@@ -114,7 +114,7 @@ _**NOTE:** After adding new taxa into *fdog*, you should [check for the validity
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fDOG/issues/new) or be in touch via email.
 
 # How to cite
-Ebersberger, I., Strauss, S. & von Haeseler, A. HaMStR: Profile hidden markov model based search for orthologs in ESTs. BMC Evol Biol 9, 157 (2009), [doi:10.1186/1471-2148-9-157](https://doi.org/10.1186/1471-2148-9-157)
+Tran V, Langschied F, Muelbaier H, Dosch J, Arthen F, Balint M, Ebersberger I. 2025. Feature architecture-aware ortholog search with fDOG reveals the distribution of plant cell wall-degrading enzymes across life. Molecular Biology and Evolution:msaf120. https://doi.org/10.1093/molbev/msaf120
 
 # Contributors
 - [Ingo Ebersberger](https://github.com/ebersber)
