@@ -117,6 +117,11 @@ def main():
             if not ex_fasta:
                 ex_fasta = out + '.extended.fa'
                 ex_fasta_out = open(ex_fasta, 'w')
+            inSeq = SeqIO.to_dict((SeqIO.parse(open(directory + '/' + infile), 'fasta')))
+            for seq in inSeq:
+                if not seq in fa_seq_id:
+                    ex_fasta_out.write('>%s\n%s\n' % (seq, inSeq[seq].seq))
+                    fa_seq_id.add(seq)
             with open(directory + '/' + infile, 'r') as reader:
                 lines = reader.readlines()
                 for line in lines:
@@ -129,6 +134,7 @@ def main():
                 lines = reader.readlines()
                 for line in lines:
                     og_fasta_out.write(line)
+
     if phyloprofile:
         phyloprofile_out.close()
     if domains_0:

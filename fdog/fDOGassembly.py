@@ -258,7 +258,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             # augutus call
             cmd = "augustus --protein=1 --gff3=on --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #print(cmd)
-            starting_subprocess(cmd, 'silent')
+            starting_subprocess(cmd, 'normal')
             # transfer augustus output to AS sequence
             #print(tmp_path)
             #print(key)
@@ -1086,7 +1086,7 @@ def main():
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.5.1'
+    version = '0.1.5.2'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
@@ -1108,7 +1108,7 @@ def main():
     optional.add_argument('--evalBlast', help='E-value cut-off for the Blast search. (default: 0.00001)', action='store', default=0.00001, type=float)
     optional.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set', action='store_true', default=False)
     optional.add_argument('--msaTool', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. (default:muscle)', choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
-    optional.add_argument('--checkCoorthologsRef', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_true', default=False)
+    optional.add_argument('--checkCoorthologsOff', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_false', default=True)
     optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. (default: blosum62)', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     optional.add_argument('--coreTaxa', help='List of core taxa used during --strict', action='store', nargs="+", default=[])
     #optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on.', action='store', default='no')
@@ -1139,7 +1139,8 @@ def main():
     #I/O
     tmp = args.tmp
     strict = args.strict
-    checkCoorthologs = args.checkCoorthologsRef
+    checkCoorthologs = args.checkCoorthologsOff
+    print(checkCoorthologs)
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
