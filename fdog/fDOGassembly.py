@@ -30,6 +30,8 @@ import time
 import shutil
 import multiprocessing as mp
 import fdog.libs.alignment as align_fn
+import fdog.libs.zzz as general_fn
+import fdog.libs.fas as fas_fn
 from tqdm import tqdm
 from pathlib import Path
 import pandas as pd
@@ -59,12 +61,6 @@ def check_ref_spec(species_list, fasta_file):
     print("Reference species is not part of the ortholog group. Exciting ...")
     sys.exit()
 
-def load_config(config_file):
-    with open(config_file, 'r') as stream:
-        try:
-            return yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
 
 def starting_subprocess(cmd, mode, time_out = None):
 
@@ -830,7 +826,7 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
                 if to_add != min_name:
                     checked.append(to_add)
             elif name in tested and isoforms == False:
-                pass             
+                pass
             else:
                 checked.append(name)
     #print(checked)
@@ -1140,7 +1136,7 @@ def main():
     tmp = args.tmp
     strict = args.strict
     checkCoorthologs = args.checkCoorthologsOff
-    print(checkCoorthologs)
+    # print(checkCoorthologs)
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
@@ -1187,25 +1183,28 @@ def main():
     #checking paths
     if dataPath == '':
         fdogPath = os.path.realpath(__file__).replace('/fDOGassembly.py','')
-        configFile = fdogPath + '/bin/pathconfig.txt'
+        configFile = fdogPath + '/bin/pathconfig.yml'
         if not os.path.exists(configFile):
-            sys.exit('No pathconfig.txt found. Please run fdog.setup (https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog) or give a dataPath')
-        if pathFile == '':
-            with open(configFile) as f:
-                dataPath = f.readline().strip()
-        else:
-            cfg = load_config(pathFile)
-            try:
-                dataPath = cfg['dataPath']
-            except:
-                dataPath = 'config'
+            sys.exit(
+                f'No pathconfig.yml found at {pathconfigFile}. Please run fdog.setup '
+                + '(https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
+        if pathFile:
+            configFile = os.path.abspath(pathFile)
+        cfg = general_fn.load_config(configFile)
+        try:
+            dataPath = cfg['datapath']
+        except:
+            dataPath = os.getcwd()
 
     if out == '':
         out = os.getcwd()
     else:
         if out[-1] != "/":
             out = out + "/"
+        if not os.path.exists(out):
+            os.mkdir(out)
         check_path(out)
+    out = os.path.abspath(out)
 
     if os.path.exists(out + '/' + group):
         if append != True and force != True:
@@ -1217,7 +1216,6 @@ def main():
             out = out + '/' + group + '/'
         elif append == True:
             out = out + '/' + group + '/'
-
     else:
         os.system('mkdir ' + out + '/' + group + ' >/dev/null 2>&1')
         out = out + '/' + group + '/'
@@ -1379,7 +1377,7 @@ def main():
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         cmd = ['fas.run', '--seed', fasta_path , '--query' , orthologsOutFile , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
-        #print(cmd)
+        # print(cmd)
         fas_out = run_fas(cmd)
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
@@ -1393,8 +1391,13 @@ def main():
 
     ################# remove tmp folder ########################################
 
-    print("fDOG-Assembly finished completely in " + str(end-start) + "seconds.")
-    print("Group preparation: %s \t Ortholog search: %s \t FAS: %s \n" % (str(time_group), str(time_ortholog), str(time_fas)))
+    print(
+        f"fDOG-Assembly finished completely in {round(end-start,2)}s ("
+        f" Group preparation: {round(time_group,2)}s \t"
+        f"Ortholog search: {round(time_ortholog,2)}s \t"
+        f"FAS: {round(time_fas,2)}s)"
+    )
+    print(f"Outputs are saved at {out}")
     sys.stdout = sys.__stdout__
     cleanup(tmp, tmp_folder)
 

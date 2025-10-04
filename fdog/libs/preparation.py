@@ -40,7 +40,7 @@ def parsing_paths(args):
     pathconfigFile = fdog_path + '/bin/pathconfig.yml'
     if not os.path.exists(pathconfigFile):
         sys.exit(
-            f'No pathconfig.txt found at {pathconfigFile}. Please run fdog.setup '
+            f'No pathconfig.yml found at {pathconfigFile}. Please run fdog.setup '
             + '(https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
 
     if pathFile:
@@ -48,7 +48,7 @@ def parsing_paths(args):
 
     cfg = general_fn.load_config(pathconfigFile)
     try:
-        data_path = cfg['dataPath']
+        data_path = cfg['datapath']
     except:
         data_path = os.getcwd()
 
