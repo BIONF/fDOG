@@ -138,6 +138,7 @@ dmypy.json
 #Hannah
 /fdog/data/core_orthologs/
 /fdog/data/assembly_dir/
-/fdog/fdog_goes_assembly/tmp/ 
+/fdog/fdog_goes_assembly/tmp/
 taxdump*
 .DS_Store
+.idea/

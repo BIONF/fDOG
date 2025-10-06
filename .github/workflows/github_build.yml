@@ -41,11 +41,12 @@ jobs:
         pwd
         pip install .
         path=$(fdog.setup -d ./ --getSourcepath); for i in $(less $path/data/dependencies.txt); do sudo apt-get install -y -qq $i; done
-        path=$(fdog.setup -d ./ --getSourcepath); ls $path/data/
-        echo "#########################################"
+        echo "######### curent_dir #########"
         pwd
         ls
-        echo "#########################################"
+        echo "######### source_dir/data/ #########"
+        path=$(fdog.setup -d ./ --getSourcepath); ls $path/data/
+        echo "######### TEST FDOG FUNCTIONS #########"
         echo "TEST fdog.setup"
         fdog.setup -d /home/runner/work/fDOG/fDOG/dt --woFAS
         echo "TEST fdog.checkData"

@@ -3,9 +3,9 @@
 [![PyPI version](https://badge.fury.io/py/fdog.svg)](https://pypi.org/project/fdog/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17250794.svg)](https://doi.org/10.5281/zenodo.17250794)
 
-# Poster fDOG - Assembly
-https://github.com/BIONF/fDOG/blob/gh-pages/www/Poster_fDOG_Assembly.pdf
+
 # Table of Contents
 * [How to install](#how-to-install)
      * [Install the fDOG package](#install-the-fdog-package)
@@ -14,6 +14,7 @@ https://github.com/BIONF/fDOG/blob/gh-pages/www/Poster_fDOG_Assembly.pdf
 * [fDOG data set](#fdog-data-set)
      * [Adding a new gene set into fDOG](#adding-a-new-gene-set-into-fdog)
      * [Adding a list of gene sets into fDOG](#adding-a-list-of-gene-sets-into-fdog)
+* [fDOG-Assembly](#fdog-assembly)
 * [Bugs](#bugs)
 * [How to cite](#how-to-cite)
 * [Contributors](#contributors)
@@ -110,6 +111,10 @@ The header line (started with #) is a Must. The values of the last 2 columns (ab
 
 _**NOTE:** After adding new taxa into *fdog*, you should [check for the validity of the new data](https://github.com/BIONF/fDOG/wiki/Check-data-validity) before running fdog._
 
+# fDOG-Assembly
+
+*fDOG-Assembly* is an extension of *fDog* that enables searching for orthologs directly within unannotated genome assemblies. For more details about *fDOG-Assembly*, please refer to our [wiki page](https://github.com/BIONF/fDOG/wiki/fDOG-Assembly).
+
 # Bugs
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fDOG/issues/new) or be in touch via email.
 
@@ -119,6 +124,7 @@ Tran V, Langschied F, Muelbaier H, Dosch J, Arthen F, Balint M, Ebersberger I. 2
 # Contributors
 - [Ingo Ebersberger](https://github.com/ebersber)
 - [Vinh Tran](https://github.com/trvinh)
+- [Hannah Muelbaier](https://github.com/HannahBioI)
 - [Holger Bergmann](https://github.com/holgerbgm)
 
 # Contact
