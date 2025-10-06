@@ -4,6 +4,8 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
 
+# Poster fDOG - Assembly
+https://github.com/BIONF/fDOG/blob/gh-pages/www/Poster_fDOG_Assembly.pdf
 # Table of Contents
 * [How to install](#how-to-install)
      * [Install the fDOG package](#install-the-fdog-package)

@@ -35,7 +35,7 @@ setup(
     author_email="tran@bio.uni-frankfurt.de",
     url="https://github.com/BIONF/fDOG",
     packages=find_packages(),
-    package_data={'': ['*']},
+    include_package_data=True,
     install_requires=[
         'biopython',
         'tqdm',
@@ -44,6 +44,7 @@ setup(
         'PyYAML',
         'pyhmmer',
         'pysam',
+        'pandas',
         'greedyFAS>=1.11.2'
     ],
     entry_points={
@@ -58,7 +59,8 @@ setup(
                             "fdog.mergeOutput = fdog.mergeOutput:main",
                             "fdog.uninstall = fdog.removefDog:main",
                             "fdog.assembly = fdog.fDOGassembly:main",
-                            "fdog.mergeAssembly = fdog.mergeAssemblyOutput:main"],
+                            "fdog.addAssembly = fdog.addAssembly:main",
+                            "fdog.addCoreGroup = fdog.makeCoreGroupFromFasta:main"],
     },
     license="GPL-3.0",
     classifiers=[

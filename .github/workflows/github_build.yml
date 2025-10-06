@@ -41,6 +41,11 @@ jobs:
         pwd
         pip install .
         path=$(fdog.setup -d ./ --getSourcepath); for i in $(less $path/data/dependencies.txt); do sudo apt-get install -y -qq $i; done
+        path=$(fdog.setup -d ./ --getSourcepath); ls $path/data/
+        echo "#########################################"
+        pwd
+        ls
+        echo "#########################################"
         echo "TEST fdog.setup"
         fdog.setup -d /home/runner/work/fDOG/fDOG/dt --woFAS
         echo "TEST fdog.checkData"
@@ -49,6 +54,8 @@ jobs:
         fdog.showTaxa
         echo "TEST fdog.run"
         fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02 --fasOff --group mammalia
+        echo "TEST fdog.assembly"
+        fdog.assembly --gene test --refSpec HUMAN@9606@qfo24_02 --augustus --augustusRefSpec human --coregroupPath core_orthologs/ --out test_assembly --fasoff
         mkdir seeds
         path=$(fdog.setup -d ./ --getSourcepath); a="1 2 3"; for i in ${a[@]}; do cp $path/data/infile.fa seeds/$i.fa; done
         echo "TEST fdogs.run"

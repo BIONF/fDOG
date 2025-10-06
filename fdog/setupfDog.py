@@ -174,6 +174,9 @@ def download_data(dataPath, resetData):
             os.rename('%s/genome_dir' % dataPath, '%s/searchTaxa_dir' % dataPath)
             os.rename('%s/blast_dir' % dataPath, '%s/coreTaxa_dir' % dataPath)
             os.rename('%s/weight_dir' % dataPath, '%s/annotation_dir' % dataPath)
+        if not 'assembly_path' in general_fn.read_dir(dataPath):
+            os.makedirs(f'{dataPath}/assembly_path')
+            shutil.copytree(f'{get_source_path()}/data/assembly_dir', f'{dataPath}/assembly_dir')
         check_cmd = 'fdog.checkData -s %s/searchTaxa_dir -c %s/coreTaxa_dir -a %s/annotation_dir --reblast --ignoreAnno' % (dataPath, dataPath, dataPath)
         try:
             print('Checking downloaded data...')
@@ -197,6 +200,7 @@ def write_pathconfig(fdogPath, dataPath):
         cf.write('corepath: \'%s/coreTaxa_dir\'\n' % dataPath)
         cf.write('searchpath: \'%s/searchTaxa_dir\'\n' % dataPath)
         cf.write('annopath: \'%s/annotation_dir\'\n' % dataPath)
+        cf.write('assemblypath: \'%s/assembly_dir\'\n' % dataPath)
 
 
 def main():

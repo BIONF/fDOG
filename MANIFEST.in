@@ -1,1 +1,1 @@
-recursive-include fDOG *
+recursive-include fdog/data *
