@@ -960,7 +960,7 @@ def blockProfiles(core_path, group, mode, out, msaTool):
         check_path(fasta_path)
         if msaTool == "muscle":
             if align_fn.get_muscle_version(msaTool) == 'v3':
-                print("muscle -quiet -in " + output_file + " -out " + aln_file)
+                print("muscle -quiet -in " + fasta_path + " -out " + msa_path)
             else:
                 cmd = "muscle -quiet -align " + fasta_path + " -output " + msa_path
         elif msaTool == "mafft-linsi":
@@ -1186,7 +1186,7 @@ def main():
         configFile = fdogPath + '/bin/pathconfig.yml'
         if not os.path.exists(configFile):
             sys.exit(
-                f'No pathconfig.yml found at {pathconfigFile}. Please run fdog.setup '
+                f'No pathconfig.yml found at {configFile}. Please run fdog.setup '
                 + '(https://github.com/BIONF/fDOG/wiki/Installation#setup-fdog).')
         if pathFile:
             configFile = os.path.abspath(pathFile)
@@ -1239,8 +1239,8 @@ def main():
     ################## How to handle std output and std error ##################
 
     if mode == 'silent':
-        sys.stderr = f
-        sys.stdout = f
+        sys.stderr = False
+        sys.stdout = False
     else:
         pass
 
