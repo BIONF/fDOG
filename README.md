@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/fdog.svg)](https://pypi.org/project/fdog/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17250794.svg)](https://doi.org/10.5281/zenodo.17250794)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17250793.svg)](https://doi.org/10.5281/zenodo.17250793)
 
 
 # Table of Contents
