@@ -35,7 +35,7 @@ setup(
     author_email="tran@bio.uni-frankfurt.de",
     url="https://github.com/BIONF/fDOG",
     packages=find_packages(),
-    package_data={'': ['*']},
+    include_package_data=True,
     install_requires=[
         'biopython',
         'tqdm',
