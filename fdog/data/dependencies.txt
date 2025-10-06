@@ -5,5 +5,4 @@ mafft
 muscle
 augustus
 metaeuk
-hmmemit
 tblastn
