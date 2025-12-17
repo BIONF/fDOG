@@ -20,6 +20,8 @@ import os
 from pathlib import Path
 import ssl
 import urllib.request
+import certifi
+import shutil
 import yaml
 import time
 import pickle
@@ -81,13 +83,14 @@ def download_progress(count, block_size, total_size):
 
 
 def download_file(url, file):
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    download_file = urllib.request.URLopener(context=ctx)
-    print('Downloading %s' % (url + '/' + file))
-    urllib.request.urlretrieve(url + '/' + file, file, download_progress)
-    print(' ... done!')
+    # Use a verified CA bundle (important in conda/micromamba environments)
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    full_url = f"{url}/{file}"
+    print(f"Downloading {full_url}")
+    with urllib.request.urlopen(full_url, context=ctx) as response, open(file, "wb") as out_file:
+        shutil.copyfileobj(response, out_file)
+
+    print("... done!")
 
 
 def count_line(file, pattern, contain):

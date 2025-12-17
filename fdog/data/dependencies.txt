@@ -3,3 +3,5 @@ hmmer
 clustalw
 mafft
 muscle
+augustus
+metaeuk

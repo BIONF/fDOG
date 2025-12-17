@@ -135,7 +135,7 @@ def abbr_ncbi_name(ncbi_name):
     E.g. "Homo sapiens" -> "HOMSA"
     """
     if not ncbi_name.startswith('UNK'):
-        ncbi_name = re.sub('[^a-zA-Z1-9\s]+', '', ncbi_name)
+        ncbi_name = re.sub('[^a-zA-Z1-9\\s]+', '', ncbi_name)
         tax_name = ncbi_name.split()
         name = tax_name[0][:3].upper()+tax_name[1][:2].upper()
     else:

@@ -3,6 +3,8 @@
 [![PyPI version](https://badge.fury.io/py/fdog.svg)](https://pypi.org/project/fdog/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![Github Build](https://github.com/BIONF/fDOG/workflows/build/badge.svg)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17250793.svg)](https://doi.org/10.5281/zenodo.17250793)
+
 
 # Table of Contents
 * [How to install](#how-to-install)
@@ -12,6 +14,7 @@
 * [fDOG data set](#fdog-data-set)
      * [Adding a new gene set into fDOG](#adding-a-new-gene-set-into-fdog)
      * [Adding a list of gene sets into fDOG](#adding-a-list-of-gene-sets-into-fdog)
+* [fDOG-Assembly](#fdog-assembly)
 * [Bugs](#bugs)
 * [How to cite](#how-to-cite)
 * [Contributors](#contributors)
@@ -22,27 +25,60 @@
 *fDOG* tool is distributed as a python package called *fdog*. It is compatible with [Python ≥ v3.12](https://www.python.org/downloads/).
 
 ## Install the fDOG package
-You can install *fdog* using `pip`:
+
+**_RECOMMENDATION:_** Install fDOG in a fresh conda environment to ensure compatibility and avoid conflicts with other packages.
+
+### Using a Conda Environment
+
+1. Follow [this instruction](https://mamba.readthedocs.io/en/latest/) to install Mamba or Micromamba (faster package manager for conda)
+
+2. Create a new environment
+
+```
+mamba create -n fdog python -y
+```
+
+3. Activate the environment
+
+```
+mamba activate fdog
+```
+
+4. Install *fdog* using `pip`:
+
 ```
 python3 -m pip install fdog
 ```
 
-or, in case you do not have admin rights, and don't use package systems like Anaconda to manage environments you need to use the `--user` option:
+### Without conda
+
+1. Install *fdog* globally (requires admin rights)
+
+```
+python3 -m pip install fdog
+```
+
+2. Install *fdog* for a single user (no admin rights needed)
+
 ```
 python3 -m pip install --user fdog
 ```
 
-and then add the following line to the end of your **~/.bashrc** or **~/.bash_profile** file, restart the current terminal to apply the change (or type `source ~/.bashrc`):
+3. Add local bin to PATH (if using `--user`)
+
+Append this line to the end of your **~/.bashrc** or **~/.bash_profile** file
 
 ```
 export PATH=$HOME/.local/bin:$PATH
 ```
 
+Then, reload the current terminal to apply the change (or run `source ~/.bashrc`)
+
 ## Setup fDOG
 
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
 
-**NOTE**: in case you haven't installed [greedyFAS](https://github.com/BIONF/FAS), it will be installed automatically within *fDOG* setup. However, you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) after *fDOG* setup finished before actually using *fDOG*!
+**IMPORTANT NOTE**: if you haven't installed [greedyFAS](https://github.com/BIONF/FAS), it will be automatically installed during the *fDOG* setup. After installation, you must run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) before using *fDOG* with *FAS*! This step is required to configure *FAS* correctly. You can run *fDOG* without *FAS* by adding the `--fasOff` option to your command. However, it is recommended to use *FAS* to access all the features of *fDOG*.
 
 You can setup fDOG by running this command
 ```
@@ -56,12 +92,28 @@ You will get a warning if any of the dependencies are not ready to use, please s
 *For debugging the setup, please create a log file by running the setup as e.g. `fdog.setup | tee log.txt` and send us that log file, so that we can trouble shoot the issues. Most of the problems can be solved by just re-running the setup.*
 
 # Usage
-*fdog* will run smoothly with the provided sample input file 'infile.fa' if everything is set correctly.
 
+Once *fdog* is installed and set up correctly, it can be run using the provided sample input file 'infile.fa'
+
+## Running fDOG with FAS
 ```
 fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02
 ```
-The output files with the prefix `test` will be saved at your current working directory.
+
+## Running fDOG without FAS
+
+If FAS has not been set up, add the `--fasOff` option
+
+```
+fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02 --fasOff
+```
+
+## Output
+
+All output files will be saved in your **current working directory** with the prefix specified in `--jobName` (e.g. `test`).
+
+## Viewing all options
+
 You can have an overview about all available options with the command
 ```
 fdog.run -h
@@ -108,6 +160,10 @@ The header line (started with #) is a Must. The values of the last 2 columns (ab
 
 _**NOTE:** After adding new taxa into *fdog*, you should [check for the validity of the new data](https://github.com/BIONF/fDOG/wiki/Check-data-validity) before running fdog._
 
+# fDOG-Assembly
+
+*fDOG-Assembly* is an extension of *fDog* that enables searching for orthologs directly within unannotated genome assemblies. For more details about *fDOG-Assembly*, please refer to our [wiki page](https://github.com/BIONF/fDOG/wiki/fDOG-Assembly).
+
 # Bugs
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fDOG/issues/new) or be in touch via email.
 
@@ -117,6 +173,7 @@ Tran V, Langschied F, Muelbaier H, Dosch J, Arthen F, Balint M, Ebersberger I. 2
 # Contributors
 - [Ingo Ebersberger](https://github.com/ebersber)
 - [Vinh Tran](https://github.com/trvinh)
+- [Hannah Muelbaier](https://github.com/HannahBioI)
 - [Holger Bergmann](https://github.com/holgerbgm)
 
 # Contact
