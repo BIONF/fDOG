@@ -25,27 +25,60 @@
 *fDOG* tool is distributed as a python package called *fdog*. It is compatible with [Python ≥ v3.12](https://www.python.org/downloads/).
 
 ## Install the fDOG package
-You can install *fdog* using `pip`:
+
+**_RECOMMENDATION:_** Install fDOG in a fresh conda environment to ensure compatibility and avoid conflicts with other packages.
+
+### Using a Conda Environment
+
+1. Follow [this instruction](https://mamba.readthedocs.io/en/latest/) to install Mamba or Micromamba (faster package manager for conda)
+
+2. Create a new environment
+
+```
+mamba create -n fdog python -y
+```
+
+3. Activate the environment
+
+```
+mamba activate fdog
+```
+
+4. Install *fdog* using `pip`:
+
 ```
 python3 -m pip install fdog
 ```
 
-or, in case you do not have admin rights, and don't use package systems like Anaconda to manage environments you need to use the `--user` option:
+### Without conda
+
+1. Install *fdog* globally (requires admin rights)
+
+```
+python3 -m pip install fdog
+```
+
+2. Install *fdog* for a single user (no admin rights needed)
+
 ```
 python3 -m pip install --user fdog
 ```
 
-and then add the following line to the end of your **~/.bashrc** or **~/.bash_profile** file, restart the current terminal to apply the change (or type `source ~/.bashrc`):
+3. Add local bin to PATH (if using `--user`)
+
+Append this line to the end of your **~/.bashrc** or **~/.bash_profile** file
 
 ```
 export PATH=$HOME/.local/bin:$PATH
 ```
 
+Then, reload the current terminal to apply the change (or run `source ~/.bashrc`)
+
 ## Setup fDOG
 
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
 
-**NOTE**: in case you haven't installed [greedyFAS](https://github.com/BIONF/FAS), it will be installed automatically within *fDOG* setup. However, you need to run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) after *fDOG* setup finished before actually using *fDOG*!
+**IMPORTANT NOTE**: if you haven't installed [greedyFAS](https://github.com/BIONF/FAS), it will be automatically installed during the *fDOG* setup. After installation, you must run [setupFAS](https://github.com/BIONF/FAS/wiki/setupFAS) before using *fDOG* with *FAS*! This step is required to configure *FAS* correctly. You can run *fDOG* without *FAS* by adding the `--fasOff` option to your command. However, it is recommended to use *FAS* to access all the features of *fDOG*.
 
 You can setup fDOG by running this command
 ```
@@ -59,12 +92,28 @@ You will get a warning if any of the dependencies are not ready to use, please s
 *For debugging the setup, please create a log file by running the setup as e.g. `fdog.setup | tee log.txt` and send us that log file, so that we can trouble shoot the issues. Most of the problems can be solved by just re-running the setup.*
 
 # Usage
-*fdog* will run smoothly with the provided sample input file 'infile.fa' if everything is set correctly.
 
+Once *fdog* is installed and set up correctly, it can be run using the provided sample input file 'infile.fa'
+
+## Running fDOG with FAS
 ```
 fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02
 ```
-The output files with the prefix `test` will be saved at your current working directory.
+
+## Running fDOG without FAS
+
+If FAS has not been set up, add the `--fasOff` option
+
+```
+fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02 --fasOff
+```
+
+## Output
+
+All output files will be saved in your **current working directory** with the prefix specified in `--jobName` (e.g. `test`).
+
+## Viewing all options
+
 You can have an overview about all available options with the command
 ```
 fdog.run -h

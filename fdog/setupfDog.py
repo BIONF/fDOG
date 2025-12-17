@@ -71,9 +71,23 @@ def get_data_path(fdogPath):
         return(dataPath)
 
 
-def install_fas(woFAS):
+def install_fas(woFAS, force):
     """ Install greedyFAS """
     if not woFAS:
+        if force:
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "greedyFAS", "-y"])
+            except subprocess.CalledProcessError as e:
+                # If pip returns a non-zero code during uninstallation
+                print(f"ERROR: Failed to uninstall greedyFAS. Pip returned error code {e.returncode}.")
+                sys.exit(1)
+            except Exception as e:
+                # If the package is not installed, pip returns a CalledProcessError with a specific message
+                if "Skipping" in str(e) or "not installed" in str(e):
+                    print(f"Package greedyFAS not found. Continuing...")
+                else:
+                    print(f"Unexpected error: {e}")
+                    sys.exit(1)
         ### check if fas already installed
         try:
             fasVersion = subprocess.run(['fas.run --version'], shell = True, capture_output = True, check = True)
@@ -177,6 +191,7 @@ def download_data(dataPath, resetData):
         if not 'assembly_path' in general_fn.read_dir(dataPath):
             os.makedirs(f'{dataPath}/assembly_path')
             shutil.copytree(f'{get_source_path()}/data/assembly_dir', f'{dataPath}/assembly_dir')
+        # check downloaded data
         check_cmd = 'fdog.checkData -s %s/searchTaxa_dir -c %s/coreTaxa_dir -a %s/annotation_dir --reblast --ignoreAnno' % (dataPath, dataPath, dataPath)
         try:
             print('Checking downloaded data...')
@@ -212,7 +227,7 @@ def main():
     optional.add_argument('--getSourcepath', help='Get path to installed fdog package', action='store_true', default=False)
     optional.add_argument('--getDatapath', help='Get fDOG default data path', action='store_true', default=False)
     optional.add_argument('--woFAS', help='Do not install FAS (https://github.com/BIONF/FAS)', action='store_true', default=False)
-    optional.add_argument('--force', help='Force installing', action='store_true', default=False)
+    optional.add_argument('--force', help='Force installing the dependencies', action='store_true', default=False)
     optional.add_argument('--resetData', help='Re-download precalculated fDOG data', action='store_true', default=False)
 
     ### parse arguments
@@ -258,21 +273,23 @@ def main():
     print('*** Installing dependencies...')
     ## FAS
     if not woFAS:
-        install_fas(woFAS)
+        install_fas(woFAS, force)
     ## hmmer, blast+, clustalw, mafft, muscle
     missing_tools = check_dependencies(fdogPath)
-    if len(missing_tools) > 0:
+    if force or len(missing_tools) > 0:
         if check_conda_env() == True:
             req_file = '%s/data/conda_requirements.yml' % fdogPath
             print('=> Dependencies in %s' % req_file)
 
-            install_cmd = f'install -c bioconda --file {req_file} -y'
+            install_cmd = f'install -c conda-forge -c bioconda --file {req_file} -y'
             if shutil.which("micromamba"):
                 install_cmd = f'micromamba {install_cmd}'
             elif shutil.which("mamba"):
                 install_cmd = f'mamba {install_cmd}'
             else:
                 install_cmd = f'conda {install_cmd}'
+            if force:
+                install_cmd += ' --force-reinstall'
             try:
                 subprocess.call(install_cmd, shell=True)
             except:
@@ -281,7 +298,11 @@ def main():
             install_cmd = 'sudo apt-get install -y -qq <tool>'
             sys.exit('\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
     else:
-        print('=> Dependencies in %s/data/dependencies.txt already installed!' % fdogPath)
+        if check_conda_env() == True:
+            print('=> Dependencies in %s/data/conda_requirements.yml already installed!' % fdogPath)
+        else:
+            print('=> Dependencies in %s/data/dependencies.txt already installed!' % fdogPath)
+    check_dependencies(fdogPath)
     ## fasta36
     install_fasta36(fdogPath, os.getcwd())
 
@@ -301,7 +322,11 @@ def main():
     write_pathconfig(fdogPath, dataPath)
 
     print('\033[96m==> FINISHED! fDOG data can be found at %s\033[0m' % dataPath)
-    print('You can test fDOG using the following command:\n%s' % demo_cmd)
+    check_fas = fas_fn.check_fas_executable()
+    if check_fas == 1:
+        print('You can test fDOG using the following command:\n%s' % demo_cmd)
+    else:
+        print('You can test fDOG using the following command:\n%s --fasOff' % demo_cmd)
 
 if __name__ == '__main__':
     main()
