@@ -294,6 +294,10 @@ def main():
             except:
                 sys.exit(f'\033[91mERROR: Cannot install conda packages in {req_file}!\033[0m')
         else:
+            try:
+                subprocess.check_output(['which metaeuk'], shell = True, stderr = subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                missing_tools.append('metaeuk')
             install_cmd = 'sudo apt-get install -y -qq <tool>'
             sys.exit('\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
     else:
