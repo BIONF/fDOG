@@ -48,7 +48,7 @@ def sort_hmm_hits(hmm_hits, hmm_score_type = 'domain', hitLimit = 10, scoreCutof
     best_hit_score = -9999
     if hmm_score_type == 'domain':
         for hit in hmm_hits:
-            ori_hits[hit.name.decode('ASCII')] = len(hit.domains)
+            ori_hits[hit.name] = len(hit.domains)
             best_domain_score = -9999 #hit.domains[0].score
             best_domain_hit = ''
             if len(hit.domains) > 0:
@@ -56,7 +56,7 @@ def sort_hmm_hits(hmm_hits, hmm_score_type = 'domain', hitLimit = 10, scoreCutof
                 for i in hit.domains:
                     if i.score > best_domain_score:
                         best_domain_score = i.score
-                        best_domain_hit = i.hit.name.decode('ASCII')
+                        best_domain_hit = i.hit.name
                 # add hit to score_dict with increasing domain score
                 if best_domain_score > best_score:
                     best_score = best_domain_score
@@ -70,11 +70,11 @@ def sort_hmm_hits(hmm_hits, hmm_score_type = 'domain', hitLimit = 10, scoreCutof
                         score_dict[best_domain_score].append(best_domain_hit)
     else:
         for hit in hmm_hits:
-            ori_hits[hit.name.decode('ASCII')] = hit.score
+            ori_hits[hit.name] = hit.score
             if hit.score > best_hit_score:
                 # get hit with best score
                 best_hit_score = hit.score
-                best_hit = hit.name.decode('ASCII')
+                best_hit = hit.name
             # add to score_dict
             if best_hit_score > best_score:
                 best_score = best_hit_score
@@ -83,9 +83,9 @@ def sort_hmm_hits(hmm_hits, hmm_score_type = 'domain', hitLimit = 10, scoreCutof
                 cutoff = best_score/100*(100+scoreCutoff)
             if hit.score >= cutoff:
                 if hit.score not in score_dict:
-                    score_dict[hit.score] = [hit.name.decode('ASCII')]
+                    score_dict[hit.score] = [hit.name]
                 else:
-                    score_dict[hit.score].append(hit.name.decode('ASCII'))
+                    score_dict[hit.score].append(hit.name)
 
     output_fn.print_debug(debug, 'All HMM hits', ori_hits)
     hmm_cand = {}
@@ -122,8 +122,8 @@ def do_hmmsearch(
                     hmm_file, sequences, E = evalHmmer, cpus = cpus):
                 if len(hits) > 0:
                     hmm_hits = sort_hmm_hits(hits, hmm_score_type, hitLimit, scoreCutoff, debug)
-        except :
+        except Exception as e:
             sys.exit(
-                'ERROR: Error running hmmsearch for %s agains %s'
-                % (hmm_file, search_fa))
+                'ERROR: Error running hmmsearch for %s agains %s\n%s'
+                % (hmm_file, search_fa, e))
     return(hmm_hits)
