@@ -25,6 +25,11 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install metaeuk
+      run: |
+        wget https://mmseqs.com/metaeuk/metaeuk-linux-avx2.tar.gz
+        tar -xzf metaeuk-linux-avx2.tar.gz
+        sudo mv metaeuk/bin/metaeuk /usr/local/bin/
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip

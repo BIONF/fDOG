@@ -280,7 +280,6 @@ def main():
         if check_conda_env() == True:
             req_file = '%s/data/conda_requirements.yml' % fdogPath
             print('=> Dependencies in %s' % req_file)
-
             install_cmd = f'install -c conda-forge -c bioconda --file {req_file} -y'
             if shutil.which("micromamba"):
                 install_cmd = f'micromamba {install_cmd}'
