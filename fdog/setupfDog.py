@@ -279,20 +279,26 @@ def main():
     if force or len(missing_tools) > 0:
         if check_conda_env() == True:
             req_file = '%s/data/conda_requirements.yml' % fdogPath
+            with open(req_file) as f:
+                packages = [line.strip() for line in f if line.strip() and not line.startswith("#")]
             print('=> Dependencies in %s' % req_file)
-            install_cmd = f'install -c conda-forge -c bioconda --file {req_file} -y'
+            base_cmd = "install -c conda-forge -c bioconda -y"
+            if packages:
+                base_cmd += " " + " ".join(packages)
             if shutil.which("micromamba"):
-                install_cmd = f'micromamba {install_cmd}'
+                install_cmd = f'micromamba {base_cmd}'
             elif shutil.which("mamba"):
-                install_cmd = f'mamba {install_cmd}'
+                install_cmd = f'mamba {base_cmd}'
             else:
-                install_cmd = f'conda {install_cmd}'
+                install_cmd = f'conda {base_cmd}'
             if force:
                 install_cmd += ' --force-reinstall'
             try:
-                subprocess.call(install_cmd, shell=True)
-            except:
-                sys.exit(f'\033[91mERROR: Cannot install conda packages in {req_file}!\033[0m')
+                retcode = subprocess.call(install_cmd, shell=True)
+                if retcode != 0:
+                    sys.exit(f"\033[91mERROR: Conda installation failed with exit code {retcode}!\033[0m")
+            except Exception as e:
+                sys.exit(f"\033[91mERROR: Cannot install conda packages in {req_file}!\033[0m\n{e}")
         else:
             try:
                 subprocess.check_output(['which metaeuk'], shell = True, stderr = subprocess.STDOUT)
