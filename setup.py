@@ -42,7 +42,7 @@ setup(
         'ete4',
         'six',
         'PyYAML',
-        'pyhmmer=0.11.4',
+        'pyhmmer==0.11.4',
         'pysam',
         'pandas',
         'greedyFAS>=1.19.0'
