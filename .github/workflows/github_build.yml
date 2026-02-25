@@ -41,7 +41,7 @@ jobs:
         pwd
         pip install .
         sudo apt-get update
-        xargs -a $path/data/dependencies.txt sudo apt-get install -y -qq
+        path=$(fdog.setup -d ./ --getSourcepath); xargs -a $path/data/dependencies.txt sudo apt-get install -y -qq
         echo "######### curent_dir #########"
         pwd
         ls
