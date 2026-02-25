@@ -960,7 +960,7 @@ def blockProfiles(core_path, group, mode, out, msaTool):
         check_path(fasta_path)
         if msaTool == "muscle":
             if align_fn.get_muscle_version(msaTool) == 'v3':
-                print("muscle -quiet -in " + fasta_path + " -out " + msa_path)
+                cmd = "muscle -quiet -in " + fasta_path + " -out " + msa_path
             else:
                 cmd = "muscle -quiet -align " + fasta_path + " -output " + msa_path
         elif msaTool == "mafft-linsi":
