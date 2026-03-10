@@ -126,4 +126,5 @@ def do_hmmsearch(
             sys.exit(
                 'ERROR: Error running hmmsearch for %s agains %s\n%s'
                 % (hmm_file, search_fa, e))
+    hmm_hits = {k.decode() if isinstance(k, bytes) else k: v for k, v in hmm_hits.items()}
     return(hmm_hits)
