@@ -26,9 +26,9 @@
 
 ## Install the fDOG package
 
-**_RECOMMENDATION:_** Install fDOG in a fresh conda environment to ensure compatibility and avoid conflicts with other packages.
+**_RECOMMENDATION:_** Install fDOG in a fresh conda-like environment to ensure compatibility and prevent conflicts with other packages. We recommend using Mamba or Micromamba instead of Conda for better performance, faster dependency resolution and more reliable environment management.
 
-### Using a Conda Environment
+### Using a Mamba/Conda Environment
 
 1. Follow [this instruction](https://mamba.readthedocs.io/en/latest/) to install Mamba or Micromamba (faster package manager for conda)
 
