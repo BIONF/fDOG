@@ -79,7 +79,9 @@ jobs:
       - name: Setup micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment.yml
+          environment-name: fdog-env
+          create-args: >-
+            python=3.12
           cache-environment: true
           cache-downloads: true
           init-shell: bash
