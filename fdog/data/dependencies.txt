@@ -5,3 +5,4 @@ mafft
 muscle
 augustus
 metaeuk
+miniprot
