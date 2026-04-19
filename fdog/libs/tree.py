@@ -110,24 +110,46 @@ def get_leaves_dict(spec_lineage, tree, min_index, max_index):
     return(general_fn.remove_dup_in_dict(node_dict))
 
 
+# def check_tax_id(tax_id):
+#     """ Check valid taxon ID
+#     Return taxon name (UNK<tax_id> if ID not found in ncbi db)
+#     """
+#     ncbi = NCBITaxa()
+#     try:
+#         tmp = ncbi.get_rank([tax_id])
+#         rank = tmp[int(tax_id)]
+#         if not rank == 'species':
+#             print('\033[92mWARNING: rank of %s is not SPECIES (%s)\033[0m' % (tax_id, rank))
+#         else:
+#             ncbi_name = ncbi.get_taxid_translator([tax_id])[int(tax_id)]
+#             print('\033[92mNCBI taxon info: %s %s\033[0m' % (tax_id, ncbi_name))
+#         return(ncbi_name)
+#     except:
+#         print('\033[92mWARNING: %s not found in NCBI taxonomy database!\033[0m' % tax_id)
+#         return('UNK%s' % tax_id)
+
 def check_tax_id(tax_id):
-    """ Check valid taxon ID
-    Return taxon name (UNK<tax_id> if ID not found in ncbi db)
+    """Check valid taxon ID.
+    Return taxon name if valid, otherwise 'UNK<tax_id>'.
+    Prints warnings if rank is not species or taxid not found.
     """
     ncbi = NCBITaxa()
-    tmp = ncbi.get_rank([tax_id])
-    try:
-        tmp = ncbi.get_rank([tax_id])
-        rank = tmp[int(tax_id)]
-        if not rank == 'species':
-            print('\033[92mWARNING: rank of %s is not SPECIES (%s)\033[0m' % (tax_id, rank))
-        else:
-            ncbi_name = ncbi.get_taxid_translator([tax_id])[int(tax_id)]
-            print('\033[92mNCBI taxon info: %s %s\033[0m' % (tax_id, ncbi_name))
-        return(ncbi_name)
-    except:
-        print('\033[92mWARNING: %s not found in NCBI taxonomy database!\033[0m' % tax_id)
-        return('UNK%s' % tax_id)
+    # Ensure tax_id is integer
+    tax_id = int(tax_id)
+    # Get rank of tax_id
+    ranks = ncbi.get_rank([tax_id])
+    rank = ranks.get(tax_id, None)
+    if rank is None:
+        print(f'\033[93mWARNING: {tax_id} not found in NCBI taxonomy database!\033[0m')
+        return f'UNK{tax_id}'
+
+    if rank != 'species':
+        print(f'\033[92mWARNING: rank of {tax_id} is not SPECIES ({rank})\033[0m')
+    # Get taxon name
+    names = ncbi.get_taxid_translator([tax_id])
+    ncbi_name = names.get(tax_id, f'UNK{tax_id}')
+    print(f'\033[92mNCBI taxon info: {tax_id} {ncbi_name}\033[0m')
+    return ncbi_name
 
 
 def abbr_ncbi_name(ncbi_name):

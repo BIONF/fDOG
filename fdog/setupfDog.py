@@ -161,8 +161,7 @@ def check_dependencies(fdogPath):
 
 def download_data(dataPath, resetData):
     """ Downloade pre-calculated fDOG data """
-    data_fdog_file = "data_fDOG_2024.tar.gz"
-    checksum_data = "1748371655 621731824 $data_fdog_file"
+    data_fdog_file = "data_fDOG_2024b.tar.gz"
 
     genome_path = '%s/searchTaxa_dir' % dataPath
     Path(genome_path).mkdir(parents = True, exist_ok = True)
@@ -171,14 +170,6 @@ def download_data(dataPath, resetData):
         if os.path.exists(data_fdog_file) and resetData:
             os.remove(data_fdog_file)
         general_fn.download_file(data_url, data_fdog_file)
-        # ####### temporary solution while the uni network does not work #########
-        # wgetCmd = 'wget "https://www.dropbox.com/scl/fi/t2ln18k0jthc3y74s591q/data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0"'
-        # try:
-        #     subprocess.run([wgetCmd], shell=True, check=True)
-        #     shutil.move("data_HaMStR-2019c.tar.gz?rlkey=c66nc3eslqyn2a6k6ey4e678r&st=plzvbllv&dl=0", "data_HaMStR-2019c.tar.gz")
-        # except:
-        #     print('Problem occurred while download demo data from dropbox')
-        # ########################################################################
         try:
             print('Extracting %s...' % data_fdog_file)
             shutil.unpack_archive(data_fdog_file, dataPath, 'gztar')
@@ -195,7 +186,7 @@ def download_data(dataPath, resetData):
         check_cmd = 'fdog.checkData -s %s/searchTaxa_dir -c %s/coreTaxa_dir -a %s/annotation_dir --reblast --ignoreAnno' % (dataPath, dataPath, dataPath)
         try:
             print('Checking downloaded data...')
-            subprocess.run([check_cmd], stdout = subprocess.DEVNULL, check = True, shell = True)
+            subprocess.run([check_cmd], check = True, shell = True)
         except:
             print('\033[96mWARNING: Problem with validating downloaded data. Please run fdog.checkData manually!\033[0m')
         os.remove(data_fdog_file)
@@ -253,15 +244,17 @@ def main():
     ### check if pathconfig file exists
     pathconfigFile = '%s/bin/pathconfig.yml' % fdogPath
     demo_cmd = 'fdog.run --seqFile infile.fa --jobName test --refspec HUMAN@9606@qfo24_02'
-    if os.path.exists(pathconfigFile) and not force:
+    if os.path.exists(pathconfigFile) and not force and not resetData:
         check_fas = 1
         if not woFAS:
             check_fas = fas_fn.check_fas_executable()
         if check_fas == 1:
             print('fDOG seems to be ready to use!')
+            print(f'Data path: {get_data_path(fdogPath)}')
             print('You can test fDOG using the following command:\n%s' % demo_cmd)
         else:
             print('fDOG seems to be ready to use without FAS!')
+            print(f'Data path: {get_data_path(fdogPath)}')
             print('You can test fDOG using the following command:\n%s --fasOff' % demo_cmd)
         sys.exit()
 
@@ -278,28 +271,55 @@ def main():
     missing_tools = check_dependencies(fdogPath)
     if force or len(missing_tools) > 0:
         if check_conda_env() == True:
-            req_file = '%s/data/conda_requirements.yml' % fdogPath
-            print('=> Dependencies in %s' % req_file)
-
-            install_cmd = f'install -c conda-forge -c bioconda --file {req_file} -y'
+            req_file = f"{fdogPath}/data/conda_requirements.txt"
+            # Read package list
+            with open(req_file) as f:
+                packages = [
+                    line.strip()
+                    for line in f
+                    if line.strip() and not line.strip().startswith("#")
+                ]
+            print(f"=> Dependencies in {req_file}")
+            # Base command
+            base_cmd = [
+                "install",
+                "-c", "conda-forge",
+                "-c", "bioconda",
+                "-y"
+            ]
+            # Add packages directly
+            if packages:
+                base_cmd.extend(packages)
+            # Select package manager
             if shutil.which("micromamba"):
-                install_cmd = f'micromamba {install_cmd}'
+                cmd = ["micromamba"] + base_cmd
             elif shutil.which("mamba"):
-                install_cmd = f'mamba {install_cmd}'
+                cmd = ["mamba"] + base_cmd
             else:
-                install_cmd = f'conda {install_cmd}'
+                cmd = ["conda"] + base_cmd
+            # Optional force reinstall
             if force:
-                install_cmd += ' --force-reinstall'
+                cmd.append("--force-reinstall")
             try:
-                subprocess.call(install_cmd, shell=True)
-            except:
-                sys.exit(f'\033[91mERROR: Cannot install conda packages in {req_file}!\033[0m')
+                retcode = subprocess.call(cmd)
+                if retcode != 0:
+                    sys.exit(f"\033[91mERROR: Conda installation failed with exit code {retcode}!\033[0m")
+            except Exception as e:
+                sys.exit(f"\033[91mERROR: Cannot install conda packages in {req_file}!\033[0m\n{e}")
         else:
+            try:
+                subprocess.check_output(['which', 'metaeuk'], stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError:
+                missing_tools.append('metaeuk')
+
             install_cmd = 'sudo apt-get install -y -qq <tool>'
-            sys.exit('\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m' % (', '.join(missing_tools), install_cmd))
+            sys.exit(
+                '\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m'
+                % (', '.join(missing_tools), install_cmd)
+            )
     else:
         if check_conda_env() == True:
-            print('=> Dependencies in %s/data/conda_requirements.yml already installed!' % fdogPath)
+            print('=> Dependencies in %s/data/conda_requirements.txt already installed!' % fdogPath)
         else:
             print('=> Dependencies in %s/data/dependencies.txt already installed!' % fdogPath)
     check_dependencies(fdogPath)
