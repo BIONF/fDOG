@@ -4,3 +4,5 @@ clustalw
 mafft
 muscle
 augustus
+metaeuk
+miniprot

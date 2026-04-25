@@ -35,6 +35,7 @@ import fdog.libs.fas as fas_fn
 from tqdm import tqdm
 from pathlib import Path
 import pandas as pd
+import re
 
 ########################### functions ##########################################
 def check_path(path, exit=True):
@@ -60,7 +61,6 @@ def check_ref_spec(species_list, fasta_file):
             return species
     print("Reference species is not part of the ortholog group. Exciting ...")
     sys.exit()
-
 
 def starting_subprocess(cmd, mode, time_out = None):
 
@@ -166,8 +166,135 @@ def parse_blast(line, blast_results, cutoff):
             blast_results[node_name] = list
         else:
             blast_results[node_name] = [[int(sstart),int(send), evalue, int(qstart), int(qend), strand, score]]
-
+    #print(blast_results)
     return blast_results, evalue
+
+def parse_miniprot(line, results, cutoff):
+    # 1	string	Protein sequence name
+    #2	int	Protein sequence length
+    #3	int	Protein start coordinate (0-based)
+    #4	int	Protein end coordinate (0-based)
+    #5	char	‘+’ for forward strand; ‘-’ for reverse
+    #6	string	Contig sequence name
+    #7	int	Contig sequence length
+    #8	int	Contig start coordinate on the original strand
+    #9	int	Contig end coordinate on the original strand
+    #10	int	Number of matching nucleotides
+    #11	int	Number of nucleotides in alignment excl. introns
+    #12	int	Mapping quality (0-255 with 255 for missing)
+    #print(line)
+    #print(results)
+    #print(cutoff)
+    
+    line = line.replace("\n", "")
+    line_info = line.split("\t")
+    #add region to dictionary
+
+    refstart, refend, strand, contig, start, end, quality = int(line_info[2]), int(line_info[3]), line_info[4], line_info[5], int(line_info[7]), int(line_info[8]), int(line_info[11])
+
+    if contig in results:
+        list = results[contig]
+        list.append([int(start),int(end), quality, int(refstart), int(refend), strand, quality])
+        results[contig] = list
+    else:
+        results[contig] = [[int(start),int(end), quality, int(refstart), int(refend), strand, quality]]
+    #print(results)
+    return results, 0
+
+def parse_miniprot_predictions(tmp_path, candidatesOutFile, asName, group_name):
+    search_file = open(os.path.join(tmp_path, "miniprot_results.out"), "r")
+
+    # --- 1. Parse hit blocks ---
+    hits = []
+    current = None
+
+    for line in search_file:
+        line = line.rstrip("\n")
+
+        if line.startswith("##PAF"):
+            if current is not None:
+                hits.append(current)
+
+            fields = line.split("\t")
+            tstart  = int(fields[8])
+            tend    = int(fields[9])
+            aln_len = int(fields[11])
+
+            as_score = None
+            for f in fields[12:]:
+                m = re.match(r"AS:i:(-?\d+)", f)
+                if m:
+                    as_score = int(m.group(1))
+                    break
+
+            current = {
+                "paf_line":  line,
+                "sta_line":  None,
+                "gff_lines": [],
+                "gff_id":    None,
+                "tstart":    tstart,
+                "tend":      tend,
+                "aln_len":   aln_len,
+                "as_score":  as_score,
+                "sequence":  None,
+            }
+
+        elif line.startswith("##STA") and current is not None:
+            current["sta_line"] = line
+            current["sequence"] = line.split(None, 1)[1] if len(line.split(None, 1)) > 1 else ""
+
+        elif line.startswith("##"):
+            pass
+
+        elif current is not None and line.strip():
+            current["gff_lines"].append(line)
+            cols = line.split("\t")
+            if len(cols) >= 9 and cols[2] == "mRNA":
+                m = re.search(r"ID=([^;]+)", cols[8])
+                if m:
+                    current["gff_id"] = m.group(1)
+
+    if current is not None:
+        hits.append(current)
+
+    search_file.close()
+
+    # --- 2. Group overlapping hits ---
+    groups = []
+
+    for hit in hits:
+        placed = False
+        for group in groups:
+            for member in group:
+                if hit["tstart"] <= member["tend"] and hit["tend"] >= member["tstart"]:
+                    group.append(hit)
+                    placed = True
+                    break
+            if placed:
+                break
+        if not placed:
+            groups.append([hit])
+
+    # --- 3. Select best hit per group (highest AS score, then longest alignment) ---
+    best_hits = []
+    for group in groups:
+        best = max(
+            group,
+            key=lambda h: (
+                h["as_score"] if h["as_score"] is not None else float("-inf"),
+                h["aln_len"],
+            ),
+        )
+        best_hits.append(best)
+
+    # --- 4. Write FASTA output ---
+    with open(candidatesOutFile, "w") as out:
+        for hit in best_hits:
+            header = hit["gff_id"] if hit["gff_id"] else "unknown"
+            header_full = f"{group_name}|{asName}|{header}"
+            seq    = hit["sequence"] if hit["sequence"] else ""
+            out.write(f">{header_full}\n{seq}\n")
+    return candidatesOutFile
 
 def get_x_results(blast_dic, x, score_list):
 
@@ -187,28 +314,106 @@ def get_x_results(blast_dic, x, score_list):
             number_regions += len(key_list)
     return new_dic, number_regions
 
-def candidate_regions(intron_length, cutoff_evalue, tmp_path, x = 10):
+def merge_overlapping_entries(format_dict):
+    """
+    For each node, merge overlapping intervals based on start/end positions.
+    Overlapping entries in the original list remain unchanged.
+    Returns a new dict with merged (non-overlapping) intervals per node,
+    the total number of merged entries across all nodes, and a flat list of all scores.
+
+    Merging rules:
+        - start:  minimum of all overlapping entries
+        - end:    maximum of all overlapping entries
+        - evalue: minimum (best) evalue of all overlapping entries
+        - qstart: minimum of all overlapping entries
+        - qend:   maximum of all overlapping entries
+        - strand: must be identical across all overlapping entries, raises ValueError otherwise
+        - score:  minimum of all overlapping entries
+
+    Args:
+        format_dict: {node_name: [(start, end, evalue, qstart, qend, strand, score), ...]}
+
+    Returns:
+        merged_dict:   {node_name: [(min_start, max_end, min_evalue, min_qstart, max_qend, strand, min_score), ...]}
+        total_entries: int, total number of merged entries across all nodes
+        all_scores:    list of all scores (float/int) from all merged entries, in node iteration order
+    """
+    merged_dict   = {}
+    total_entries = 0
+    all_scores    = []
+
+    for node_name, entries in format_dict.items():
+        if not entries:
+            merged_dict[node_name] = []
+            continue
+
+        # Sort entries by start position to make overlap detection easier
+        sorted_entries = sorted(entries, key=lambda x: x[0])
+
+        merged = []
+
+        # Initialize the running interval with the first entry
+        curr_start, curr_end, curr_evalue, curr_qstart, curr_qend, curr_strand, curr_score = sorted_entries[0]
+
+        for entry in sorted_entries[1:]:
+            entry_start, entry_end, entry_evalue, entry_qstart, entry_qend, entry_strand, entry_score = entry
+
+            # Check if the current entry overlaps with the running interval
+            if entry_start <= curr_end and entry_strand == curr_strand:
+                # Merge: extend interval and keep best (minimum) evalue and score
+                curr_end    = max(curr_end, entry_end)
+                curr_qstart = min(curr_qstart, entry_qstart)
+                curr_qend   = max(curr_qend, entry_qend)
+                curr_evalue = min(curr_evalue, entry_evalue)
+                curr_score  = min(curr_score, entry_score)
+
+            else:
+                # No overlap: save the completed merged interval and start a new one
+                merged.append((curr_start, curr_end, curr_evalue, curr_qstart, curr_qend, curr_strand, curr_score))
+                curr_start, curr_end, curr_evalue, curr_qstart, curr_qend, curr_strand, curr_score = entry
+
+        # Append the last remaining interval
+        merged.append((curr_start, curr_end, curr_evalue, curr_qstart, curr_qend, curr_strand, curr_score))
+
+        merged_dict[node_name] = merged
+
+        # Accumulate totals across all nodes
+        total_entries += len(merged)
+        all_scores.extend(entry[6] for entry in merged)
+
+    return merged_dict, total_entries, all_scores
+
+def candidate_regions(intron_length, cutoff_evalue, tmp_path, searchTool, x):
     ###################### extracting candidate regions ########################
+
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
-    blast_file = open(tmp_path + "/blast_results.out", "r")
+    if searchTool == "blast":
+        search_file = open(tmp_path + "/blast_results.out", "r")
+    else:
+        search_file = open(tmp_path + "/miniprot_results.out", "r")
     evalue = 0
-    blast_results = {}
+    results = {}
     #parsing blast output
     while True:
-        line = blast_file.readline()
+        line = search_file.readline()
         #end of file is reached
         if not line:
             break
-        #parsing blast output
-        blast_results, evalue = parse_blast(line, blast_results, cutoff_evalue)
-
-    if blast_results == {}:
-        blast_file.close()
+        #parsing output
+        if searchTool == "blast":
+            results, evalue = parse_blast(line, results, cutoff_evalue)
+        else:
+            results, evalue = parse_miniprot(line, results, cutoff_evalue)
+    if results == {}:
+        search_file.close()
         return 0,0
     else:
-        candidate_regions, number_regions, score_list = merge(blast_results, intron_length)
-        blast_file.close()
-        if number_regions > x:
+        if searchTool == "blast":
+            candidate_regions, number_regions, score_list = merge(results, intron_length)
+        else:
+            candidate_regions, number_regions, score_list = merge_overlapping_entries(results)
+        search_file.close()
+        if number_regions > x and search_file == 'blast':
             candidate_regions, number_regions = get_x_results(candidate_regions, x, score_list)
         return candidate_regions, number_regions
 
@@ -254,7 +459,7 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
             # augutus call
             cmd = "augustus --protein=1 --gff3=on --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #print(cmd)
-            starting_subprocess(cmd, 'normal')
+            starting_subprocess(cmd, 'silent')
             # transfer augustus output to AS sequence
             #print(tmp_path)
             #print(key)
@@ -344,6 +549,18 @@ def searching_for_db(assembly_path):
         if not any(File.endswith(end) for File in os.listdir(assembly_path)):
             check = False
     return check
+
+def check_blast_version(blast_db, mode):
+    """ Check if blast DBs are compatible with blastp version """
+    fdog_path = os.path.realpath(__file__).replace('fDOGassembly.py', '')
+    #print(fdog_path)
+    if mode == "prot":
+        query = os.path.join(fdog_path, 'data', 'infile.fa')
+        try:
+            cmd = ["blastp", "-query", query, "-db", blast_db]
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            sys.exit(f"ERROR: Error running BLAST (probably conflict with BLAST DB versions)\n{e.stderr}")
 
 def get_distance_biopython(file, matrix):
     """ Reads alignment file and returns distance matrix """
@@ -450,7 +667,7 @@ def checkCoOrthologs(candidate_name, best_hit, ref, fdog_ref_species, candidates
         #rejected
         return 0, distance_ref_hit, distance_hit_query
 
-def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, searchTool, checkCo, msaTool, matrix, dataPath, filter, tmp_path, mode):
+def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue_cut_off, taxa, checkCo, msaTool, matrix, dataPath, tmp_path, mode, filter):
     # the backward search uses the genes predicted from augustus and makes a blastp search
     #the blastp search is against all species that are part of the core_ortholog group if the option --strict was chosen or only against the ref taxa
     seedDic = getSeedInfo(fasta_path)
@@ -469,12 +686,9 @@ def backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, eva
         except KeyError:
             #print("The fDOG reference species isn't part of the core ortholog group, ... exciting")
             return 0, seed
-        if searchTool == "blast":
-            cmd = "blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile
-            starting_subprocess(cmd, mode)
-        else:
-            print("diamonds are the girls best friends")
-            ##### diamond call
+
+        cmd = "blastp -db " + blast_dir_path + fdog_ref_species + "/" + fdog_ref_species + " -outfmt '6 sseqid qseqid evalue' -max_target_seqs 10 -out " + tmp_path + "blast_" + fdog_ref_species + " -evalue " + str(evalue_cut_off) + " -query " + candidatesOutFile + " -seg " + filter
+        starting_subprocess(cmd, mode)
 
         alg_file = open(tmp_path + "blast_" + fdog_ref_species, "r")
         lines = alg_file.readlines()
@@ -686,6 +900,8 @@ def getLocationFromGff(gff_file, name, tool):
     #print(name)
     if tool == 'metaeuk':
         gene_count = int(name.split('_')[-1:][0])
+    elif tool == "miniprot":
+        gene_count = int(name[2:])
     else:
         gene_count = int(name.split('.')[-2].replace('g', '').split('_')[-1:][0])
     counter = 0
@@ -695,7 +911,7 @@ def getLocationFromGff(gff_file, name, tool):
                 pass
             else:
                     contig, source, type, start, end, score, strand, phase, att = line.split('\t')
-                    if type == 'gene':
+                    if type == 'gene' or tool == "miniprot" and type == 'mRNA':
                         counter += 1
                         if counter == gene_count:
                             position = [contig, int(start), int(end), strand]
@@ -793,7 +1009,10 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
         distance = distances[ref_id , name]
         id = name.split('|')[2]
         if isoforms == False:
-            gff_file = tmp_path + '/' + '_'.join(id.split('_')[0:-1]) + '.gff'
+            if gene_prediction != "miniprot":
+                gff_file = tmp_path + '/' + '_'.join(id.split('_')[0:-1]) + '.gff'
+            else:
+                gff_file = tmp_path + '/miniprot_results.out'
             position[name] = getLocationFromGff(gff_file, id, gene_prediction)
         if distance <= min_dist:
             min_dist = distance
@@ -872,18 +1091,7 @@ def run_fas(cmd):
                     sys.exit()
     return output
 
-def ortholog_search_tblastn(args):
-    (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms) = args
-    output = []
-    asNamePath = asName.replace('@', '_')
-    cmd = 'mkdir ' + out + '/tmp/' + asNamePath
-    starting_subprocess(cmd, 'silent')
-    tmp_path = out + "tmp/" + asNamePath + "/"
-    candidatesOutFile = tmp_path + group + ".candidates.fa"
-
-    output.append("Searching in species " + asName + "\n")
-    assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
-    db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
+def tblastn(assemblyDir, asName, consensus_path, evalue, tmp_path, mode, output, db_path, assembly_path):
     blast_dir_path = assemblyDir + "/" + asName + "/blast_dir/"
     if not os.path.exists(blast_dir_path):
         cmd = 'mkdir ' + blast_dir_path
@@ -893,6 +1101,9 @@ def ortholog_search_tblastn(args):
     if db_check == 0:
         cmd = 'makeblastdb -in ' + assembly_path + ' -dbtype nucl -parse_seqids -out ' + db_path
         starting_subprocess(cmd, mode)
+    else:
+        ## check if blast version and DB are compartable
+        check_blast_version(db_path, "nt")
 
     #makes a tBLASTn search against database
     #codon table argument [-db_gencode int_value], table available ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
@@ -902,45 +1113,128 @@ def ortholog_search_tblastn(args):
     time_tblastn_end = time.time()
     time_tblastn = time_tblastn_end - time_tblastn_start
     if exit_code == 1:
-        output.append("The tblastn search takes too long for species %s. Skipping species ..." % asName)
-        return [], candidatesOutFile, output
+        return 1
 
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
+    return 0
 
-    regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path)
-    if regions == 0:
-        #no candidat region are available, no ortholog can be found
-        output.append("No candidate region found for species %s!\n" % asName)
-        return [], candidatesOutFile, output
+def miniprot(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group):
+    mini_db_path = assemblyDir + "/" + asName + "/miniprot_dir/" + asName + ".mpi"
+    asName = asName.replace('@', '_')
+    core_fasta_path = tmp_path.replace(asName,"") + group + ".fa"
+    #print(core_fasta_path)
+    
+    #create combined input file for miniprot, concat core group genes and consensus sequence
+    combined_fasta_path = tmp_path + "/miniprot_in.fa"
+    cmd = 'cat ' + core_fasta_path + ' ' + consensus_path + ' > ' + combined_fasta_path
+    starting_subprocess(cmd, 'silent')
 
-    else:
-        output.append(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
-        extract_seq(regions, db_path, tmp_path, mode)
+    if not os.path.exists(mini_db_path):
+        cmd = 'mkdir -p ' + os.path.dirname(assemblyDir + "/" + asName + "/miniprot_dir/")
+        starting_subprocess(cmd, 'silent')
+        cmd = 'miniprot -d ' + mini_db_path + ' ' + assembly_path
+        starting_subprocess(cmd, mode)
+    cmd = "miniprot -I %s %s --outn %i > %s" % (mini_db_path, combined_fasta_path, number_candidates, tmp_path + "/miniprot_results.out")
+    #print(cmd)
+    time_miniprot_start = time.time()
+    result = starting_subprocess(cmd, 'silent')
+    time_miniprot_end = time.time()
+    time_miniprot = time_miniprot_end - time_miniprot_start
+    if result == 1:
+        return 1
 
-    if gene_prediction == "augustus":
-        ############### make Augustus PPX search ###################################
-        time_augustus_start = time.time()
-        augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
-        time_augustus_end = time.time()
-        time_augustus = time_augustus_end - time_augustus_start
-        output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
-    else:
-        time_metaeuk_start = time.time()
-        if metaeuk_db == '':
-            db = fasta_path
+    output.append("Time miniprot %s in species %s" % (str(time_miniprot), asName))
+    return 0
+
+def miniprot_fast(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group):
+    mini_db_path = assemblyDir + "/" + asName + "/miniprot_dir/" + asName + ".mpi"
+    asName = asName.replace('@', '_')
+    core_fasta_path = tmp_path.replace(asName,"") + group + ".fa"
+
+    #create combined input file for miniprot, concat core group genes and consensus sequence
+    combined_fasta_path = tmp_path + "/miniprot_in.fa"
+    cmd = 'cat ' + core_fasta_path + ' ' + consensus_path + ' > ' + combined_fasta_path
+    starting_subprocess(cmd, 'silent')
+
+    if not os.path.exists(mini_db_path):
+        cmd = 'mkdir -p ' + os.path.dirname(assemblyDir + "/" + asName + "/miniprot_dir/")
+        starting_subprocess(cmd, 'silent')
+        cmd = 'miniprot -d ' + mini_db_path + ' ' + assembly_path
+        starting_subprocess(cmd, mode)
+    cmd = "miniprot -I --trans --gff %s %s --outn %i > %s" % (mini_db_path, combined_fasta_path, number_candidates, tmp_path + "/miniprot_results.out")
+    #print(cmd)
+    time_miniprot_start = time.time()
+    result = starting_subprocess(cmd, 'silent')
+    time_miniprot_end = time.time()
+    time_miniprot = time_miniprot_end - time_miniprot_start
+    if result == 1:
+        return 1
+
+    output.append("Time miniprot %s in species %s" % (str(time_miniprot), asName))
+    return 0
+
+def ortholog_search_forward(args):
+    (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms, number_candidates, low_complexity_filter,fast) = args
+    output = []
+    asNamePath = asName.replace('@', '_')
+    cmd = 'mkdir ' + out + '/tmp/' + asNamePath
+    starting_subprocess(cmd, 'silent')
+    tmp_path = out + "tmp/" + asNamePath + "/"
+    candidatesOutFile = tmp_path + group + ".candidates.fa"
+    db_path = assemblyDir + "/" + asName + "/blast_dir/" + asName + ".fa"
+    regions = 0
+
+    output.append("Searching in species " + asName + "\n")
+    assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
+
+    if searchTool == 'blast':
+        exit_code = tblastn(assemblyDir, asName, consensus_path, evalue, tmp_path, mode, output, db_path, assembly_path)
+        if exit_code == 1:
+            output.append("The tblastn search takes too long for species %s. Skipping species ..." % asName)
+            return [], candidatesOutFile, output
+    elif searchTool == 'miniprot' and fast == False:
+        exit_code = miniprot(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group)
+    elif fast == True:
+        exit_code = miniprot_fast(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group)
+
+    if fast == False:
+        regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path, searchTool, number_candidates)
+        if regions == 0:
+            #no candidat region are available, no ortholog can be found
+            output.append("No candidate region found for species %s!\n" % asName)
+            return [], candidatesOutFile, output
+
         else:
-            db = metaeuk_db
-        metaeuk_single(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, db)
-        time_metaeuk_end = time.time()
-        time_metaeuk = time_metaeuk_end - time_metaeuk_start
-        output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))
+            output.append(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
+            extract_seq(regions, db_path, tmp_path, mode)
+    #print(regions)
+        if gene_prediction == "augustus":
+            ############### make Augustus PPX search ###################################
+            time_augustus_start = time.time()
+            augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
+            time_augustus_end = time.time()
+            time_augustus = time_augustus_end - time_augustus_start
+            output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
+        else:
+            time_metaeuk_start = time.time()
+            if metaeuk_db == '':
+                db = fasta_path
+            else:
+                db = metaeuk_db
+            metaeuk_single(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, db)
+            time_metaeuk_end = time.time()
+            time_metaeuk = time_metaeuk_end - time_metaeuk_start
+            output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))
 
-    ################# backward search to filter for orthologs###################
-    if int(os.path.getsize(candidatesOutFile)) <= 0:
-        #print("No genes found at candidate regions\n")
-        return [], candidatesOutFile, output
+        ################# backward search to filter for orthologs###################
+        if int(os.path.getsize(candidatesOutFile)) <= 0:
+            #print("No genes found at candidate regions\n")
+            return [], candidatesOutFile, output
+    
+    else:
+        candidatesOutFile = parse_miniprot_predictions(tmp_path, candidatesOutFile,asName, group)
+    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, checkCoorthologs, msaTool, matrix, dataPath, tmp_path, mode, low_complexity_filter)
 
-    reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, searchTool, checkCoorthologs, msaTool, matrix, dataPath, filter, tmp_path, mode)
 
     if reciprocal_sequences == 0:
         if regions != 0:
@@ -981,7 +1275,7 @@ def blockProfiles(core_path, group, mode, out, msaTool):
         print("Building block profiles failed. Using prepareAlign to convert alignment\n")
         new_path = core_path + group +"/"+ group + "_new.aln"
         cmd = 'prepareAlign < ' + msa_path + ' > ' + new_path
-        starting_subprocess(cmd, mode)
+        starting_subprocess(cmd, 'silent')
         cmd = 'msa2prfl.pl ' + new_path + ' --setname=' + group + ' >' + profile_path
         starting_subprocess(cmd, 'silent')
         print(" \t ...finished \n", flush=True)
@@ -1007,6 +1301,7 @@ def consensusSequence(core_path, group, mode, out):
 def createGff(ortholog_sequences, out_folder, tool):
     #print(ortholog_sequences)
     #print(out_folder)
+    #print(tool)
     gff_folder = out_folder + "/gff/"
     os.system('mkdir %s >/dev/null 2>&1' %(gff_folder))
     types_set = set(['gene', 'CDS', 'transcript', 'mRNA', 'exon'])
@@ -1025,10 +1320,15 @@ def createGff(ortholog_sequences, out_folder, tool):
                 region = '_'.join(gene.split('_')[0:-1])
                 if tool == 'metaeuk':
                     gene_count = int(gene.split('_')[-1:][0])
+                elif tool == "miniprot":
+                    gene_count = int(gene[2:])
                 else:
                     gene_count = int(gene.split('.')[-2].replace('g', '').split('_')[-1:][0])
                 #print(region, gene_count)
-                gff_file_gene = "%s/tmp/%s/%s.gff" %(out_folder, species.replace('@', '_'), region)
+                if tool != 'miniprot':
+                    gff_file_gene = "%s/tmp/%s/%s.gff" %(out_folder, species.replace('@', '_'), region)
+                else:
+                    gff_file_gene = "%s/tmp/%s/miniprot_results.out" %(out_folder, species.replace('@', '_'))
                 #print(gff_file_gene)
                 with open(gff_file_gene, 'r') as gff:
                     counter = 0
@@ -1038,7 +1338,7 @@ def createGff(ortholog_sequences, out_folder, tool):
                         else:
                             line=line.rstrip()
                             contig, source, type, start, end, score, strand, phase, att = line.split('\t')
-                            if type == 'gene':
+                            if type == 'gene' or tool == 'miniprot' and type == 'mRNA':
                                 counter += 1
                             if counter == gene_count:
                                 if source == 'AUGUSTUS':
@@ -1077,12 +1377,27 @@ def getAugustusRefSpec(mapping_augustus):
             dict[assembly] = id
     return dict
 
+def extract_ref_gene(fasta, species_list):
+    """ Extracts reference gene sequences and uses this for ortholog search instead of consensus sequence
+    """
+    seqs = readFasta(fasta)
+    for seq in seqs:
+        for species in species_list:
+            if seq.id.split('|')[1] == species:
+                species = seq.id.split("|")[1]
+                print("Gene of reference species identified:")
+                print(seq.id)
+                return seq
+    sys.exit("No fitting reference gene found. Check if a sequence of the reference species is part of the ortholog group!")
+
+
+
 def main():
 
     #################### handle user input #####################################
 
     start = time.time()
-    version = '0.1.5.2'
+    version = '0.2.0.0'
     ################### initialize parser ######################################
     parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
     parser.add_argument('--version', action='version', version=str(version))
@@ -1100,14 +1415,15 @@ def main():
     optional.add_argument('--out', help='Output directory', action='store', default='')
     optional.add_argument('--dataPath', help='fDOG data directory containing searchTaxa_dir, coreTaxa_dir and annotation_dir', action='store', default='')
     optional.add_argument('--coregroupPath', help='core_ortholog directory containing ortholog groups of gene of interest', action='store', default='')
-    #optional.add_argument('--searchTool', help='Choose between blast and diamond as alignment search tool(default:blast)', action='store', choices=['blast', 'diamond'], default='blast')
+    optional.add_argument('--searchTool', help='Search tool used for candidate region determination. (default: miniprot)', choices=['miniprot', 'blast'], action='store', default='miniprot')
     optional.add_argument('--evalBlast', help='E-value cut-off for the Blast search. (default: 0.00001)', action='store', default=0.00001, type=float)
     optional.add_argument('--strict', help='An ortholog is only then accepted when the reciprocity is fulfilled for each sequence in the core set', action='store_true', default=False)
     optional.add_argument('--msaTool', help='Choose between mafft-linsi or muscle for the multiple sequence alignment. (default:muscle)', choices=['mafft-linsi', 'muscle'], action='store', default='muscle')
     optional.add_argument('--checkCoorthologsOff', help='During the final ortholog search, accept an ortholog also when its best hit in the reverse search is not the core ortholog itself, but a co-ortholog of it', action='store_false', default=True)
     optional.add_argument('--scoringmatrix', help='Choose a scoring matrix for the distance criteria used by the option --checkCoorthologsRef. (default: blosum62)', choices=['identity', 'blastn', 'trans', 'benner6', 'benner22', 'benner74', 'blosum100', 'blosum30', 'blosum35', 'blosum40', 'blosum45', 'blosum50', 'blosum55', 'blosum60', 'blosum62', 'blosum65', 'blosum70', 'blosum75', 'blosum80', 'blosum85', 'blosum90', 'blosum95', 'feng', 'fitch', 'genetic', 'gonnet', 'grant', 'ident', 'johnson', 'levin', 'mclach', 'miyata', 'nwsgappep', 'pam120', 'pam180', 'pam250', 'pam30', 'pam300', 'pam60', 'pam90', 'rao', 'risler', 'structure'], action='store', default='blosum62')
     optional.add_argument('--coreTaxa', help='List of core taxa used during --strict', action='store', nargs="+", default=[])
-    #optional.add_argument('--filter', help='Switch the low complexity filter for the blast search on.', action='store', default='no')
+    optional.add_argument('--numberCandidates', help='Number of candidate sequences to consider', action='store', default=10, type=int)
+    optional.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blastp search on.', action='store', choices=['yes', 'no'], default='no')
     optional.add_argument('--fasoff', help='Turn off FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
     optional.add_argument('--searchTaxa', help='List of Taxa to search in, (default: all species located in assembly_dir)', action='store', nargs="+", default=[])
@@ -1119,8 +1435,11 @@ def main():
     optional.add_argument('--augustusRefSpec', help='Augustus reference species identifier (use command: augustus --species=help to get precomputed augustus gene models)', action='store', default='')
     optional.add_argument('--augustusRefSpecFile', help='Mapping file tab seperated containing Assembly Names and augustus reference species that should be used', action='store', default='')
     optional.add_argument('--metaeukDb', help='Path to MetaEuk reference database', action='store', default='')
+    optional.add_argument('--miniprot', help='Path to MiniProt database', action='store', default='')
     optional.add_argument('--isoforms', help='All Isoforms of a gene passing the ortholog verification will be included in the output', action='store_true', default=False)
     optional.add_argument('--gff', help='GFF files will be included in output', action='store_true', default=False)
+    optional.add_argument('--fast', help='Enable FAST mode for faster processing by using miniprot only', action='store_true', default=False)
+    optional.add_argument('--referenceGeneOnly', help='Extracts the protein sequence of the reference Species from the core group and preforms ortholog search with this sequence only', default=False, action='store_true')
     args = parser.parse_args()
 
     # required
@@ -1136,12 +1455,11 @@ def main():
     tmp = args.tmp
     strict = args.strict
     checkCoorthologs = args.checkCoorthologsOff
-    # print(checkCoorthologs)
+    refGene = args.referenceGeneOnly
     #others
     average_intron_length = args.avIntron
     length_extension = args.lengthExtension
-    #searchTool = args.searchTool
-    searchTool = 'blast'
+    searchTool = args.searchTool
     evalue = args.evalBlast
     msaTool = args.msaTool
     matrix = args.scoringmatrix
@@ -1157,6 +1475,9 @@ def main():
     metaeuk_db = args.metaeukDb
     isoforms = args.isoforms
     gff = args.gff
+    number_candidates = args.numberCandidates
+    low_complexity_filter = args.lowComplexityFilter
+    fast = args.fast
 
     #gene prediction tool
     augustus = args.augustus
@@ -1168,9 +1489,11 @@ def main():
         if mapping_augustus != '':
             check_path(mapping_augustus)
             aug_ref_dict = getAugustusRefSpec(mapping_augustus)
+    elif fast == True:
+        gene_prediction = "miniprot"
     else:
         gene_prediction = "metaeuk"
-        if metaeuk_db == '':
+        if metaeuk_db == '' and fast != True:
             print("MetaEuk DB is required when using MetaEuk as gene prediction tool")
             return 1
 
@@ -1280,24 +1603,29 @@ def main():
     cmd = 'mkdir ' + out + '/tmp'
     starting_subprocess(cmd, 'silent')
 
+    #link fasta group to tmp
+    cmd = 'ln -s ' + os.path.abspath(fasta_path) + ' ' + tmp_folder + '/' + group + '.fa'
+    #print(cmd)
+    starting_subprocess(cmd, 'normal')
+
     print("Gene: " + group, flush=True)
     print("fDOG reference species: " + fdog_ref_species + " \n",flush=True)
 
     ###################### preparations ########################################
 
-    if augustus == True:
+    if augustus == True and refGene == False:
         group_computation_time_start = time.time()
         consensus_path = core_path + '/' + group + '/' + group + '.con'
         if check_path(consensus_path, exit=False) == 1:
             consensus_path = consensusSequence(core_path, group, mode, out)
-        print(consensus_path)
+        #print(consensus_path)
         profile_path = core_path + '/' + group + '/' + group + '.prfl'
         if check_path(profile_path, exit=False) == 1:
-            profile_path = blockProfiles(core_path, group, mode, out, msaTool)
-        print(profile_path)
+            profile_path = blockProfiles(core_path, group, 'silent', out, msaTool)
+        #print(profile_path)
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
-    else:
+    elif augustus != True and refGene == False:
         #print("test")
         profile_path = ""
         group_computation_time_start = time.time()
@@ -1307,7 +1635,25 @@ def main():
         #concatinade core_group sequences if metaeuk should be run without tblastn
         group_computation_time_end = time.time()
         time_group = group_computation_time_end - group_computation_time_start
-
+    elif fast == False and refGene == True or refGene == True and searchTool == 'miniprot':
+        group_computation_time_start = time.time()
+        consensus_path = core_path + '/' + group + '/' + group + '.con'
+        if augustus == True:
+            profile_path = core_path + '/' + group + '/' + group + '.prfl'
+            if check_path(profile_path, exit=False) == 1:
+                profile_path = blockProfiles(core_path, group, 'silent', out, msaTool)
+            print(profile_path)
+        else:
+            profile_path = ""
+        ref_gene = extract_ref_gene(core_path + '/' + group + '/' + group + '.fa', [fdog_ref_species])
+        #print(consensus_path)
+        with open(consensus_path, 'w') as file:
+            file.write('>' + ref_gene.id + '\n')
+            file.write(str(ref_gene.seq) + '\n')
+        group_computation_time_end = time.time()
+        time_group = group_computation_time_end - group_computation_time_start
+    else:
+        sys.exit("--referenceGeneOnly can not be used in combination with --searchTool 'miniprot' or --fast. Please remove --referenceGeneOnly if miniprot should be used")
 
     ###################### ortholog search #####################################
 
@@ -1321,15 +1667,15 @@ def main():
         pool = mp.Pool(cpus)
         for asName in assembly_names:
             if mapping_augustus == '':
-                calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms])
+                calls.append([asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms, number_candidates, low_complexity_filter, fast])
             else:
                 try:
-                    calls.append([asName, out, assemblyDir, consensus_path, aug_ref_dict[asName], group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms])
+                    calls.append([asName, out, assemblyDir, consensus_path, aug_ref_dict[asName], group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms, number_candidates, low_complexity_filter, fast])
                 except KeyError:
                     print("%s is not included in Augustus reference species mapping file. %s will be skipped" %(asName, asName))
 
         print("Searching for orthologs ...", flush=True)
-        for i in tqdm(pool.imap_unordered(ortholog_search_tblastn, calls),total=len(calls)):
+        for i in tqdm(pool.imap_unordered(ortholog_search_forward, calls),total=len(calls)):
             ortholog_sequences.append([i[0], i[1]])
             if mode == 'debug':
                 for k in i[2]:
@@ -1340,13 +1686,13 @@ def main():
         ###################### computation species wise ################
         for asName in tqdm(assembly_names):
             if mapping_augustus == '':
-                args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms]
+                args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms, number_candidates, low_complexity_filter, fast]
             else:
                 try:
-                    args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, filter, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms]
+                    args = [asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms, number_candidates, low_complexity_filter, fast]
                 except KeyError:
                     print("%s is not included in Augustus reference species mapping file. %s will be skipped" % (asName, asName))
-            reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search_tblastn(args)
+            reciprocal_sequences, candidatesOutFile, output_ortholog_search = ortholog_search_forward(args)
             ortholog_sequences.append([reciprocal_sequences, candidatesOutFile])
             if mode == 'debug':
                 for k in output_ortholog_search:
@@ -1377,7 +1723,7 @@ def main():
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         cmd = ['fas.run', '--seed', fasta_path , '--query' , orthologsOutFile , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
-        # print(cmd)
+        #print(cmd)
         fas_out = run_fas(cmd)
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
