@@ -313,7 +313,7 @@ def get_x_results(blast_dic, x, score_list):
             number_regions += len(key_list)
     return new_dic, number_regions
 
-def merge_overlapping_entries(format_dict):
+def merge_overlapping_entries(format_dict, length_extension):
     """
     For each node, merge overlapping intervals based on start/end positions.
     Overlapping entries in the original list remain unchanged.
@@ -353,10 +353,13 @@ def merge_overlapping_entries(format_dict):
 
         # Initialize the running interval with the first entry
         curr_start, curr_end, curr_evalue, curr_qstart, curr_qend, curr_strand, curr_score = sorted_entries[0]
+        curr_start = max(0, curr_start - length_extension)  # Extend start by length_extension, but not below 0
+        curr_end   = curr_end + length_extension  # Extend end by length_extension
 
         for entry in sorted_entries[1:]:
             entry_start, entry_end, entry_evalue, entry_qstart, entry_qend, entry_strand, entry_score = entry
-
+            entry_start = max(0, entry_start - length_extension)
+            entry_end   = entry_end + length_extension
             # Check if the current entry overlaps with the running interval
             if entry_start <= curr_end and entry_strand == curr_strand:
                 # Merge: extend interval and keep best (minimum) evalue and score
@@ -382,7 +385,7 @@ def merge_overlapping_entries(format_dict):
 
     return merged_dict, total_entries, all_scores
 
-def candidate_regions(intron_length, cutoff_evalue, tmp_path, searchTool, x):
+def candidate_regions(intron_length, cutoff_evalue, tmp_path, searchTool, x, length_extension):
     ###################### extracting candidate regions ########################
 
     # info about output blast http://www.metagenomics.wiki/tools/blast/blastn-output-format-6
@@ -410,11 +413,13 @@ def candidate_regions(intron_length, cutoff_evalue, tmp_path, searchTool, x):
     else:
         if searchTool == "blast":
             candidate_regions, number_regions, score_list = merge(results, intron_length)
+            candidate_regions, number_regions, score_list = merge_overlapping_entries(candidate_regions, length_extension)
         else:
-            candidate_regions, number_regions, score_list = merge_overlapping_entries(results)
+            candidate_regions, number_regions, score_list = merge_overlapping_entries(results, length_extension)
         search_file.close()
-        if number_regions > x and search_file == 'blast':
+        if number_regions > x and searchTool == 'blast':
             candidate_regions, number_regions = get_x_results(candidate_regions, x, score_list)
+
         return candidate_regions, number_regions
 
 def extract_seq(region_dic, path, tmp_path, mode):
@@ -442,23 +447,25 @@ def extract_sequence_from_to(name, file, start, end):
 
     return out, start, end
 
-def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode):
+def augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species, ass_name, group, tmp_path, mode, searchTool):
     """Gene prediction with software Augustus for all candidate regions. The resulting AS sequences will be written in a tmp file."""
     output = open(candidatesOutFile, "w")
     region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
-    region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
+    region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\t" + "Tool" + "\n")
     for key in regions:
         locations = regions[key]
         counter = 0
         for i in locations:
             # some variables
             counter += 1
-            start = str(i[0] - length_extension)
-            end = str(i[1] + length_extension)
+            start = int(i[0])
+            if start < 0:
+                start = 0
+            end = int(i[1])
             name = key + "_" + str(counter)
             # augutus call
             #print(augustus_ref_species)
-            cmd = "augustus --protein=1 --gff3=on --proteinprofile=" + profile_path + " --predictionStart=" + start + " --predictionEnd=" + end + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
+            cmd = "augustus --protein=1 --gff3=on --proteinprofile=" + profile_path + " --predictionStart=" + str(start) + " --predictionEnd=" + str(end) + " --species=" + augustus_ref_species + " " + tmp_path + key + ".fasta > " + tmp_path + name + ".gff"
             #print(cmd)
             result = starting_subprocess(cmd, 'silent')
             # Error handling
@@ -470,19 +477,21 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                 if stderr_output and any(kw in stderr_output.lower() 
                                         for kw in ["error", "failed", "abort", "exception"]):
                     print(f"[WARNING] Augustus reported an error for species {ass_name} region {name} from {start} to {end}:\n{stderr_output}")
+                    if searchTool != "blast":
+                        continue
 
                 if result.returncode != 0:
                     print(f"[WARNING] Augustus exited with code {result.returncode} for species {ass_name} region {name} from {start} to {end}")
                     if stderr_output:
                         print(f"          Details: {stderr_output}")
+                    if searchTool != "blast":
+                        continue
             # transfer augustus output to AS sequence
             #print(tmp_path)
             #print(key)
             cmd = "getAnnoFasta.pl --seqfile=" + tmp_path + key + ".fasta " + tmp_path + name + ".gff"
             #print(cmd)
             starting_subprocess(cmd, mode)
-            #write region in region file
-            region.write(key + "\t" + str(start) + "\t" + str(end) + "\n")
             # parsing header and sequences
             try:
                 sequence_file = open(tmp_path + name + ".aa", "r")
@@ -495,16 +504,20 @@ def augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, aug
                     else:
                         output.write(line)
                 sequence_file.close()
+                #write region in region file
+                region.write(key + "\t" + str(start) + "\t" + str(end) + "\t" + "Augustus" + "\n")
             except FileNotFoundError:
+                region.write(key + "\t" + str(start) + "\t" + str(end) + "\t" + "" + "\n")
+                print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
                 pass
                 #print("No gene found in region with ID" + name + " in species " + ass_name + " , continuing with next region")
     output.close()
     region.close()
 
-def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group, tmp_path, mode, db):
+def metaeuk_single(regions, candidatesOutFile, ass_name, group, tmp_path, mode, db, searchTool):
     output = open(candidatesOutFile, "w")
     region = open(candidatesOutFile.replace(".candidates.fa", ".regions.txt"), "w")
-    region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\n")
+    region.write("Contig/scaffold" + "\t" + "start" + "\t" + "end" + "\t" + "Tool" "\n")
 
     for key in regions:
         locations = regions[key]
@@ -512,17 +525,23 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
         for i in locations:
             #some variables
             counter += 1
-            start = str(i[0] - length_extension)
-            end = str(i[1] + length_extension)
+            start = int(i[0])
+            end = int(i[1])
             name = key + "_" + str(counter)
-            file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", start, end)
-            region.write(key + "\t" + str(start) + "\t" + str(end) + "\n")
+            file, start, end = extract_sequence_from_to(tmp_path + name, tmp_path + key + ".fasta", str(start), str(end))
             #metaeuk call sensitive
             #cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1 --remove-tmp-files -s 6"
             #print(cmd)
             cmd = "metaeuk easy-predict " + file + " " + db + " " + tmp_path + name + " " + tmp_path + "/metaeuk --max-intron 130000 --max-seq-len 160000 --min-exon-aa 15 --max-overlap 15 --min-intron 5 --overlap 1 -s 6 --split 0 --remove-tmp-files"
             # other parameteres used by BUSCO with metazoa set--max-intron 130000 --max-seq-len 160000 --min-exon-aa 5 --max-overlap 5 --min-intron 1 --overlap 1
-            starting_subprocess(cmd, mode)
+            result = starting_subprocess(cmd, mode)
+            if result.returncode != 0:
+                stderr_output = result.stderr.decode('utf-8').strip() if result.stderr else ""
+                if stderr_output:
+                        print(f"          Details: {stderr_output}")
+                if searchTool == "miniprot":
+                    print("Error during gene prediction with metaeuk, using miniprot predictions for species %s" % ass_name)
+                    continue
             # parsing header and sequences
             try:
                 sequence_file = open(tmp_path + name + ".fas", "r")
@@ -551,10 +570,140 @@ def metaeuk_single(regions, candidatesOutFile, length_extension, ass_name, group
                 for line in new_lines:
                     gff_file.write(line)
                 gff_file.close()
+                region.write(key + "\t" + str(start) + "\t" + str(end) + "\t" + "MetaEuk" + "\n")
             except FileNotFoundError:
+                region.write(key + "\t" + str(start) + "\t" + str(end) + "\t" + "" + "\n")
                 pass
     region.close()
     output.close()
+
+def get_miniprot_prediction(contig, start, end, tmp_path, group, asName, candidatesOutFile):
+    """
+    Parses Miniprot results, filters hits to the target region (contig:start-end),
+    selects the best non-overlapping hit per overlap group, and appends results to
+    candidatesOutFile (FASTA) and regions.txt.
+    """
+
+    hits = []
+    current = None
+
+    with open(os.path.join(tmp_path, "miniprot_results.out"), "r") as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+
+            if line.startswith("##PAF"):
+                if current is not None:
+                    hits.append(current)
+                fields = line.split("\t")
+                as_score = next(
+                    (int(m.group(1)) for f in fields[12:] if (m := re.match(r"AS:i:(-?\d+)", f))),
+                    None
+                )
+                current = {
+                    "contig": fields[6], "tstart": int(fields[8]), "tend": int(fields[9]),
+                    "aln_len": int(fields[11]), "as_score": as_score,
+                    "gff_id": None, "sequence": None,
+                }
+            elif line.startswith("##STA") and current:
+                parts = line.split(None, 1)
+                current["sequence"] = parts[1] if len(parts) > 1 else ""
+            elif current and not line.startswith("##") and line.strip():
+                cols = line.split("\t")
+                if len(cols) >= 9 and cols[2] == "mRNA":
+                    if m := re.search(r"ID=([^;]+)", cols[8]):
+                        current["gff_id"] = m.group(1)
+
+        if current:
+            hits.append(current)
+
+    # Filter to target region, group overlapping hits, pick best per group
+    regional_hits = [
+        h for h in hits
+        if h["contig"] == contig and h["tstart"] <= end and h["tend"] >= start
+    ]
+
+    if not regional_hits:
+        print(hits)
+        print(f"[WARNING] No Miniprot hits found for {contig}:{start}-{end}")
+        return
+
+    groups = []
+    for hit in regional_hits:
+        target = next(
+            (g for g in groups if any(hit["tstart"] <= m["tend"] and hit["tend"] >= m["tstart"] for m in g)),
+            None
+        )
+        (target if target else groups.append([]) or groups[-1]).append(hit)
+
+    regions_file = candidatesOutFile.replace(".candidates.fa", ".regions.txt")
+
+        # Read regions.txt, update matching line in-place, write back
+    with open(regions_file, "r") as reg_in:
+        lines = reg_in.readlines()
+
+    with open(regions_file, "w") as reg_out:
+        for line in lines:
+            cols = line.rstrip("\n").split("\t")
+            if cols[0] == contig and int(cols[1]) == start and int(cols[2]) == end:
+                reg_out.write(f"{contig}\t{start}\t{end}\tminiprot\n")
+            else:
+                reg_out.write(line)
+
+    # Append best hit per group to candidatesOutFile (FASTA)
+    with open(candidatesOutFile, "a") as fa_out:
+        for g in groups:
+            hit = max(g, key=lambda h: (h["as_score"] or float("-inf"), h["aln_len"]))
+            header = f"{group}|{asName}|{hit['gff_id'] or 'unknown'}"
+            fa_out.write(f">{header}\n{hit['sequence'] or ''}\n")
+            print(f"[INFO] Added Miniprot fallback: {header}")
+
+def check_candidate_regions(regions, candidatesOutFile, tmp_path, group, asName, gene_prediction, length_extension):
+    """
+    Checks whether at least one gene prediction exists for each candidate region.
+    If not, the Miniprot prediction for that region is used as a fallback.
+
+    TSV format: contig \t start \t end \t method (last field empty = no gene predicted)
+    """
+
+    tsv_path = candidatesOutFile.replace(".candidates.fa", ".regions.txt")
+
+    # Parse TSV and index regions by (contig, start, end)
+    region_has_gene = {}  # key: (contig, start, end) → bool
+
+    with open(tsv_path, "r") as tsv:
+        for line in tsv:
+            line = line.strip()
+            if not line or line.startswith("Contig/scaffold"):
+                continue
+            parts = line.split("\t")
+            contig = parts[0]
+            start  = int(parts[1])
+            end    = int(parts[2])
+            method = parts[3] if len(parts) > 3 else ""
+
+            key = (contig, start, end)
+            # Only set to True, never overwrite an existing True with False
+            if method.strip():
+                region_has_gene[key] = True
+            else:
+                region_has_gene.setdefault(key, False)
+
+    # Check each region — fall back to Miniprot if no gene was predicted
+    for contig, locations in regions.items():
+        #print(locations)
+        for i in locations:
+            start = int(i[0])
+            if start < 0:
+                start = 0
+            end = int(i[1])
+            key = (contig, start, end)
+            has_gene = region_has_gene.get(key, False)
+            if not has_gene:
+                print(f"[INFO] No gene prediction for {asName} {contig}:{start}-{end} — falling back to Miniprot")
+                get_miniprot_prediction(
+                    contig, start, end,
+                    tmp_path, group, asName, candidatesOutFile
+                )
 
 def searching_for_db(assembly_path):
 
@@ -1022,7 +1171,10 @@ def coorthologs(candidate_names, tmp_path, candidatesFile, fasta, fdog_ref_speci
     elif msaTool == "mafft-linsi":
         cmd = 'mafft --maxiterate 1000 --localpair --anysymbol --quiet %s > %s'% (out, aln_file)
         starting_subprocess(cmd, mode)
-
+    if int(os.path.getsize(aln_file)) <= 0:
+        print("Error during MSA construction for Coortholog determination:")
+        print("cmd: %s" % (cmd))
+        return []
     distances = get_distance_biopython(aln_file, matrix)
 
     min_dist = 10
@@ -1197,6 +1349,28 @@ def miniprot_fast(assemblyDir, asName, consensus_path, tmp_path, mode, output, a
     output.append("Time miniprot %s in species %s" % (str(time_miniprot), asName))
     return 0
 
+def remove_duplicates(fasta_file):
+    # Read the input FASTA file and store unique sequences
+    unique_sequences = {}
+    current_header = None
+    current_sequence = []
+    with open(fasta_file, 'r') as infile:
+        for line in infile:
+            if line.startswith(">"):
+                if current_header is not None:
+                    unique_sequences[current_header] = ''.join(current_sequence)
+                current_header = line.strip()
+                current_sequence = []
+            else:
+                current_sequence.append(line.strip())
+    if current_header is not None:
+        unique_sequences[current_header] = ''.join(current_sequence)
+
+    # Write the unique sequences to a new FASTA file
+    with open(fasta_file, 'w') as outfile:
+        for header, sequence in unique_sequences.items():
+            outfile.write(f"{header}\n{sequence}\n")
+
 def ortholog_search_forward(args):
     (asName, out, assemblyDir, consensus_path, augustus_ref_species, group, length_extension, average_intron_length, evalue, strict, fdog_ref_species, msaTool, matrix, dataPath, mode, fasta_path, profile_path, taxa, searchTool, checkCoorthologs, gene_prediction, metaeuk_db, isoforms, number_candidates, low_complexity_filter,fast) = args
     output = []
@@ -1209,6 +1383,7 @@ def ortholog_search_forward(args):
     regions = 0
     output.append("Searching in species " + asName + "\n")
     assembly_path = assemblyDir + "/" + asName + "/" + asName + ".fa"
+    error_gene_prediction = False
 
     if searchTool == 'blast':
         exit_code = tblastn(assemblyDir, asName, consensus_path, evalue, tmp_path, mode, output, db_path, assembly_path)
@@ -1219,7 +1394,7 @@ def ortholog_search_forward(args):
         exit_code = miniprot_fast(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group)
 
     if fast == False:
-        regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path, searchTool, number_candidates)
+        regions, number_regions = candidate_regions(average_intron_length, evalue, tmp_path, searchTool, number_candidates, length_extension)
         if regions == 0:
             #no candidat region are available, no ortholog can be found
             output.append("No candidate region found for species %s!\n" % asName)
@@ -1228,21 +1403,21 @@ def ortholog_search_forward(args):
         else:
             output.append(str(number_regions) + " candiate region(s) were found for species %s.\n" % asName)
             extract_seq(regions, db_path, tmp_path, mode)
-    #print(regions)
         if gene_prediction == "augustus":
             ############### make Augustus PPX search ###################################
             time_augustus_start = time.time()
-            augustus_ppx(regions, candidatesOutFile, length_extension, profile_path, augustus_ref_species, asName, group, tmp_path, mode)
+            augustus_ppx(regions, candidatesOutFile, profile_path, augustus_ref_species, asName, group, tmp_path, mode, searchTool)
             time_augustus_end = time.time()
             time_augustus = time_augustus_end - time_augustus_start
             output.append("Time augustus: %s species %s \n" % (str(time_augustus), asName))
+            
         else:
             time_metaeuk_start = time.time()
             if metaeuk_db == '':
                 db = fasta_path
             else:
                 db = metaeuk_db
-            metaeuk_single(regions, candidatesOutFile, length_extension, asName, group, tmp_path, mode, db)
+            metaeuk_single(regions, candidatesOutFile, asName, group, tmp_path, mode, db, searchTool)
             time_metaeuk_end = time.time()
             time_metaeuk = time_metaeuk_end - time_metaeuk_start
             output.append("Time metaeuk: %s species %s \n" % (str(time_metaeuk), asName))
@@ -1256,17 +1431,26 @@ def ortholog_search_forward(args):
                 print("No gene predicted with augustus or metaeuk, using miniprot predictions for species %s" % asName)
                 candidatesOutFile = parse_miniprot_predictions(tmp_path, candidatesOutFile,asName, group)
                 fast = True
+                if int(os.path.getsize(candidatesOutFile)) <= 0:
+                    return [], candidatesOutFile, output
 
     else:
         candidatesOutFile = parse_miniprot_predictions(tmp_path, candidatesOutFile,asName, group)
     
+    if fast == False and searchTool != 'blast':
+        print("Checking candidate regions...")
+        check_candidate_regions(regions, candidatesOutFile, tmp_path, group, asName, gene_prediction, length_extension)
+
     reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, checkCoorthologs, msaTool, matrix, dataPath, tmp_path, mode, low_complexity_filter)
 
-
+    remove_duplicates(candidatesOutFile)
     if reciprocal_sequences == 0:
         if fast == False and searchTool != 'blast':
             candidatesOutFile = parse_miniprot_predictions(tmp_path, candidatesOutFile,asName, group)
+            remove_duplicates(candidatesOutFile)
             fast = True
+            if int(os.path.getsize(candidatesOutFile)) <= 0:
+                    return [], candidatesOutFile, output
             reciprocal_sequences, taxa = backward_search(candidatesOutFile, fasta_path, strict, fdog_ref_species, evalue, taxa, checkCoorthologs, msaTool, matrix, dataPath, tmp_path, mode, low_complexity_filter)
             if reciprocal_sequences == 0:
                 if regions != 0:
@@ -1662,7 +1846,6 @@ def main():
         consensus_path = core_path + '/' + group + '/' + group + '.con'
         if check_path(consensus_path, exit=False) == 1:
             consensus_path = consensusSequence(core_path, group, mode, out)
-        #print(consensus_path)
         profile_path = core_path + '/' + group + '/' + group + '.prfl'
         if check_path(profile_path, exit=False) == 1:
             profile_path = blockProfiles(core_path, group, 'silent', out, msaTool)
@@ -1673,7 +1856,7 @@ def main():
         #print("test")
         profile_path = ""
         group_computation_time_start = time.time()
-        consensus_path = core_path + '/' + group + '.con'
+        consensus_path = core_path + '/' + group + '/' + group + '.con'
         if check_path(consensus_path, exit=False) == 1:
             consensus_path = consensusSequence(core_path, group, mode, out)
         #concatinade core_group sequences if metaeuk should be run without tblastn
