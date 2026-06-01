@@ -311,6 +311,10 @@ def main():
                 subprocess.check_output(['which', 'metaeuk'], stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 missing_tools.append('metaeuk')
+            try:
+                subprocess.check_output(['which miniprot'], shell = True, stderr = subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                missing_tools.append('miniprot')
 
             install_cmd = 'sudo apt-get install -y -qq <tool>'
             sys.exit(
