@@ -76,23 +76,19 @@ Then, reload the current terminal to apply the change (or run `source ~/.bashrc`
 
 4. Install dependencies (requires admin rights)
 
-  1. Tools in [dependencies.txt](https://github.com/BIONF/fDOG/blob/master/fdog/data/dependencies.txt)
-
+**Tools in [dependencies.txt](https://github.com/BIONF/fDOG/blob/master/fdog/data/dependencies.txt)**
 ```
 xargs -a path/to/dependencies.txt sudo apt-get install -y -qq
 ```
 
-  2. Genome annotation tools
-
+**Genome annotation tools**
   Please follow the instruction of [metaeuk](https://github.com/soedinglab/metaeuk#installation) and [miniprot](https://github.com/lh3/miniprot#install) to install those genome annotation tools. Example code:
-
   - metaeuk
 ```
 wget https://mmseqs.com/metaeuk/metaeuk-linux-avx2.tar.gz
 tar -xzf metaeuk-linux-avx2.tar.gz
 sudo cp metaeuk/bin/metaeuk /usr/local/bin/
 ```
-
   - miniprot
 ```
 git clone https://github.com/lh3/miniprot

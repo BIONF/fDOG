@@ -20,7 +20,7 @@ jobs:
       matrix:
         python-version: [3.12]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -59,7 +59,7 @@ jobs:
   conda-test:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: startsWith(github.event.ref, 'refs/tags')
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: casperdcl/deploy-pypi@v2
         with:
           password: ${{ secrets.pypi }}
