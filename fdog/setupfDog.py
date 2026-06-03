@@ -316,10 +316,8 @@ def main():
             except subprocess.CalledProcessError as e:
                 missing_tools.append('miniprot')
 
-            install_cmd = 'sudo apt-get install -y -qq <tool>'
             sys.exit(
-                '\033[91mERROR: Please install these tools manually:\n%s\nusing the command: %s!\033[0m'
-                % (', '.join(missing_tools), install_cmd)
+                '\033[91mERROR: Please install these tools manually:\n\033[0m' % (', '.join(missing_tools))
             )
     else:
         if check_conda_env() == True:
