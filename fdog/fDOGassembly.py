@@ -1295,7 +1295,6 @@ def tblastn(assemblyDir, asName, consensus_path, evalue, tmp_path, mode, output,
     return 0
 
 
-
 def miniprot_fast(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group):
     mini_db_path = assemblyDir + "/" + asName + "/miniprot_dir/" + asName + ".mpi"
     core_fasta_path = tmp_path.replace(asName.replace('@', '_'),"") + group + ".fa"
