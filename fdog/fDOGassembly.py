@@ -1294,39 +1294,10 @@ def tblastn(assemblyDir, asName, consensus_path, evalue, tmp_path, mode, output,
     output.append("Time tblastn %s in species %s" % (str(time_tblastn), asName))
     return 0
 
-def miniprot(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group):
-    mini_db_path = assemblyDir + "/" + asName + "/miniprot_dir/" + asName + ".mpi"
-    asName = asName.replace('@', '_')
-    core_fasta_path = tmp_path.replace(asName,"") + group + ".fa"
-    #print(core_fasta_path)
-    
-    #create combined input file for miniprot, concat core group genes and consensus sequence
-    combined_fasta_path = tmp_path + "/miniprot_in.fa"
-    cmd = 'cat ' + core_fasta_path + ' ' + consensus_path + ' > ' + combined_fasta_path
-    starting_subprocess(cmd, 'silent')
-
-    if not os.path.exists(mini_db_path):
-        cmd = 'mkdir -p ' + os.path.dirname(assemblyDir + "/" + asName + "/miniprot_dir/")
-        starting_subprocess(cmd, 'silent')
-        cmd = 'miniprot -d ' + mini_db_path + ' ' + assembly_path
-        starting_subprocess(cmd, mode)
-    cmd = "miniprot -I %s %s --outn %i > %s" % (mini_db_path, combined_fasta_path, number_candidates, tmp_path + "/miniprot_results.out")
-    #print(cmd)
-    time_miniprot_start = time.time()
-    result = starting_subprocess(cmd, 'silent')
-    time_miniprot_end = time.time()
-    time_miniprot = time_miniprot_end - time_miniprot_start
-    if result == 1:
-        return 1
-
-    output.append("Time miniprot %s in species %s" % (str(time_miniprot), asName))
-    return 0
 
 def miniprot_fast(assemblyDir, asName, consensus_path, tmp_path, mode, output, assembly_path, number_candidates, group):
     mini_db_path = assemblyDir + "/" + asName + "/miniprot_dir/" + asName + ".mpi"
-    asName = asName.replace('@', '_')
-    core_fasta_path = tmp_path.replace(asName,"") + group + ".fa"
-
+    core_fasta_path = tmp_path.replace(asName.replace('@', '_'),"") + group + ".fa"
     #create combined input file for miniprot, concat core group genes and consensus sequence
     combined_fasta_path = tmp_path + "/miniprot_in.fa"
     cmd = 'cat ' + core_fasta_path + ' ' + consensus_path + ' > ' + combined_fasta_path
@@ -1336,7 +1307,7 @@ def miniprot_fast(assemblyDir, asName, consensus_path, tmp_path, mode, output, a
         cmd = 'mkdir -p ' + os.path.dirname(assemblyDir + "/" + asName + "/miniprot_dir/")
         starting_subprocess(cmd, 'silent')
         cmd = 'miniprot -d ' + mini_db_path + ' ' + assembly_path
-        starting_subprocess(cmd, mode)
+        starting_subprocess(cmd, 'silent')
     cmd = "miniprot -I --trans --gff %s %s --outn %i > %s" % (mini_db_path, combined_fasta_path, number_candidates, tmp_path + "/miniprot_results.out")
     #print(cmd)
     time_miniprot_start = time.time()
@@ -1815,6 +1786,13 @@ def main():
                     assembly_names = [line.rstrip() for line in lines]
             else:
                 print("Input %s for search Taxa is not in the assembly_dir or an existing file" % searchTaxa[0])
+    
+    ############################## is MiniProt installed? ######################
+
+    miniProt_path = shutil.which("miniprot")
+    if miniProt_path is None:
+        print("MiniProt is not installed or not in PATH. Using tblastn instead")
+        searchTool = 'blast'
 
     ################################# paths ####################################
 
