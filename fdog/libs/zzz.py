@@ -90,6 +90,8 @@ def download_file(url, file):
     # with urllib.request.urlopen(full_url, context=ctx) as response, open(file, "wb") as out_file:
     #     shutil.copyfileobj(response, out_file)
     # print("... done!")
+    retries = 5
+    delay = 15
     for attempt in range(retries):
         try:
             print(f"Downloading {full_url}")
