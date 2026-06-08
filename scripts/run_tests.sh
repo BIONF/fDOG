@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+assert_eq() {
+    local expected="$1"
+    local actual="$2"
+    local msg="$3"
+
+    if [ "$expected" != "$actual" ]; then
+        echo "ERROR: $msg (expected=$expected, actual=$actual)"
+        exit 1
+    fi
+}
+
 echo "######### source_dir/data/ #########"
 path=$(fdog.setup -d ./ --getSourcepath)
 ls "$path/data/"
@@ -27,6 +38,9 @@ fdog.run --seqFile infile.fa --jobName test \
          --refspec HUMAN@9606@qfo24_02 \
          --fasOff --group mammalia
 
+lines=$(wc -l < test.phyloprofile)
+assert_eq 10 "$lines" "test.phyloprofile line count"
+
 echo "TEST fdog.assembly"
 fdog.assembly --gene test \
               --refSpec HUMAN@9606@qfo24_02 \
@@ -34,7 +48,10 @@ fdog.assembly --gene test \
               --augustusRefSpec human \
               --coregroupPath core_orthologs/ \
               --out test_assembly \
-              --fasoff
+              --fasOff
+
+lines=$(wc -l < test_assembly/test/test_og.fa)
+assert_eq 4 "$lines" "test_assembly/test/test_og.fa line count"
 
 echo "Prepare seeds"
 mkdir -p seeds
@@ -50,8 +67,14 @@ fdogs.run --seqFolder seeds \
           --searchTaxa PARTE@5888@qfo24_02,THAPS@35128@qfo24_02 \
           --hmmScoreType sequence
 
+lines=$(wc -l < test_multi.phyloprofile)
+assert_eq 13 "$lines" "test_multi.phyloprofile line count"
+
 echo "TEST fdog.addTaxon"
 head "$DT_DIR/searchTaxa_dir/HUMAN@9606@qfo24_02/HUMAN@9606@qfo24_02.fa" > hm.fa
 fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
+
+lines=$(wc -l < searchTaxa_dir/HOMSA\@9606\@260608/HOMSA\@9606\@260608.fa)
+assert_eq 10 "$lines" "searchTaxa_dir/HOMSA\@9606\@260608/HOMSA\@9606\@260608.fa line count"
 
 ls

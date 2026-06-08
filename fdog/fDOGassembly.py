@@ -1623,7 +1623,7 @@ def main():
     optional.add_argument('--coreTaxa', help='List of core taxa used during --strict', action='store', nargs="+", default=[])
     optional.add_argument('--numberCandidates', help='Number of candidate sequences to consider', action='store', default=10, type=int)
     optional.add_argument('--lowComplexityFilter', help='Switch the low complexity filter for the blastp search on.', action='store', choices=['yes', 'no'], default='no')
-    optional.add_argument('--fasoff', help='Turn off FAS support', action='store_true', default=False)
+    optional.add_argument('--fasOff', help='Turn off FAS support', action='store_true', default=False)
     optional.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
     optional.add_argument('--searchTaxa', help='List of Taxa to search in, (default: all species located in assembly_dir)', action='store', nargs="+", default=[])
     optional.add_argument('--debug', help='Stdout and Stderr from fdog.assembly and every used tool will be printed, caution: using --parallel can result in messy output', action='store_true', default=False)
@@ -1663,7 +1663,7 @@ def main():
     msaTool = args.msaTool
     matrix = args.scoringmatrix
     taxa = args.coreTaxa
-    fasoff = args.fasoff
+    fasoff = args.fasOff
     searchTaxa = args.searchTaxa
     debug = args.debug
     force = args.force

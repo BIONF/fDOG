@@ -86,11 +86,26 @@ def download_file(url, file):
     # Use a verified CA bundle (important in conda/micromamba environments)
     ctx = ssl.create_default_context(cafile=certifi.where())
     full_url = f"{url}/{file}"
-    print(f"Downloading {full_url}")
-    with urllib.request.urlopen(full_url, context=ctx) as response, open(file, "wb") as out_file:
-        shutil.copyfileobj(response, out_file)
-
-    print("... done!")
+    # print(f"Downloading {full_url}")
+    # with urllib.request.urlopen(full_url, context=ctx) as response, open(file, "wb") as out_file:
+    #     shutil.copyfileobj(response, out_file)
+    # print("... done!")
+    for attempt in range(retries):
+        try:
+            print(f"Downloading {full_url}")
+            with urllib.request.urlopen(full_url, context=ctx) as response, \
+                 open(file, "wb") as out_file:
+                shutil.copyfileobj(response, out_file)
+            print("... done!")
+            return
+        except Exception as e:
+            if attempt == retries - 1:
+                raise
+            print(
+                f"Download failed ({attempt+1}/{retries}): {e}. "
+                f"Retrying in {delay}s..."
+            )
+            time.sleep(delay)
 
 
 def count_line(file, pattern, contain):
