@@ -41,7 +41,7 @@ fdog.run --seqFile infile.fa --jobName test \
 lines=$(wc -l < test.phyloprofile)
 assert_eq 10 "$lines" "test.phyloprofile line count"
 
-echo "TEST fdog.assembly"
+echo "TEST fdog.assembly with miniprot"
 fdog.assembly --gene test \
               --refSpec HUMAN@9606@qfo24_02 \
               --augustus \
@@ -52,6 +52,19 @@ fdog.assembly --gene test \
 
 lines=$(wc -l < test_assembly/test/test_og.fa)
 assert_eq 4 "$lines" "test_assembly/test/test_og.fa line count"
+
+echo "TEST fdog.assembly with blast"
+fdog.assembly --gene test \
+              --refSpec HUMAN@9606@qfo24_02 \
+              --augustus \
+              --augustusRefSpec human \
+              --coregroupPath core_orthologs/ \
+              --out test_assembly_blast \
+              --fasOff \
+              --searchTool blast
+
+lines=$(wc -l < test_assembly_blast/test/test_og.fa)
+assert_eq 4 "$lines" "test_assembly_blast/test/test_og.fa line count"
 
 echo "Prepare seeds"
 mkdir -p seeds
