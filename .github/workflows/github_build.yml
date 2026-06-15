@@ -38,7 +38,7 @@ jobs:
     - name: Install augustus
       run: |
         sudo apt-get update
-        sudo apt-get install -y libboost-all-dev
+        sudo apt-get install -y libboost-all-dev libmysql++-dev libmysqlclient-dev
         git clone --depth 1 https://github.com/Gaius-Augustus/Augustus.git
         make -C Augustus
         sudo make -C Augustus install
