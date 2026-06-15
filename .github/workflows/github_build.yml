@@ -46,7 +46,8 @@ jobs:
           liblpsolve55-dev \
           libmysql++-dev \
           libmysqlclient-dev \
-          libbamtools-dev
+          libbamtools-dev \
+          libhts-dev
         git clone --depth 1 https://github.com/Gaius-Augustus/Augustus.git
         cd Augustus
         make clean
