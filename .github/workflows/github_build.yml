@@ -35,6 +35,11 @@ jobs:
         git clone --depth 1 https://github.com/lh3/miniprot
         make -C miniprot
         sudo install -m 755 miniprot/miniprot /usr/local/bin/miniprot
+    - name: Install augustus
+      run: |
+        git clone --depth 1 https://github.com/Gaius-Augustus/Augustus.git
+        make -C Augustus/augustus
+        sudo make Augustus/install
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip
