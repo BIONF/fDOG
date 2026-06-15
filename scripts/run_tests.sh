@@ -85,9 +85,9 @@ assert_eq 13 "$lines" "test_multi.phyloprofile line count"
 
 echo "TEST fdog.addTaxon"
 head "$DT_DIR/searchTaxa_dir/HUMAN@9606@qfo24_02/HUMAN@9606@qfo24_02.fa" > hm.fa
-fdog.addTaxon -f hm.fa -i 9606 -o ./ -c -a
+fdog.addTaxon -f hm.fa -i 9606 -v testAddTaxon -o ./ -c -a
 
-lines=$(wc -l < searchTaxa_dir/HOMSA\@9606\@260608/HOMSA\@9606\@260608.fa)
-assert_eq 10 "$lines" "searchTaxa_dir/HOMSA\@9606\@260608/HOMSA\@9606\@260608.fa line count"
+lines=$(wc -l < searchTaxa_dir/HOMSA\@9606\@testAddTaxon/HOMSA\@9606\@testAddTaxon.fa)
+assert_eq 10 "$lines" "searchTaxa_dir/HOMSA\@9606\@testAddTaxon/HOMSA\@9606\@testAddTaxon.fa line count"
 
 ls
