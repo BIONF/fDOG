@@ -38,8 +38,8 @@ jobs:
     - name: Install augustus
       run: |
         git clone --depth 1 https://github.com/Gaius-Augustus/Augustus.git
-        make -C Augustus/augustus
-        sudo make Augustus/install
+        make -C Augustus
+        sudo make -C Augustus install
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip
