@@ -49,13 +49,13 @@ jobs:
           libbamtools-dev \
           libhts-dev
         git clone --depth 1 https://github.com/Gaius-Augustus/Augustus.git
-        cd Augustus
-        make clean
-        make \
+        make -C Augustus clean
+        make -C Augustus \
           MYSQL=0 \
           SQLITE=0 \
           COMPGENEPRED=1
-        sudo make install
+        sudo make -C Augustus install
+        echo "$GITHUB_WORKSPACE/Augustus/scripts" >> $GITHUB_PATH
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip
