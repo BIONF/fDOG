@@ -179,6 +179,7 @@ def main():
     optional_paths.add_argument('--corepath', help='Path for the core taxa directory', action='store', default='')
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
     optional_paths.add_argument('--annopath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
+    optional_paths.add_argument('--gffpath', help='Path for the GFF directory', action='store', default='')
     optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     core_options = parser.add_argument_group('Core compilation options')
@@ -238,6 +239,7 @@ def main():
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--force', help='Overwrite existing ortholog search output files', action='store_true', default=False)
     addtionalIO.add_argument('--forceCore', help='Overwrite existing core set of your sequence', action='store_true', default=False)
+    addtionalIO.add_argument('--keepDupOrtho', help='Keep orthologs with the identical sequences in the each taxon', action='store_true', default=False)
     addtionalIO.add_argument('--notAddingTaxa', help='Do not add all search taxa to phyloprofile output', action='store_true', default=False)
     addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
@@ -265,6 +267,7 @@ def main():
     corepath = args.corepath
     searchpath = args.searchpath
     annopath = args.annopath
+    gffpath = args.gffpath
     pathFile = args.pathFile
 
     # core compilation arguments
@@ -301,6 +304,7 @@ def main():
     hitLimit = args.hitLimit
     hmmScoreType = args.hmmScoreType
     scoreCutoff = args.scoreCutoff
+    keepDupOrtho = args.keepDupOrtho
 
     # fas arguments
     fasOff = args.fasOff
@@ -425,7 +429,7 @@ def main():
 
             ### do ortholog search
             orthoArgs = [checkCoorthologsRefOff, rbh, rep, evalBlast,
-                        lowComplexityFilter, evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner]
+                        lowComplexityFilter, evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner, keepDupOrtho]
             otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
             ortho_options = [orthoArgs, otherArgs, pathArgs, refspec]
             ortho_runtime = search_ortholog(ortho_options, seeds, inFol, outpath)

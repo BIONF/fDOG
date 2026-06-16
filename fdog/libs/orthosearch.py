@@ -26,6 +26,7 @@ import fdog.libs.fasta as fasta_fn
 import fdog.libs.blast as blast_fn
 import fdog.libs.hmm as hmm_fn
 import fdog.libs.alignment as align_fn
+import fdog.libs.isoforms as isoform_fn
 import fdog.libs.preparation as prepare_fn
 import fdog.libs.output as output_fn
 
@@ -37,7 +38,8 @@ def hamstr(args):
         evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
         evalBlast, lowComplexityFilter,
         checkCoorthologsRefOff, rbh, rep,
-        aligner, cpus, debug, silentOff, noCleanup) = args
+        aligner, cpus, debug, silentOff, noCleanup, 
+        isoformDict, keepDupIso) = args
     """ Ortholog search algorithm for a hmm core group agains a search taxon
     Implemented based on HaMStR https://doi.org/10.1186/1471-2148-9-157
     """
@@ -148,6 +150,10 @@ def hamstr(args):
             output_fn.print_stdout(
                 silentOff, 'WARNING: Reciprocity not fulfulled! No ortholog found!')
         else:
+            # remove genes with identical sequences (default)
+            if not keepDupIso:            
+                ortho_candi = fasta_fn.unique_sequences(ortho_candi)
+
             output_fn.print_debug(
                 debug, 'Candidates for checking co-orthologs', ortho_candi.keys())
             best_ortho = list(ortho_candi.keys())[0]
@@ -157,6 +163,9 @@ def hamstr(args):
 
             if rep == False:
                 if len(ortho_candi) > 1:
+                    # print(f"FINAL {len(ortho_candi)} CANDIDATES: {ortho_candi}") # <===== HERERER
+                    # print(f"{ortho_candi.keys()}") # <===== HERERER
+                    
                     aln_co_fa = '%s/coortho_%s_%s.fa' % (
                                 outpath, seqName, search_taxon)
                     with open(aln_co_fa, 'w') as aln_co_fa_out:
@@ -172,6 +181,8 @@ def hamstr(args):
                         os.remove(aln_co_fa)
                     best_dist = align_fn.calc_Kimura_dist(
                                     aln_co_seq, seed_id, f'{search_taxon}_{best_ortho}', debug)
+                    
+                    final_candi = [best_ortho]
                     for cand in ortho_candi:
                         if not cand == best_ortho:
                             candi_dist = align_fn.calc_Kimura_dist(
@@ -184,11 +195,25 @@ def hamstr(args):
                                 % (best_dist, candi_dist))
                             if candi_dist < best_dist:
                                 if not cand == seed_id:
-                                    ortho_final = fasta_fn.add_seq_to_dict(
-                                        ortho_final,
-                                        '%s|%s|%s|0' \
-                                            % (seqName, search_taxon, cand),
-                                        ortho_candi[cand])
+                                    final_candi.append(cand)
+                    
+                    # check for isoforms and add ortholog type for each candidate
+                    # 1 : main, representative ortholog
+                    # 1i: isoform(s) of the main ortholog
+                    # 2 & 2i; 3 & 3i: co-orthologs and their corresponding isoform(s)
+                    protein_to_gene = isoform_fn.build_protein_group_map(ortho_candi.keys(), isoformDict)
+                    output_fn.print_stdout(silentOff, f"Protein to gene: {protein_to_gene}")
+                    candi_with_orthotypes = isoform_fn.assign_orthotypes(final_candi, protein_to_gene)
+                    output_fn.print_stdout(silentOff, f"Ortholog type: {candi_with_orthotypes}")
+
+                    # add co-orthologs / isoforms to the final list
+                    for cand in candi_with_orthotypes:
+                        if not cand == best_ortho:
+                            ortho_final = fasta_fn.add_seq_to_dict(
+                                ortho_final,
+                                f'{seqName}|{search_taxon}|{cand}|{candi_with_orthotypes[cand]}',
+                                ortho_candi[cand])
+
             output_fn.print_stdout(
                 silentOff,
                 '=> %s orthologs found: %s'
@@ -200,9 +225,9 @@ def run_hamstr(args):
     """ Perform ortholog search based on hamstr approach """
 
     (seqName, refspec, pathArgs, orthoArgs, otherArgs) = args
-    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath, gffpath) = pathArgs
     (checkCoorthologsRefOff, rbh, rep, evalBlast, lowComplexityFilter,
-                        evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner) = orthoArgs
+                        evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner, keepDupIso) = orthoArgs
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
 
     hamstr_jobs = []
@@ -222,13 +247,17 @@ def run_hamstr(args):
             if os.path.exists(
                     os.path.abspath(
                         '%s/%s/%s.fa' % (searchpath,search_taxon,search_taxon))):
+                isoformDict = {}
+                if os.path.exists(f"{gffpath}/{search_taxon}.gff"):
+                    isoformDict = isoform_fn.parse_gff_protein_to_gene(f"{gffpath}/{search_taxon}.gff")
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
                     evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
-                    aligner, cpus, debug, silentOff, noCleanup
+                    aligner, cpus, debug, silentOff, noCleanup,
+                    isoformDict, keepDupIso
                 ])
             else:
                 ignored_taxa.append(search_taxon)
@@ -242,13 +271,17 @@ def run_hamstr(args):
             if os.path.exists(
                     os.path.abspath(
                         '%s/%s/%s.fa' % (searchpath,search_taxon,search_taxon))):
+                isoformDict = {}
+                if os.path.exists(f"{gffpath}/{search_taxon}.gff"):
+                    isoformDict = isoform_fn.parse_gff_protein_to_gene(f"{gffpath}/{search_taxon}.gff")
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
                     evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
-                    aligner, cpus, debug, silentOff, noCleanup
+                    aligner, cpus, debug, silentOff, noCleanup,
+                    isoformDict
                 ])
 
     ### do ortholog search

@@ -159,7 +159,7 @@ def compile_core(args):
     """ Core compilation """
     (seqFile, seqName, refspec, seed_id, coreArgs, pathArgs, orthoArgs, otherArgs, debug) = args
     (minDist, maxDist, coreSize, coreTaxa, distDeviation, alnStrategy, fasOff) = coreArgs
-    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath, gffpath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherArgs
     aligner = orthoArgs[-1]
     otherArgs.insert(0, 'NA')
@@ -393,7 +393,7 @@ def compile_core(args):
 def run_compile_core(args):
     (seqFile, seqName, refspec, seed_id, reuseCore, forceCore, coreArgs,
             pathArgs, orthoCoreArgs, otherCoreArgs, debug) = args
-    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath, gffpath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherCoreArgs[-6:]
     begin = time.time()
     fdogPath = os.path.realpath(__file__).replace('/libs/corecompile.py','')
