@@ -21,18 +21,22 @@ DT_DIR="$WORKDIR/dt"
 
 echo "######### TEST FDOG FUNCTIONS #########"
 
+echo "******************************************"
 echo "TEST fdog.setup"
 fdog.setup -d "$DT_DIR" --woFAS
 
+echo "******************************************"
 echo "TEST fdog.checkData"
 fdog.checkData -s "$DT_DIR/searchTaxa_dir" \
                -c "$DT_DIR/coreTaxa_dir" \
                -a "$DT_DIR/annotation_dir" \
                --reblast --ignoreAnno
 
+echo "******************************************"
 echo "TEST fdog.showTaxa"
 fdog.showTaxa
 
+echo "******************************************"
 echo "TEST fdog.run"
 fdog.run --seqFile infile.fa --jobName test \
          --refspec HUMAN@9606@qfo24_02 \
@@ -41,6 +45,7 @@ fdog.run --seqFile infile.fa --jobName test \
 lines=$(wc -l < test.phyloprofile)
 assert_eq 10 "$lines" "test.phyloprofile line count"
 
+echo "******************************************"
 echo "TEST fdog.assembly with miniprot"
 fdog.assembly --gene test \
               --refSpec HUMAN@9606@qfo24_02 \
@@ -53,6 +58,7 @@ fdog.assembly --gene test \
 lines=$(wc -l < test_assembly/test/test_og.fa)
 assert_eq 4 "$lines" "test_assembly/test/test_og.fa line count"
 
+echo "******************************************"
 echo "TEST fdog.assembly with blast"
 fdog.assembly --gene test \
               --refSpec HUMAN@9606@qfo24_02 \
@@ -66,6 +72,7 @@ fdog.assembly --gene test \
 lines=$(wc -l < test_assembly_blast/test/test_og.fa)
 assert_eq 4 "$lines" "test_assembly_blast/test/test_og.fa line count"
 
+echo "******************************************"
 echo "Prepare seeds"
 mkdir -p seeds
 for i in 1 2 3; do
@@ -83,6 +90,7 @@ fdogs.run --seqFolder seeds \
 lines=$(wc -l < test_multi.phyloprofile)
 assert_eq 13 "$lines" "test_multi.phyloprofile line count"
 
+echo "******************************************"
 echo "TEST fdog.addTaxon"
 head "$DT_DIR/searchTaxa_dir/HUMAN@9606@qfo24_02/HUMAN@9606@qfo24_02.fa" > hm.fa
 fdog.addTaxon -f hm.fa -i 9606 -v testAddTaxon -o ./ -c -a
