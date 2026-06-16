@@ -96,6 +96,8 @@ cd miniprot && make
 sudo cp miniprot /usr/local/bin/
 ```
 
+**Please check our [FAQ in the Wiki](https://github.com/BIONF/fDOG/wiki/FAQ) if you encounter any issues with the installation or dependencies.**
+
 ## Setup fDOG
 
 After installing *fdog*, you need to setup *fdog* to get its dependencies and pre-calculated data.
