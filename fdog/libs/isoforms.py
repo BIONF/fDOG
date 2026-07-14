@@ -37,19 +37,6 @@ def parse_gff_protein_to_gene(gff_file):
     return protein_to_gene
 
 
-def gene_to_protein(protein_to_gene):
-    '''
-    Build reverse index for protein_to_gene dict
-    Returns:
-        gene_to_proteins : dict
-            {gene_id: list_of_protein_ids}
-    '''
-    gene_to_proteins = defaultdict(list)
-    for prot, gene in protID_to_geneID.items():
-        gene_to_proteins[gene].append(prot)
-    return(gene_to_proteins)
-
-
 def find_isoforms(protein_to_gene, protein_id):
     """
     Return all isoforms (protein IDs) belonging to the same gene as protein_id.
