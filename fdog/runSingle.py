@@ -233,10 +233,10 @@ def main():
     # get gffpath from path config file
     if pathFile:
         pathconfigFile = os.path.abspath(pathFile)
-    cfg = general_fn.load_config(pathconfigFile)
-    if 'gffpath' in cfg:
-        gffpath = cfg['gffpath']
-        general_fn.check_file_exist(gffpath)
+        cfg = general_fn.load_config(pathconfigFile)
+        if 'gffpath' in cfg:
+            gffpath = cfg['gffpath']
+            general_fn.check_file_exist(gffpath)
     
     pathArgs = [outpath, hmmpath, corepath, searchpath, annopath, gffpath]
 
