@@ -161,7 +161,7 @@ def compile_core(args):
     (minDist, maxDist, coreSize, coreTaxa, distDeviation, alnStrategy, fasOff) = coreArgs
     (outpath, hmmpath, corepath, searchpath, annopath, gffpath) = pathArgs
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherArgs
-    aligner = orthoArgs[-1]
+    aligner = orthoArgs[-2]
     otherArgs.insert(0, 'NA')
 
     ncbi = NCBITaxa()

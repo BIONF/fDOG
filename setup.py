@@ -57,6 +57,7 @@ setup(
                             "fdog.showTaxa = fdog.showTaxa:main",
                             "fdog.setPaths = fdog.setPaths:main",
                             "fdog.mergeOutput = fdog.mergeOutput:main",
+                            "fdog.filterIsoforms = fdog.filterIsoforms:main",
                             "fdog.uninstall = fdog.removefDog:main",
                             "fdog.assembly = fdog.fDOGassembly:main",
                             "fdog.addAssembly = fdog.addAssembly:main",
