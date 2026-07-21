@@ -36,6 +36,9 @@ from tqdm import tqdm
 from pathlib import Path
 import pandas as pd
 import re
+import fdog.libs.output as output_fn
+from importlib.metadata import version, PackageNotFoundError
+
 
 ########################### functions ##########################################
 def check_path(path, exit=True):
@@ -1592,14 +1595,14 @@ def extract_ref_gene(fasta, species_list):
 
 
 def main():
-
     #################### handle user input #####################################
-
     start = time.time()
-    version = '0.2.0.0'
+    fdog_version = version("fdog")
     ################### initialize parser ######################################
-    parser = argparse.ArgumentParser(description='You are running fdog.assembly version ' + str(version) + '.')
-    parser.add_argument('--version', action='version', version=str(version))
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.',
+                                     epilog="For more information on certain options, please refer to the wiki pages "
+                                            "on github: https://github.com/BIONF/fDOG/wiki/fDOG-Assembly")
+    parser.add_argument('--version', action='version', version=str(fdog_version))
     ################## required arguments ######################################
     required = parser.add_argument_group('Required arguments')
     required.add_argument('--gene', help='Core_ortholog group name. Folder inlcuding the fasta file, hmm file and aln file has to be located in core_orthologs/',
@@ -1908,6 +1911,7 @@ def main():
 
     ################## preparing output ########################################
     orthologsOutFile = out + "/" + group + "_og.fa"
+    outputFiles = [f'{group}_og.fa']
 
     if taxa == []:
         taxa = [fdog_ref_species]
@@ -1928,27 +1932,41 @@ def main():
         tmp_path = out + '/tmp/'
         fas_seed_id = createFasInput(orthologsOutFile, mappingFile)
         cmd = ['fas.run', '--seed', fasta_path , '--query' , orthologsOutFile , '--annotation_dir' , tmp_path + 'anno_dir' ,'--bidirectional', '--tsv', '--phyloprofile', mappingFile, '--seed_id', fas_seed_id, '--out_dir', out, '--out_name', group]
-        #print(cmd)
         fas_out = run_fas(cmd)
         clean_fas(out + group + "_forward.domains", 'domains')
         clean_fas(out + group + "_reverse.domains", 'domains')
         clean_fas(out + group + ".phyloprofile", 'phyloprofile')
         print("\t ...finished \n", flush=True)
+        outputFiles.append(f'{group}.phyloprofile')
+        outputFiles.append(f'{group}_forward.domains')
+        outputFiles.append(f'{group}_reverse.domains')
         end = time.time()
         time_fas = end - fas
     else:
+        output_fn.hamstr_2_profile(orthologsOutFile)
+        outputFiles.append(f'{group}.phyloprofile')
         end = time.time()
         time_fas = 0
 
     ################# remove tmp folder ########################################
 
-    print(
-        f"fDOG-Assembly finished completely in {round(end-start,2)}s ("
-        f" Group preparation: {round(time_group,2)}s \t"
-        f"Ortholog search: {round(time_ortholog,2)}s \t"
-        f"FAS: {round(time_fas,2)}s)"
-    )
-    print(f"Outputs are saved at {out}")
+    # print(
+    #     f"fDOG-Assembly finished completely in {round(end-start,2)}s ("
+    #     f"Group preparation: {round(time_group,2)}s \t"
+    #     f"Ortholog search: {round(time_ortholog,2)}s \t"
+    #     f"FAS: {round(time_fas,2)}s)"
+    # )
+
+    print("################################")
+    print(f"Pipeline completed successfully in {round(end-start,2)}s")
+    print(f"  Group preparation: {round(time_group,2)}s")
+    print(f"  Ortholog search: {round(time_ortholog,2)}s")
+    print(f"  FAS calculation: {round(time_fas,2)}s")
+    print(f"Output directory:\n  {out}")
+    print("Generated files:")
+    for file in outputFiles:
+        print(f"  - {file}")
+
     sys.stdout = sys.__stdout__
     cleanup(tmp, tmp_folder)
 

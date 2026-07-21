@@ -182,7 +182,7 @@ def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
         except:
             output_fn.print_debug(debug, 'Identify seed ID', 'Input seed ID not found!')
     # otherwise, perform blast search
-    blast_xml = blast_fn.do_blastsearch(seqFile, refspec_db, evalBlast = 0.001)
+    blast_xml = blast_fn.do_blastsearch(seqFile, refspec_db, evalBlast = 0.001, cpus = 1)
     if not blast_xml:
         print(f'ERROR: No blast output!')
         print(f'You can check it by running:\nblastp -query {seqFile} -db {corepath}/{refspec}/{refspec} -evalue 0.001 -outfmt 7')

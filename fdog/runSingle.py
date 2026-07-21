@@ -37,6 +37,7 @@ def main():
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.',
                                      epilog="For more information on certain options, please refer to the wiki pages "
                                             "on github: https://github.com/BIONF/fDOG/wiki")
+    parser.add_argument('--version', action='version', version=str(fdog_version))
     required = parser.add_argument_group('Required arguments')
     required.add_argument('--seqFile', help='Input file containing the seed sequence (protein only) in fasta format',
                             action='store', default='', required=True)
@@ -195,7 +196,6 @@ def main():
     if cpus > os.cpu_count():
         cpus = os.cpu_count()
 
-
     begin = time.time()
     ##### Check and group parameters
     print('##### PREPARING & CHECKING #####')
@@ -287,6 +287,7 @@ def main():
         otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
         hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
         output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
+        outputFiles = [f'{seqName}.extended.fa']
         end = time.time()
         print('==> Ortholog search finished in ' + '{:5.3f}s'.format(end - start))
 
@@ -302,8 +303,12 @@ def main():
                 fas_fn.calc_fas_multi(finalOutfile, outpath, annopath, cpus, featureFile)
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
+                outputFiles.append(f'{seqName}.phyloprofile')
+                outputFiles.append(f'{seqName}_forward.domains')
+                outputFiles.append(f'{seqName}_reverse.domains')
         else:
             output_fn.hamstr_2_profile(finalOutfile)
+            outputFiles.append(f'{seqName}.phyloprofile')
 
         ##### ADD ALL SEARCH TAXA INTO PhyloProfile OUTPUT
         if not notAddingTaxa:
@@ -314,7 +319,12 @@ def main():
             output_fn.add_all_taxa(pp_file, searchTaxa)
 
         end = time.time()
-        print('==> fdog.run finished in ' + '{:5.3f}s'.format(end - begin))
+        print("################################")
+        print(f"Pipeline completed successfully in {end - begin:5.3f}s.")
+        print(f"Output directory:\n  {outpath}")
+        print("Generated files:")
+        for file in outputFiles:
+            print(f"  - {file}")
 
 if __name__ == '__main__':
     main()

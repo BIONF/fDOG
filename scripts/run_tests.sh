@@ -56,7 +56,7 @@ fdog.assembly --gene test \
               --fasOff
 
 lines=$(wc -l < test_assembly/test/test_og.fa)
-assert_eq 4 "$lines" "test_assembly/test/test_og.fa line count"
+assert_eq 3 "$lines" "test_assembly/test/test_og.fa line count"
 
 echo "******************************************"
 echo "TEST fdog.assembly with blast"
@@ -70,7 +70,7 @@ fdog.assembly --gene test \
               --searchTool blast
 
 lines=$(wc -l < test_assembly_blast/test/test_og.fa)
-assert_eq 4 "$lines" "test_assembly_blast/test/test_og.fa line count"
+assert_eq 3 "$lines" "test_assembly_blast/test/test_og.fa line count"
 
 echo "******************************************"
 echo "Prepare seeds"

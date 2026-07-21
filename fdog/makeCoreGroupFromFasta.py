@@ -22,6 +22,7 @@ import sys
 import argparse
 import fdog.libs.alignment as align_fn
 import fdog.libs.zzz as general_fn
+from importlib.metadata import version, PackageNotFoundError
 
 def check_fasta(file):
     nHeader = general_fn.count_line(file, '>', True)
@@ -67,9 +68,11 @@ def makeHMM(out_folder, gene, aln_file):
 def main():
 
     #################### handle user input #####################################
-    version = '0.0.1'
+    fdog_version = version("fdog")
     ################### initialize parser ######################################
-    parser = argparse.ArgumentParser(description='You are running fdog.addCoreGroup version ' + str(version) + '.')
+    parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.',
+                                     epilog="For more information on certain options, please refer to the wiki pages "
+                                            "on github: https://github.com/BIONF/fDOG/wiki/fDOG-Assembly")
     ################## required arguments ######################################
     required = parser.add_argument_group('Required arguments')
     required.add_argument('--fasta', help='Path to fasta file of ortholog group.', action='store', default='', required=True)
