@@ -89,7 +89,7 @@ def do_align(aligner, fa_file):
     elif aligner == 'muscle_v5':
         align_cline = 'muscle -align %s -output %s.muscle.out' % (fa_file, out_file)
     else:
-        align_cline = 'mafft --localpair --maxiterate 1000 %s' % fa_file
+        align_cline = 'mafft --anysymbol --localpair --maxiterate 1000 %s' % fa_file
     try:
         aln_out = subprocess.run([align_cline], shell = True, capture_output = True, check = True)
     except subprocess.CalledProcessError as e:
@@ -180,7 +180,7 @@ def calc_aln_score(fa1, fa2, aln_strategy = 'local', debugCore = False):
         if len(l) > 1:
             gene_id = l.split()[0]
             if gene_id in aln_score:
-                if re.search('\(\s+\d+\)', l):
+                if re.search(r'\(\s+\d+\)', l):
                     l = re.sub(r'\(\s+','(', l)
                 aln_score[gene_id] = aln_score[gene_id] + int(l.split()[2])
     os.remove(fa1_filename)
