@@ -1943,7 +1943,8 @@ def main():
         end = time.time()
         time_fas = end - fas
     else:
-        output_fn.hamstr_2_profile(orthologsOutFile)
+        shutil.copyfile(orthologsOutFile, out + group + ".phyloprofile")
+        output_fn.hamstr_2_profile(out + group + ".phyloprofile")
         outputFiles.append(f'{group}.phyloprofile')
         end = time.time()
         time_fas = 0

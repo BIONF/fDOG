@@ -142,3 +142,5 @@ dmypy.json
 taxdump*
 .DS_Store
 .idea/
+examples/data/**
+!examples/data/.gitkeep
