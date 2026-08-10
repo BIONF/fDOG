@@ -141,3 +141,7 @@ dmypy.json
 /fdog/fdog_goes_assembly/tmp/ 
 taxdump*
 /fdog/fDOGassembly.py
+
+# examples/
+examples/data/**
+!examples/data/.gitkeep
