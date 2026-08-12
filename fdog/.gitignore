@@ -143,5 +143,5 @@ taxdump*
 /fdog/fDOGassembly.py
 
 # examples/
-examples/data/**
-!examples/data/.gitkeep
+examples/fdog_assembly/data/**
+!examples/fdog_assembly/data/.gitkeep
