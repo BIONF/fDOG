@@ -26,6 +26,7 @@ import fdog.libs.fasta as fasta_fn
 import fdog.libs.blast as blast_fn
 import fdog.libs.hmm as hmm_fn
 import fdog.libs.alignment as align_fn
+import fdog.libs.isoforms as isoform_fn
 import fdog.libs.preparation as prepare_fn
 import fdog.libs.output as output_fn
 
@@ -37,10 +38,12 @@ def hamstr(args):
         evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
         evalBlast, lowComplexityFilter,
         checkCoorthologsRefOff, rbh, rep,
-        aligner, cpus, debug, silentOff, noCleanup) = args
+        aligner, cpus, debug, silentOff, noCleanup, 
+        prot_to_gene, keepDupOrtho, seed_isoforms, filterIsoforms) = args
     """ Ortholog search algorithm for a hmm core group agains a search taxon
     Implemented based on HaMStR https://doi.org/10.1186/1471-2148-9-157
     """
+
     ### (0) Dict for storing candidate and final orthologs (key=id, value=seq)
     ortho_candi = {}
     ortho_final = {}
@@ -94,15 +97,20 @@ def hamstr(args):
             if noCleanup == False:
                 os.remove(hmm_hit_fa)
             ### (4) check reciprocity
-            ### (4a) if refspec_seq_id == best blast hit
+            ### (4a) if best blast hit == refspec_seq_id or any of the seed isoforms
             if len(blast_out['hits'].keys()) > 0:
                 best_blast_hit = list(blast_out['hits'].keys())[0]
                 if best_blast_hit == hmm_hit and len(blast_out['hits'].keys()) > 1:
                     best_blast_hit = list(blast_out['hits'].keys())[0]
-                if seed_id == best_blast_hit:
-                    output_fn.print_stdout(
-                        silentOff,
-                        '%s accepted (best blast hit is ref)' % (blast_out['query']))
+                if best_blast_hit in seed_isoforms:
+                    if seed_id == best_blast_hit:
+                        output_fn.print_stdout(
+                            silentOff,
+                            '%s accepted (best blast hit is ref)' % (blast_out['query']))
+                    else:
+                        output_fn.print_stdout(
+                            silentOff,
+                            '%s accepted (best blast hit is isoform of ref)' % (blast_out['query']))
                     ortho_candi[hmm_hit] = search_seqs.fetch(hmm_hit)
                     continue
                 else:
@@ -148,13 +156,18 @@ def hamstr(args):
             output_fn.print_stdout(
                 silentOff, 'WARNING: Reciprocity not fulfulled! No ortholog found!')
         else:
+            # remove genes with identical sequences (default)
+            if not keepDupOrtho:            
+                ortho_candi = fasta_fn.unique_sequences(ortho_candi)
+
             output_fn.print_debug(
                 debug, 'Candidates for checking co-orthologs', ortho_candi.keys())
             best_ortho = list(ortho_candi.keys())[0]
-            ortho_final = fasta_fn.add_seq_to_dict(
-                ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
-                ortho_candi[best_ortho])
+            # ortho_final = fasta_fn.add_seq_to_dict(
+            #     ortho_final, '%s|%s|%s|1' % (seqName, search_taxon, best_ortho),
+            #     ortho_candi[best_ortho])
 
+            final_candi = [best_ortho]
             if rep == False:
                 if len(ortho_candi) > 1:
                     aln_co_fa = '%s/coortho_%s_%s.fa' % (
@@ -172,6 +185,7 @@ def hamstr(args):
                         os.remove(aln_co_fa)
                     best_dist = align_fn.calc_Kimura_dist(
                                     aln_co_seq, seed_id, f'{search_taxon}_{best_ortho}', debug)
+                    
                     for cand in ortho_candi:
                         if not cand == best_ortho:
                             candi_dist = align_fn.calc_Kimura_dist(
@@ -184,11 +198,36 @@ def hamstr(args):
                                 % (best_dist, candi_dist))
                             if candi_dist < best_dist:
                                 if not cand == seed_id:
-                                    ortho_final = fasta_fn.add_seq_to_dict(
-                                        ortho_final,
-                                        '%s|%s|%s|0' \
-                                            % (seqName, search_taxon, cand),
-                                        ortho_candi[cand])
+                                    final_candi.append(cand)
+
+            output_fn.print_stdout(silentOff, f'FINAL CANDIDATES: {final_candi}')
+            
+            # check for isoforms and add ortholog type for each candidate
+            # 1 : main, representative ortholog
+            # 1i: isoform(s) of the main ortholog
+            # 2 & 2i; 3 & 3i: co-orthologs and their corresponding isoform(s)
+            # 1io, 2io, ...: other isoforms that are not found via HMM search (if filterIsoforms == all_isoforms or fas_isoforms)
+            candi_with_orthotypes = isoform_fn.assign_orthotypes(final_candi, prot_to_gene, seed_id, filterIsoforms)
+            output_fn.print_stdout(silentOff, f"Ortholog type: {candi_with_orthotypes}")
+            # add co-orthologs / isoforms to the final list
+            for cand in candi_with_orthotypes:
+                if cand in final_candi:
+                    # found (co)orthologs / isoforms
+                    if filterIsoforms == "hmm_isoforms":
+                        if "i" in candi_with_orthotypes[cand]:
+                            continue
+                    ortho_final = fasta_fn.add_seq_to_dict(
+                        ortho_final,
+                        f'{seqName}|{search_taxon}|{cand}|{candi_with_orthotypes[cand]}',
+                        ortho_candi[cand])
+                else:
+                    # other isoforms (io) if present
+                    if cand != seed_id:
+                        ortho_final = fasta_fn.add_seq_to_dict(
+                            ortho_final,
+                            f'{seqName}|{search_taxon}|{cand}|{candi_with_orthotypes[cand]}',
+                            search_seqs.fetch(cand))
+
             output_fn.print_stdout(
                 silentOff,
                 '=> %s orthologs found: %s'
@@ -200,15 +239,23 @@ def run_hamstr(args):
     """ Perform ortholog search based on hamstr approach """
 
     (seqName, refspec, pathArgs, orthoArgs, otherArgs) = args
-    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath, gffpath) = pathArgs
     (checkCoorthologsRefOff, rbh, rep, evalBlast, lowComplexityFilter,
-                        evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner) = orthoArgs
+        evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner, keepDupOrtho, filterIsoforms) = orthoArgs
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
 
     hamstr_jobs = []
     ### get ref seqID
     core_fa = '%s/%s/%s.fa' % (hmmpath, seqName, seqName)
     seed_id = prepare_fn.get_seed_id_from_fa(core_fa, refspec)
+
+    ### get all isoforms of seed sequence
+    seed_isoforms = []
+    if os.path.exists(f"{gffpath}/{refspec}.gff"):
+        output_fn.print_stdout(silentOff, 'Searching variants for seed...')
+        prot_to_gene_refspec = isoform_fn.parse_gff_protein_to_gene(f"{gffpath}/{refspec}.gff")
+        seed_isoforms = isoform_fn.find_isoforms(prot_to_gene_refspec, seed_id)
+        output_fn.print_stdout(silentOff, f'Seed variants: {seed_isoforms}')
 
     ### get search taxa from user defined list (as a file or directly a list)
     if not searchTaxa == '':
@@ -222,13 +269,17 @@ def run_hamstr(args):
             if os.path.exists(
                     os.path.abspath(
                         '%s/%s/%s.fa' % (searchpath,search_taxon,search_taxon))):
+                prot_to_gene = {}
+                if os.path.exists(f"{gffpath}/{search_taxon}.gff"):
+                    prot_to_gene = isoform_fn.parse_gff_protein_to_gene(f"{gffpath}/{search_taxon}.gff")
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
                     evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
-                    aligner, cpus, debug, silentOff, noCleanup
+                    aligner, cpus, debug, silentOff, noCleanup,
+                    prot_to_gene, keepDupOrtho, seed_isoforms, filterIsoforms
                 ])
             else:
                 ignored_taxa.append(search_taxon)
@@ -242,13 +293,17 @@ def run_hamstr(args):
             if os.path.exists(
                     os.path.abspath(
                         '%s/%s/%s.fa' % (searchpath,search_taxon,search_taxon))):
+                prot_to_gene = {}
+                if os.path.exists(f"{gffpath}/{search_taxon}.gff"):
+                    prot_to_gene = isoform_fn.parse_gff_protein_to_gene(f"{gffpath}/{search_taxon}.gff")
                 hamstr_jobs.append([
                     seqName, hmmpath, corepath, searchpath, outpath,
                     refspec, seed_id, search_taxon,
                     evalHmmer, hitLimit, hmmScoreType, scoreCutoff,
                     evalBlast, lowComplexityFilter,
                     checkCoorthologsRefOff, rbh, rep,
-                    aligner, cpus, debug, silentOff, noCleanup
+                    aligner, cpus, debug, silentOff, noCleanup,
+                    prot_to_gene, keepDupOrtho, seed_isoforms, filterIsoforms
                 ])
 
     ### do ortholog search
@@ -273,7 +328,7 @@ def run_hamstr(args):
     ### Get seed seq
     refspec_fa = '%s/%s/%s.fa' % (corepath, refspec, refspec)
     refspec_seqs = fasta_fn.read_fasta(refspec_fa)
-    seed_id_mod = '%s|%s|%s|1' % (seqName, refspec, seed_id)
+    seed_id_mod = '%s|%s|%s|s' % (seqName, refspec, seed_id)
     seed_seq = refspec_seqs.fetch(seed_id)
 
     ### return

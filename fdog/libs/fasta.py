@@ -75,3 +75,27 @@ def remove_dup(fa_file):
     with open(fa_file, 'w') as out:
         for id, seq in tmp.items():
             out.write('>%s\n%s\n' % (id, seq))
+
+
+def unique_sequences(protein_dict):
+    """
+    Remove duplicated genes/proteins by their sequences
+    Parameters
+    ----------
+    protein_dict : dict
+        {protein_id: sequence}
+
+    Returns
+    -------
+    dict
+        {first_protein_id_for_each_unique_sequence: sequence}
+    """
+    seen = set()
+    unique = {}
+
+    for prot_id, seq in protein_dict.items():
+        if seq not in seen:
+            seen.add(seq)
+            unique[prot_id] = seq
+
+    return unique

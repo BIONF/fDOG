@@ -36,7 +36,7 @@ import fdog.libs.corecompile as core_fn
 import fdog.libs.fas as fas_fn
 import fdog.libs.tree as tree_fn
 import fdog.libs.output as output_fn
-
+from fdog.libs.isoform_filter import filter_isoforms
 
 def get_sorted_files(directory):
     list = os.listdir(directory)
@@ -60,7 +60,7 @@ def create_core_jobs(args):
     (seed, core_options, other_options, inFol, outpath, silentOff) = args
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
-    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath, gffpath) = pathArgs
     seqFile = ('%s/%s' % (inFol, seed))
     seqName = get_seed_name(seed)
     if not os.path.exists('%s/core_orthologs/%s/hmm_dir/%s.hmm' % (outpath, seqName, seqName)) or forceCore == True:
@@ -78,11 +78,14 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silen
     (coreArgs, orthoCoreArgs, otherCoreArgs) = core_options
     (cpus, debugCore, silentOff, noCleanup, force, append) = otherCoreArgs
     (refspec, reuseCore, forceCore, pathArgs, debug) = other_options
-    (outpath, hmmpath, corepath, searchpath, annopath) = pathArgs
+    (outpath, hmmpath, corepath, searchpath, annopath, gffpath) = pathArgs
     pool = mp.Pool(cpus)
     begin = time.time()
     print('Preparing core compilation jobs...')
     core_job_file = '%s/%s_core_jobs.list' % (outpath, jobName)
+    if forceCore:
+        if os.path.exists(core_job_file):
+            os.remove(core_job_file)
     if os.path.exists(core_job_file) and os.stat(core_job_file).st_size > 0:
         print('... file contains jobs found (%s)' % core_job_file)
         core_compilation_jobs = general_fn.read_pyobj_file(core_job_file)
@@ -179,6 +182,7 @@ def main():
     optional_paths.add_argument('--corepath', help='Path for the core taxa directory', action='store', default='')
     optional_paths.add_argument('--searchpath', help='Path for the search taxa directory', action='store', default='')
     optional_paths.add_argument('--annopath', help='Path for the pre-calculated feature annotion directory', action='store', default='')
+    optional_paths.add_argument('--gffpath', help='Path for the GFF directory', action='store', default='')
     optional_paths.add_argument('--pathFile', help='Config file contains paths to data folder (in yaml format)', action='store', default='')
 
     core_options = parser.add_argument_group('Core compilation options')
@@ -234,10 +238,25 @@ def main():
     fas_options.add_argument('--minScore', help='Specify the threshold for coreFilter. Default: 0.75', action='store', default=0.75, type=float)
     fas_options.add_argument('--featureFile', help='File that contains tools used for FAS calculation', action='store', default='')
 
+    isoform_options = parser.add_argument_group('Isoform options')
+    isoform_options.add_argument(
+        '--filterIsoforms',
+        help=(
+            'Select which isoforms to report: '
+            '"all_isoforms" (all isoforms of identified orthologs), '
+            '"passed_isoforms" (only isoforms that satisfy the reciprocal criterion; default), '
+            '"hmm_isoforms" (only the isoform with the best HMM score), or '
+            '"fas_isoforms" (only the isoform with the best average FAS score).'
+        ),
+        choices=['all_isoforms', 'passed_isoforms', 'hmm_isoforms', 'fas_isoforms'],
+        default='passed_isoforms'
+    )
+
     addtionalIO = parser.add_argument_group('Other I/O options')
     addtionalIO.add_argument('--append', help='Append the output to existing output files', action='store_true', default=False)
     addtionalIO.add_argument('--force', help='Overwrite existing ortholog search output files', action='store_true', default=False)
     addtionalIO.add_argument('--forceCore', help='Overwrite existing core set of your sequence', action='store_true', default=False)
+    addtionalIO.add_argument('--keepDupOrtho', help='Keep orthologs with the identical sequences in the each taxon', action='store_true', default=False)
     addtionalIO.add_argument('--notAddingTaxa', help='Do not add all search taxa to phyloprofile output', action='store_true', default=False)
     addtionalIO.add_argument('--noCleanup', help='Temporary output will NOT be deleted. Default: False', action='store_true', default=False)
     addtionalIO.add_argument('--keep', help='Keep output of individual seed sequence. Default: False', action='store_true', default=False)
@@ -265,6 +284,7 @@ def main():
     corepath = args.corepath
     searchpath = args.searchpath
     annopath = args.annopath
+    gffpath = args.gffpath
     pathFile = args.pathFile
 
     # core compilation arguments
@@ -301,6 +321,7 @@ def main():
     hitLimit = args.hitLimit
     hmmScoreType = args.hmmScoreType
     scoreCutoff = args.scoreCutoff
+    keepDupOrtho = args.keepDupOrtho
 
     # fas arguments
     fasOff = args.fasOff
@@ -308,6 +329,11 @@ def main():
     minScore = args.minScore
     featureFile = args.featureFile
 
+    # isoform arguments
+    filterIsoforms = args.filterIsoforms
+    if fasOff and filterIsoforms == "fas_isoforms":
+        sys.exit('ERROR: Cannot filter variants based on FAS scores with --fasOff!')
+    
     # other I/O arguments
     append = args.append
     force = args.force
@@ -332,7 +358,16 @@ def main():
     (inFol, hmmpath, corepath, searchpath, annopath) = prepare_fn.check_input(
                     [inFol, refspec, outpath, hmmpath,
                     corepath, searchpath, annopath, pathFile])
-    pathArgs = [outpath, hmmpath, corepath, searchpath, annopath]
+    
+    # get gffpath from path config file
+    if pathFile:
+        pathconfigFile = os.path.abspath(pathFile)
+        cfg = general_fn.load_config(pathconfigFile)
+        if 'gffpath' in cfg:
+            gffpath = cfg['gffpath']
+            general_fn.check_file_exist(gffpath)
+
+    pathArgs = [outpath, hmmpath, corepath, searchpath, annopath, gffpath]
     prepare_fn.check_blast_version(corepath, refspec)
 
     (invalid_minDist, invalid_maxDist, suggested_minRank, suggested_maxRank) = prepare_fn.check_ranks_core_taxa(corepath, refspec, minDist, maxDist)
@@ -374,7 +409,7 @@ def main():
                     alnStrategy, fasOff]
         orthoCoreArgs = [CorecheckCoorthologsOff, rbh, True, evalBlast/10,
                         lowComplexityFilter, evalHmmer/10, coreHitLimit, hmmScoreType,
-                        scoreCutoff, aligner] # rep = True; e-value cutoff is 10x more stringent than from ortho search
+                        scoreCutoff, aligner, keepDupOrtho, filterIsoforms] # rep = True; e-value cutoff is 10x more stringent than from ortho search
         otherCoreArgs = [cpus, debugCore, silentOff, noCleanup, force, append]
         core_options = [coreArgs, orthoCoreArgs, otherCoreArgs]
         other_options = [refspec, reuseCore, forceCore, pathArgs, debug]
@@ -425,7 +460,7 @@ def main():
 
             ### do ortholog search
             orthoArgs = [checkCoorthologsRefOff, rbh, rep, evalBlast,
-                        lowComplexityFilter, evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner]
+                        lowComplexityFilter, evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner, keepDupOrtho, filterIsoforms]
             otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
             ortho_options = [orthoArgs, otherArgs, pathArgs, refspec]
             ortho_runtime = search_ortholog(ortho_options, seeds, inFol, outpath)
@@ -461,9 +496,23 @@ def main():
             output_fn.hamstr_2_profile(finalFa)
             outputFiles.append(f'{jobName}.phyloprofile')
 
+        ##### FILTER ISOFORMS (if present) WITH BEST FAS SCORES
+        pp_file = f'{outpath}/{jobName}.phyloprofile'
+        if not fasOff and gffpath:
+            if os.path.exists(pp_file) and filterIsoforms == "fas_isoforms":
+                print("##### FILTERING ISOFORMS BASED ON FAS SCORES #####")
+                start = time.time()
+                filter_isoforms(
+                    pp_file = f'{outpath}/{jobName}.phyloprofile',
+                    fasta_file = f'{outpath}/{jobName}.extended.fa',
+                    forward_file = f'{outpath}/{jobName}_forward.domains',
+                    reverse_file = f'{outpath}/{jobName}_reverse.domains'
+                )
+                end = time.time()
+                print('==> Isoform filtering finished in ' + '{:5.3f}s'.format(end - start))
+                
         ##### ADD ALL SEARCH TAXA INTO PhyloProfile OUTPUT
         if not notAddingTaxa:
-            pp_file = f'{outpath}/{jobName}.phyloprofile'
             if not searchTaxa:
                 tmp = general_fn.read_dir(searchpath)
                 searchTaxa = ','.join(tmp)
