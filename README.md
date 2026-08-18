@@ -186,7 +186,9 @@ _**NOTE:** After adding new taxa into *fdog*, you should [check for the validity
 
 # fDOG-Assembly
 
-*fDOG-Assembly* is an extension of *fDog* that enables searching for orthologs directly within unannotated genome assemblies. For more details about *fDOG-Assembly*, please refer to our [wiki page](https://github.com/BIONF/fDOG/wiki/fDOG-Assembly).
+*fDOG-Assembly* is an extension of *fDog* that enables searching for orthologs directly within unannotated genome assemblies.
+
+For more details about *fDOG-Assembly*, please refer to our [wiki page](https://github.com/BIONF/fDOG/wiki/fDOG-Assembly). An example demonstrating how to use *fDOG-Assembly* with OMA ortholog groups is available in the [examples](https://github.com/BIONF/fDOG/tree/master/examples/fdog_assembly) folder.
 
 # Bugs
 Any bug reports or comments, suggestions are highly appreciated. Please [open an issue on GitHub](https://github.com/BIONF/fDOG/issues/new) or be in touch via email.

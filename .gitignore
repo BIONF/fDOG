@@ -142,3 +142,5 @@ dmypy.json
 taxdump*
 .DS_Store
 .idea/
+examples/fdog_assembly/data/**
+!examples/fdog_assembly/data/.gitkeep

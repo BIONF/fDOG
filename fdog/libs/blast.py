@@ -24,7 +24,7 @@ import subprocess
 ##### FUNCTIONS RELATED TO BLAST #####
 
 def do_blastsearch(
-        query, blast_db, evalBlast = 0.00001, lowComplexityFilter = False):
+        query, blast_db, evalBlast = 0.00001, lowComplexityFilter = False, cpus = 1):
     """ Perform blastp search for a query fasta file
     Return an XML string contains blast result
     """
@@ -37,7 +37,8 @@ def do_blastsearch(
             "-evalue", str(evalBlast),
             "-seg", filter_value,
             "-max_target_seqs", "10",
-            "-outfmt", "5"
+            "-outfmt", "5",
+            "-num_threads", str(cpus)
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return result.stdout

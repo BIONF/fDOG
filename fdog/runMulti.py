@@ -38,7 +38,6 @@ import fdog.libs.tree as tree_fn
 import fdog.libs.output as output_fn
 from fdog.libs.isoform_filter import filter_isoforms
 
-
 def get_sorted_files(directory):
     list = os.listdir(directory)
     pairs = []
@@ -53,7 +52,7 @@ def get_sorted_files(directory):
 
 def get_seed_name(seedFile):
     seqName = seedFile.rsplit('.', 1)[0]
-    seqName = re.sub('[|.]', '_', seqName)
+    seqName = re.sub(r'[\|\.]', '_', seqName)
     return(seqName)
 
 
@@ -168,6 +167,7 @@ def main():
     parser = argparse.ArgumentParser(description='You are running fDOG version ' + str(fdog_version) + '.',
                                      epilog="For more information on certain options, please refer to the wiki pages "
                                             "on github: https://github.com/BIONF/fDOG/wiki")
+    parser.add_argument('--version', action='version', version=str(fdog_version))
     required = parser.add_argument_group('Required arguments')
     required.add_argument('--seqFolder', help='Input folder containing the seed sequences (protein only) in fasta format',
                             action='store', default='', required=True)
@@ -472,6 +472,7 @@ def main():
             print('Joining single outputs...')
             start = time.time()
             join_outputs(outpath, jobName, seeds, keep, silentOff)
+            outputFiles = [f'{jobName}.extended.fa']
             end = time.time()
             print('==> Joining outputs finished in %ss\n' % '{:5.3f}'.format(end-start))
 
@@ -488,8 +489,12 @@ def main():
                 end = time.time()
                 print('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
                 multiLog.write('==> FAS calculation finished in ' + '{:5.3f}s'.format(end - start))
+                outputFiles.append(f'{jobName}.phyloprofile')
+                outputFiles.append(f'{jobName}_forward.domains')
+                outputFiles.append(f'{jobName}_reverse.domains')
         else:
             output_fn.hamstr_2_profile(finalFa)
+            outputFiles.append(f'{jobName}.phyloprofile')
 
         ##### FILTER ISOFORMS (if present) WITH BEST FAS SCORES
         pp_file = f'{outpath}/{jobName}.phyloprofile'
@@ -514,7 +519,12 @@ def main():
             output_fn.add_all_taxa(pp_file, searchTaxa)
 
         end = time.time()
-        print('==> fdogs.run finished in ' + '{:5.3f}s'.format(end - begin))
+        print("################################")
+        print(f"Pipeline completed successfully in {end - begin:5.3f}s.")
+        print(f"Output directory:\n  {outpath}")
+        print("Generated files:")
+        for file in outputFiles:
+            print(f"  - {file}")
 
 if __name__ == '__main__':
     main()
