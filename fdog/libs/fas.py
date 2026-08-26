@@ -28,7 +28,7 @@ import fdog.libs.zzz as general_fn
 
 def check_fas_executable():
     try:
-        subprocess.check_output(['fas.setup -t ./ --check'], shell = True, stderr = subprocess.STDOUT)
+        subprocess.check_output(['fas.setup -t ./ --check --smartPath ./'], shell = True, stderr = subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         print('\033[96m%s\033[0m' % e.output.decode(sys.stdout.encoding).strip())
         print('FAS installed but fas.setup still need to be run if you want to use it!')
@@ -38,7 +38,7 @@ def check_fas_executable():
 
 def get_tool_fas_path():
     """ Get path to FAS annotation tools """
-    cmd = 'fas.setup -t ~/ -c'
+    cmd = 'fas.setup -t ./ --smartPath ./ -c'
     try:
         out = subprocess.run(
                 [cmd], shell = True, capture_output = True, check = True)
