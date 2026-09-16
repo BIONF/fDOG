@@ -196,7 +196,7 @@ Any bug reports or comments, suggestions are highly appreciated. Please [open an
 # How to cite
 Tran V, Langschied F, Muelbaier H, Dosch J, Arthen F, Balint M, Ebersberger I. 2025. Feature architecture-aware ortholog search with fDOG reveals the distribution of plant cell wall-degrading enzymes across life. Molecular Biology and Evolution:msaf120. https://doi.org/10.1093/molbev/msaf120
 
-Mülbaier H, Arthen F, Tran V, Schaefer I, Balint M, Ebersberger I. 2026. Targeted ortholog search in unannotated genome assemblies with fDOG-Assembly. Nucleic Acids Research *accepted* (see https://doi.org/10.1101/2025.09.19.677253 and )
+Mülbaier H, Arthen F, Tran V, Schaefer I, Balint M, Ebersberger I. 2026. Targeted ortholog search in unannotated genome assemblies with fDOG-Assembly. Nucleic Acids Research *accepted* (see https://doi.org/10.1101/2025.09.19.677253)
 
 # Contributors
 - [Ingo Ebersberger](https://github.com/ebersber)
