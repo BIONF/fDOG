@@ -80,6 +80,34 @@ def write_hamstr(hamstr_result, outpath, seqName, force, append):
         'Found %s ortholog(s)!\nOutput file: %s' % (ortho_count, outfile))
 
 
+def write_seed_info(seed_infos, outpath, seqName, refspec, append):
+    """ Write which reference sequence was used as seed for each search taxon
+    into seqName.seed_info.tsv (written if --matchedSeed or --windowFallback is used)
+    Columns: geneID, searchTaxon, refspec, seedID, seedRank, fallback
+    seedRank: position of the seed among the reference sequences in the core
+              group fasta file (1 = first); NA if no ortholog was found
+    fallback: 1 if the ortholog was found only among the hits below the
+              score window (--windowFallback), otherwise 0
+    """
+    outfile = os.path.abspath('%s/%s.seed_info.tsv' % (outpath, seqName))
+    old_lines = []
+    if append == True and os.path.exists(outfile):
+        with open(outfile) as f:
+            old_lines = [l for l in f.read().split('\n')[1:] if len(l) > 0]
+    new_taxa = [info['search_taxon'] for info in seed_infos]
+    with open(outfile, 'w') as out_file:
+        out_file.write('geneID\tsearchTaxon\trefspec\tseedID\tseedRank\tfallback\n')
+        for line in old_lines:
+            if not line.split('\t')[1] in new_taxa:
+                out_file.write(line + '\n')
+        for info in seed_infos:
+            seed = info['seed'] if info['seed'] else 'NA'
+            rank = info['seed_rank'] if info['seed_rank'] else 'NA'
+            out_file.write('%s\t%s\t%s\t%s\t%s\t%s\n' % (
+                seqName, info['search_taxon'], refspec, seed, rank, int(info['fallback'])))
+    return(outfile)
+
+
 def hamstr_2_profile(fa_file):
     """ Convert extended.fa file into phyloprofile file """
     if os.path.exists(fa_file):

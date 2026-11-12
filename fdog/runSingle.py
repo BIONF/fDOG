@@ -99,6 +99,10 @@ def main():
                                 action='store', choices=['domain','sequence'], default='domain')
     ortho_options.add_argument('--scoreCutoff', help='Define the percent range of the hmms core of the best hit up to which a candidate of the hmmsearch will be subjected for further evaluation. Default: 10',
                                 action='store', default=10, type=int)
+    ortho_options.add_argument('--matchedSeed', help='Use with --reuseCore when the reference species has several sequences in the core group: a candidate is accepted if its best reverse BLAST hit is any of them, and that sequence is used as seed for the co-ortholog checks and in the output. The co-ortholog check (4b) tries the sequences in the order of the core group fasta file',
+                                action='store_true', default=False)
+    ortho_options.add_argument('--windowFallback', help='If no hit within the score window (--scoreCutoff) passes the reverse search, also check the other hits among the --hitLimit best hits',
+                                action='store_true', default=False)
 
     fas_options = parser.add_argument_group('FAS options')
     fas_options.add_argument('--coreFilter',
@@ -173,6 +177,8 @@ def main():
     hitLimit = args.hitLimit
     hmmScoreType = args.hmmScoreType
     scoreCutoff = args.scoreCutoff
+    matchedSeed = args.matchedSeed
+    windowFallback = args.windowFallback
 
     # fas arguments
     fasOff = args.fasOff
@@ -285,9 +291,14 @@ def main():
         orthoArgs = [checkCoorthologsRefOff, rbh, rep, evalBlast,
                     lowComplexityFilter, evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner]
         otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
-        hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
+        (hamstr_out, seed_infos) = ortho_fn.run_hamstr(
+            [seqName, refspec, pathArgs, orthoArgs, otherArgs],
+            matchedSeed = matchedSeed, windowFallback = windowFallback, return_seed_info = True)
         output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
         outputFiles = [f'{seqName}.extended.fa']
+        if matchedSeed or windowFallback:
+            output_fn.write_seed_info(seed_infos, outpath, seqName, refspec, append)
+            outputFiles.append(f'{seqName}.seed_info.tsv')
         end = time.time()
         print('==> Ortholog search finished in ' + '{:5.3f}s'.format(end - start))
 

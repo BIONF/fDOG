@@ -128,3 +128,28 @@ def do_hmmsearch(
                 % (hmm_file, search_fa, e))
     hmm_hits = {k.decode() if isinstance(k, bytes) else k: v for k, v in hmm_hits.items()}
     return(hmm_hits)
+
+
+def do_hmmsearch_with_reserve(
+        hmm_file, search_fa, evalHmmer = 0.00001, scoreCutoff = 10,
+        hitLimit = 10, hmm_score_type = 'domain', cpus = os.cpu_count(), debug = False):
+    """ Same search as do_hmmsearch, but return two dictionaries {hit: score}:
+    window_hits:  the hits within the score window, i.e. score >=
+                  max_score / 100 * (100 - scoreCutoff); these are exactly the
+                  hits that do_hmmsearch returns
+    reserve_hits: the other hits among the hitLimit best hits; they are
+                  checked only if no hit within the window is accepted
+                  (used if --windowFallback is specified)
+    Both are sorted by decreasing score. The pHMM search is run only once.
+    """
+    all_hits = do_hmmsearch(
+        hmm_file, search_fa, evalHmmer, 100, hitLimit, hmm_score_type, cpus, debug)
+    if len(all_hits) == 0:
+        return({}, {})
+    best_score = max(all_hits.values())
+    cutoff = best_score/100*(100-scoreCutoff)
+    if best_score < 0:
+        cutoff = best_score/100*(100+scoreCutoff)
+    window_hits = {k: v for k, v in all_hits.items() if v >= cutoff}
+    reserve_hits = {k: v for k, v in all_hits.items() if v < cutoff}
+    return(window_hits, reserve_hits)

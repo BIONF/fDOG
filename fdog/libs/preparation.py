@@ -165,6 +165,24 @@ def get_seed_id_from_fa(core_fa, refspec):
     return(seed_id)
 
 
+def get_seed_ids_from_fa(core_fa, refspec):
+    """ Get the IDs of ALL sequences of the reference species in the core
+    ortholog fasta file, in the order in which they appear in the file
+    (used if --matchedSeed is specified together with --reuseCore).
+    The order of the file is the order in which the genes are tried as seed
+    in the co-ortholog test (step 4b), i.e. the preferred gene comes first.
+    """
+    seed_ids = []
+    for s in SeqIO.parse(open(core_fa), 'fasta'):
+        tmp = s.id.split('|')
+        if len(tmp) > 2 and tmp[1] == refspec:
+            seed_ids.append(tmp[-1])
+    if len(seed_ids) == 0:
+        # fall back to the matching rule of get_seed_id_from_fa
+        seed_ids = [get_seed_id_from_fa(core_fa, refspec)]
+    return(seed_ids)
+
+
 def identify_seed_id(seqFile, refspec, corepath, debug, silentOff):
     """ Identify seed ID in reference protein set using BLAST
     If the header of the seed fasta seq if found in the refspec proteome, then
