@@ -113,7 +113,7 @@ def compile_core(core_options, other_options, seeds, inFol, cpus, outpath, silen
 
 
 def search_ortholog(options, seeds, inFol, outpath):
-    (orthoArgs, otherArgs, pathArgs, refspec) = options
+    (orthoArgs, otherArgs, pathArgs, refspec, matchedSeed, windowFallback) = options
     (searchTaxa, cpus, debug, silentOff, noCleanup, force, append) = otherArgs
     ortho_runtime = []
     n = 1
@@ -123,8 +123,12 @@ def search_ortholog(options, seeds, inFol, outpath):
         seqName = get_seed_name(seed)
         print('... %s (%s / %s)' % (seqName, n, len(seeds)))
         if not os.path.exists('%s/%s.extended.fa' % (outpath, seqName)) or force == True:
-            hamstr_out = ortho_fn.run_hamstr([seqName, refspec, pathArgs, orthoArgs, otherArgs])
+            (hamstr_out, seed_infos) = ortho_fn.run_hamstr(
+                [seqName, refspec, pathArgs, orthoArgs, otherArgs],
+                matchedSeed = matchedSeed, windowFallback = windowFallback, return_seed_info = True)
             output_fn.write_hamstr(hamstr_out, outpath, seqName, force, append)
+            if matchedSeed or windowFallback:
+                output_fn.write_seed_info(seed_infos, outpath, seqName, refspec, append)
             end = time.time()
             ortho_runtime.append('%s\t%s' % (seqName, '{:5.3f}s'.format(end - begin)))
         n += 1
@@ -150,6 +154,19 @@ def join_outputs(outpath, jobName, seeds, keep, silentOff):
                 os.remove(outpath + '/' + seqName + '.fa')
             if os.path.exists(os.getcwd() + '/' + seqName + '.fa'):
                 os.remove(os.getcwd() + '/' + seqName + '.fa')
+    # merge single seed_info.tsv files (written with --matchedSeed or --windowFallback)
+    seed_info_files = ['%s/%s.seed_info.tsv' % (outpath, get_seed_name(seed)) for seed in seeds]
+    seed_info_files = [f for f in seed_info_files if os.path.exists(f)]
+    if len(seed_info_files) > 0:
+        with open('%s/%s.seed_info.tsv' % (outpath, jobName), 'w') as seed_info_out:
+            seed_info_out.write('geneID\tsearchTaxon\trefspec\tseedID\tseedRank\tfallback\n')
+            for f in seed_info_files:
+                with open(f) as fd:
+                    seed_info_out.write(''.join(fd.readlines()[1:]))
+                if not os.path.exists('%s/%s' % (single_output_fol, os.path.basename(f))):
+                    shutil.move(f, single_output_fol)
+                else:
+                    os.remove(f)
     if keep == True:
         try:
             print('Compressing single outputs...')
@@ -226,6 +243,10 @@ def main():
                                 action='store', choices=['domain','sequence'], default='domain')
     ortho_options.add_argument('--scoreCutoff', help='Define the percent range of the hmms core of the best hit up to which a candidate of the hmmsearch will be subjected for further evaluation. Default: 10',
                                 action='store', default=10, type=int)
+    ortho_options.add_argument('--matchedSeed', help='Use with --reuseCore when the reference species has several sequences in the core group: a candidate is accepted if its best reverse BLAST hit is any of them, and that sequence is used as seed for the co-ortholog checks and in the output. The co-ortholog check (4b) tries the sequences in the order of the core group fasta file',
+                                action='store_true', default=False)
+    ortho_options.add_argument('--windowFallback', help='If no hit within the score window (--scoreCutoff) passes the reverse search, also check the other hits among the --hitLimit best hits',
+                                action='store_true', default=False)
 
     fas_options = parser.add_argument_group('FAS options')
     fas_options.add_argument('--coreFilter',
@@ -301,6 +322,8 @@ def main():
     hitLimit = args.hitLimit
     hmmScoreType = args.hmmScoreType
     scoreCutoff = args.scoreCutoff
+    matchedSeed = args.matchedSeed
+    windowFallback = args.windowFallback
 
     # fas arguments
     fasOff = args.fasOff
@@ -427,7 +450,7 @@ def main():
             orthoArgs = [checkCoorthologsRefOff, rbh, rep, evalBlast,
                         lowComplexityFilter, evalHmmer, hitLimit, hmmScoreType, scoreCutoff, aligner]
             otherArgs = [searchTaxa, cpus, debug, silentOff, noCleanup, force, append]
-            ortho_options = [orthoArgs, otherArgs, pathArgs, refspec]
+            ortho_options = [orthoArgs, otherArgs, pathArgs, refspec, matchedSeed, windowFallback]
             ortho_runtime = search_ortholog(ortho_options, seeds, inFol, outpath)
             end = time.time()
             multi_ortho_time = '{:5.3f}'.format(end-start)
